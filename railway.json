@@ -4,7 +4,7 @@
     "buildCommand": "echo 'Python stdlib only, no deps needed'"
   },
   "deploy": {
-    "startCommand": "python3 server.py",
+    "startCommand": "python server.py",
     "healthcheckPath": "/api/flights",
     "healthcheckTimeout": 30,
     "restartPolicyType": "always"
