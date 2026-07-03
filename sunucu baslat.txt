@@ -1,2 +1,5 @@
 cd /d C:\Users\MSI\OneDrive\Desktop\gulizvip
 python server.py
+
+
+https://web-production-b3527.up.railway.app/#hizmetler

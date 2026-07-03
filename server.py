@@ -16,6 +16,8 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 
+import db  # PostgreSQL modülü
+
 # ─── Config ───────────────────────────────────────────────────────────────────
 HOST = "0.0.0.0"
 PORT = int(os.environ.get("PORT", 8081))
@@ -55,6 +57,16 @@ RESERVATION_ID = 1000
 
 def load_reservations():
     global RESERVATIONS, RESERVATION_ID
+    # Önce PostgreSQL dene
+    db_reservations = db.load_reservations_from_db()
+    if db_reservations is not None:
+        RESERVATIONS = db_reservations
+        next_id = db.get_next_reservation_id()
+        if next_id:
+            RESERVATION_ID = next_id
+        print(f"[i] {len(RESERVATIONS)} rezervasyon PostgreSQL'den yüklendi.")
+        return
+    # Yoksa JSON dosyasına düş
     try:
         if os.path.exists(RESERVATIONS_FILE):
             with open(RESERVATIONS_FILE, "r", encoding="utf-8") as f:
@@ -67,6 +79,9 @@ def load_reservations():
         RESERVATION_ID = 1000
 
 def save_reservations():
+    # PostgreSQL'e de kaydet (arka planda)
+    # Rezervasyon kaydetme işlemi ayrıca do_POST içinde yapılır
+    # JSON dosyasına da yedek olarak kaydet
     try:
         with open(RESERVATIONS_FILE, "w", encoding="utf-8") as f:
             json.dump({"reservations": RESERVATIONS, "next_id": RESERVATION_ID}, f, ensure_ascii=False, indent=2)
@@ -610,9 +625,18 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not reservation["customerName"] or not reservation["pickup"]:
                     self._send_error("Ad ve alış noktası zorunludur.", 400)
                     return
-                RESERVATIONS.insert(0, reservation)
-                RESERVATION_ID += 1
-                save_reservations()
+
+                # PostgreSQL'e kaydet (varsa)
+                db_id = db.save_reservation_to_db(reservation)
+                if db_id:
+                    reservation["id"] = db_id
+                    RESERVATION_ID = db_id + 1
+                else:
+                    # JSON dosyasına yedek
+                    RESERVATIONS.insert(0, reservation)
+                    RESERVATION_ID += 1
+                    save_reservations()
+
                 self._send_json({"success": True, "reservation": reservation})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
@@ -779,57 +803,63 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     if new_status not in ("pending", "approved", "completed", "cancelled"):
                         self._send_error("Geçersiz durum.", 400)
                         return
-                    found = False
-                    for r in RESERVATIONS:
-                        if r["id"] == res_id:
-                            r["status"] = new_status
-                            r["updatedAt"] = datetime.now().isoformat()
-                            found = True
-                            break
-                    if not found:
-                        self._send_error("Rezervasyon bulunamadı.", 404)
-                        return
-                    save_reservations()
+
+                    # PostgreSQL'de güncelle
+                    if not db.update_reservation_status_in_db(res_id, new_status):
+                        # Fallback: in-memory güncelle
+                        found = False
+                        for r in RESERVATIONS:
+                            if r["id"] == res_id:
+                                r["status"] = new_status
+                                r["updatedAt"] = datetime.now().isoformat()
+                                found = True
+                                break
+                        if not found:
+                            self._send_error("Rezervasyon bulamadi.", 404)
+                            return
+                        save_reservations()
+
                     self._send_json({"success": True})
 
                 elif action == "delete":
                     res_id = body.get("id")
-                    found = False
-                    for i, r in enumerate(RESERVATIONS):
-                        if r["id"] == res_id:
-                            RESERVATIONS.pop(i)
-                            found = True
-                            break
-                    if not found:
-                        self._send_error("Rezervasyon bulunamadı.", 404)
-                        return
-                    save_reservations()
+
+                    # PostgreSQL'den sil
+                    if not db.delete_reservation_from_db(res_id):
+                        # Fallback: in-memory sil
+                        found = False
+                        for i, r in enumerate(RESERVATIONS):
+                            if r["id"] == res_id:
+                                RESERVATIONS.pop(i)
+                                found = True
+                                break
+                        if not found:
+                            self._send_error("Rezervasyon bulamadi.", 404)
+                            return
+                        save_reservations()
+
                     self._send_json({"success": True})
 
                 else:
                     self._send_error("Bilinmeyen aksiyon: " + action, 400)
 
             except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
+                self._send_error("Gecersiz JSON.", 400)
             except Exception as e:
                 self._send_error(str(e), 500)
             return
 
-        self._send_error("Bulunamadı", 404)
+        self._send_error("Bulunamadi", 404)
 
 
-# ─── Server Startup ───────────────────────────────────────────────────────────
+# --- Server Startup -----------------------------------------------------------
 
 if __name__ == "__main__":
+    db.init_db()
     load_reservations()
-    refresh_flights()
-    scheduler_thread = threading.Thread(target=scheduler_loop, daemon=True)
-    scheduler_thread.start()
-    t = datetime.now().strftime("%H:%M:%S")
-    print(f"[{t}] Sunucu başlatılıyor: http://{HOST}:{PORT}")
-    server = http.server.HTTPServer((HOST, PORT), GulizHandler)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Sunucu durduruldu.")
-        server.server_close()
+    print(f"[i] Toplam {len(RESERVATIONS)} rezervasyon yüklendi.")
+    print(f"[i] Sunucu {HOST}:{PORT} üzerinde başlatılıyor...")
+    server = http.server.HTTPServer((HOST, PORT), GülizVipHandler)
+    scheduler = threading.Thread(target=scheduler_loop, daemon=True)
+    scheduler.start()
+    server.serve_forever()
