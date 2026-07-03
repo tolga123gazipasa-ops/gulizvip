@@ -636,7 +636,7 @@
 
                 <div class="form-step" id="tahsis-step1" style="display:block;">
                     <div class="form-grid">
-                    <div class="input-group"><label>Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" placeholder="Aracın sizi alacağı konum" required></div></div>
+                    <div class="input-group"><label>Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa" placeholder="Aracın sizi alacağı konum" required></div></div>
                     <div class="input-group"><label>Tahsis Süresi</label>
                         <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
                             <select id="vDuration" onchange="calculateVipPrice()">
@@ -1032,8 +1032,36 @@
         // --- SES DOSYASINI OYNATMA FONKSİYONU ---
         function playChatSound() {
             var sound = document.getElementById("chatSound");
-            sound.currentTime = 0; 
+            sound.currentTime = 0;
             sound.play().catch(function(error) { console.log("Otomatik ses politikası engeli."); });
+        }
+
+        // --- CANLI DESTEK SESSION VE KULLANICI BİLGİLERİ ---
+        var chatSessionId = localStorage.getItem('chatSessionId');
+        if (!chatSessionId) {
+            chatSessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            localStorage.setItem('chatSessionId', chatSessionId);
+        }
+        var chatName = localStorage.getItem('chatName') || '';
+        var chatPhone = localStorage.getItem('chatPhone') || '';
+        var chatLastId = 0;
+        var chatPollingTimer = null;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function promptVisitorInfo() {
+            var name = prompt('Adınızı giriniz:', chatName);
+            if (name) { chatName = name; localStorage.setItem('chatName', name); }
+            var phone = prompt('Telefon numaranızı giriniz (05XX...):', chatPhone);
+            if (phone) { chatPhone = phone; localStorage.setItem('chatPhone', phone); }
         }
 
         // --- SIKÇA SORULAN SORULAR (SSS) AÇ/KAPAT ---
@@ -1063,28 +1091,117 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- CANLI DESTEK MESAJ GÖNDERME MANTIĞI ---
+        // --- CANLI DESTEK SESSION VE KULLANICI BİLGİLERİ ---
+        var chatSessionId = localStorage.getItem('chatSessionId');
+        if (!chatSessionId) {
+            chatSessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            localStorage.setItem('chatSessionId', chatSessionId);
+        }
+        var chatName = localStorage.getItem('chatName') || '';
+        var chatPhone = localStorage.getItem('chatPhone') || '';
+        var chatLastId = 0;
+        var chatPollingTimer = null;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function promptVisitorInfo() {
+            var name = prompt('Adınızı giriniz:', chatName);
+            if (name) { chatName = name; localStorage.setItem('chatName', name); }
+            var phone = prompt('Telefon numaranızı giriniz (05XX...):', chatPhone);
+            if (phone) { chatPhone = phone; localStorage.setItem('chatPhone', phone); }
+        }
+
+        // --- CANLI DESTEK MESAJ GÖNDERME (BACKEND API İLE) ---
         function sendMessage() {
             var input = document.getElementById("chatInput");
             var msg = input.value.trim();
-            
-            if(msg !== "") {
-                var chatBody = document.getElementById("chatBody");
-                chatBody.innerHTML += '<div class="msg-user">' + msg + '</div>';
-                input.value = "";
-                chatBody.scrollTop = chatBody.scrollHeight; 
-                playChatSound(); 
-                
-                setTimeout(function() {
-                    chatBody.innerHTML += '<div class="msg-bot">Harika! Mesajınızı operasyon ekibimize ilettim. Size en kısa sürede dönüş yapacağız.</div>';
-                    chatBody.scrollTop = chatBody.scrollHeight;
-                    playChatSound(); 
-                }, 1000);
+
+            if(msg === "") return;
+
+            // İlk mesajda ad/telefon al
+            if (!chatName || !chatPhone) {
+                promptVisitorInfo();
+                if (!chatName || !chatPhone) return;
             }
+
+            var chatBody = document.getElementById("chatBody");
+
+            // Mesajı hemen local'e ekle
+            chatBody.innerHTML += '<div class="msg-user">' + escapeHtml(msg) + '</div>';
+            input.value = "";
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Backend'e gönder
+            fetch('/api/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: chatName,
+                    phone: chatPhone,
+                    message: msg,
+                    sessionId: chatSessionId
+                })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success && data.message && data.message.id) {
+                    if (data.message.id > chatLastId) chatLastId = data.message.id;
+                }
+            }).catch(function(err) {
+                console.log('Mesaj gönderilemedi:', err);
+            });
+
+            playChatSound();
         }
 
         function handleKeyPress(e) {
             if(e.key === 'Enter') { sendMessage(); }
+        }
+
+        // --- CANLI DESTEK POLLING (Admin yanıtlarını al) ---
+        function pollChatMessages() {
+            fetch('/api/chat/messages?since=' + chatLastId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && data.messages && data.messages.length > 0) {
+                        var chatBody = document.getElementById("chatBody");
+                        var added = false;
+                        data.messages.forEach(function(msg) {
+                            if (msg.id > chatLastId) chatLastId = msg.id;
+                            if (msg.sessionId === chatSessionId && msg.isAdmin) {
+                                var adminLabel = msg.adminName ? ' (' + escapeHtml(msg.adminName) + ')' : '';
+                                chatBody.innerHTML += '<div class="msg-bot"><strong>Güliz Asistan' + adminLabel + ':</strong><br>' + escapeHtml(msg.message) + '</div>';
+                                added = true;
+                            }
+                        });
+                        if (added) {
+                            chatBody.scrollTop = chatBody.scrollHeight;
+                            playChatSound();
+                        }
+                    }
+                })
+                .catch(function(err) {
+                    console.log('Mesaj polling hatası:', err);
+                });
+        }
+
+        function startChatPolling() {
+            if (chatPollingTimer) clearInterval(chatPollingTimer);
+            chatPollingTimer = setInterval(pollChatMessages, 3000);
+            pollChatMessages(); // hemen bir kere çek
+        }
+
+        function stopChatPolling() {
+            if (chatPollingTimer) {
+                clearInterval(chatPollingTimer);
+                chatPollingTimer = null;
+            }
         }
 
         // --- 3 SANİYE SONRA CANLI DESTEĞİ OTOMATİK AÇ ---
@@ -1092,7 +1209,7 @@
             var widget = document.getElementById("chatWidget");
             if (widget.style.display !== "flex") {
                 toggleChat();
-                playChatSound(); 
+                playChatSound();
             }
         }, 3000);
 
@@ -1102,9 +1219,11 @@
             if (widget.style.display === "flex") {
                 widget.style.display = "none";
                 btn.style.display = "flex";
+                stopChatPolling();
             } else {
                 widget.style.display = "flex";
                 btn.style.display = "none";
+                startChatPolling();
             }
         }
 

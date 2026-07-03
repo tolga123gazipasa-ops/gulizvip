@@ -50,6 +50,10 @@ BANK_ACCOUNTS = {
     }
 }
 
+# Telegram bot konfigürasyonu — admin panelden güncellenebilir
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
 # ─── Reservation Data ───────────────────────────────────────────────────────────
 RESERVATIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reservations.json")
 RESERVATIONS = []
@@ -154,6 +158,31 @@ flight_cache = {
     "gzp": {"gelen": [], "giden": [], "updated_at": None},
     "ayt": {"gelen": [], "giden": [], "updated_at": None},
 }
+
+# ─── Live Chat ──────────────────────────────────────────────────────────────────
+CHAT_MESSAGES = []
+CHAT_ID = 1
+
+
+# ─── Telegram Bot ─────────────────────────────────────────────────────────────────
+def send_telegram(message):
+    """Send a message via Telegram Bot API. Returns True on success."""
+    global TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False
+    try:
+        data = json.dumps({
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML"
+        }).encode("utf-8")
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=10)
+        return True
+    except Exception as e:
+        print(f"[!] Telegram mesajı gönderilemedi: {e}")
+        return False
 
 STATUS_POOL = [
     ("Bekleniyor", "expected"),
@@ -493,6 +522,45 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             self._send_json({"success": True, "reservations": RESERVATIONS})
             return
 
+        # API: /api/admin/telegram/config (auth required) — get Telegram config
+        if path == "/api/admin/telegram/config":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            self._send_json({
+                "success": True,
+                "config": {
+                    "botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "",
+                    "chatId": TELEGRAM_CHAT_ID
+                }
+            })
+            return
+
+        # API: /api/chat/messages (public) — get messages since a given ID
+        if path == "/api/chat/messages":
+            since = params.get("since")
+            if since:
+                try:
+                    since_id = int(since)
+                    messages = [m for m in CHAT_MESSAGES if m["id"] > since_id]
+                except ValueError:
+                    messages = CHAT_MESSAGES
+            else:
+                messages = CHAT_MESSAGES
+            self._send_json({"success": True, "messages": messages})
+            return
+
+        # API: /api/admin/chat/messages (auth required) — get all messages grouped by visitor
+        if path == "/api/admin/chat/messages":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            self._send_json({"success": True, "messages": CHAT_MESSAGES,
+                             "unread": sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))})
+            return
+
         # Static files
         if path == "/" or path == "":
             self._serve_static("index.html")
@@ -638,6 +706,140 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     save_reservations()
 
                 self._send_json({"success": True, "reservation": reservation})
+
+                # Telegram bildirimi — yeni rezervasyon
+                tip_etiket = "🚗 Transfer" if reservation["type"] == "transfer" else "👑 Şoförlü Günlük VIP"
+                telegram_rez = (
+                    f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
+                    f"📋 <b>Tür:</b> {tip_etiket}\n"
+                    f"👤 <b>İsim:</b> {reservation['customerName']}\n"
+                    f"📞 <b>Telefon:</b> {reservation['customerPhone']}\n"
+                    f"📍 <b>Alış:</b> {reservation['pickup']}\n"
+                    f"🏁 <b>Varış:</b> {reservation['destination']}\n"
+                    f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
+                    f"👥 <b>Kişi:</b> {reservation['passengers']}\n"
+                    f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
+                    f"🕐 <b>Oluşturulma:</b> {reservation['createdAt']}"
+                )
+                if reservation.get("flightNumber"):
+                    telegram_rez += f"\n✈️ <b>Uçuş:</b> {reservation['flightNumber']}"
+                send_telegram(telegram_rez)
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            return
+
+        # API: /api/admin/telegram/test (auth required) — test Telegram connection
+        if path == "/api/admin/telegram/test":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            test_msg = (
+                "✅ <b>Telegram bağlantısı başarılı!</b>\n"
+                f"🕐 Test mesajı: {datetime.now().isoformat()}\n\n"
+                "Güliz VIP canlı destek ve rezervasyon bildirimleri bu kanala iletilecek."
+            )
+            success = send_telegram(test_msg)
+            if success:
+                self._send_json({"success": True, "message": "Test mesajı gönderildi!"})
+            else:
+                self._send_error(
+                    "Telegram mesajı gönderilemedi. Bot token ve Chat ID'yi kontrol edin.",
+                    400
+                )
+            return
+
+        # API: /api/chat/send (public) — visitor sends a chat message
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            return
+
+        # API: /api/chat/send (public) — visitor sends a chat message
+        if path == "/api/chat/send":
+            try:
+                body = json.loads(self._read_body())
+                global CHAT_ID, CHAT_MESSAGES
+                msg = {
+                    "id": CHAT_ID,
+                    "name": body.get("name", ""),
+                    "phone": body.get("phone", ""),
+                    "message": body.get("message", ""),
+                    "timestamp": datetime.now().isoformat(),
+                    "isAdmin": False,
+                    "adminName": "",
+                    "read": False,
+                    "sessionId": body.get("sessionId", "")
+                }
+                if not msg["message"]:
+                    self._send_error("Mesaj boş olamaz.", 400)
+                    return
+                CHAT_MESSAGES.append(msg)
+                CHAT_ID += 1
+
+                # Telegram bildirimi — yeni ziyaretçi mesajı
+                if msg["name"] or msg["phone"]:
+                    telegram_text = (
+                        f"🆕 <b>Yeni Canlı Destek Mesajı</b>\n"
+                        f"👤 <b>İsim:</b> {msg['name'] or 'Belirtilmemiş'}\n"
+                        f"📞 <b>Telefon:</b> {msg['phone'] or 'Belirtilmemiş'}\n"
+                        f"💬 <b>Mesaj:</b> {msg['message']}\n"
+                        f"🕐 <b>Saat:</b> {msg['timestamp']}"
+                    )
+                else:
+                    telegram_text = (
+                        f"🆕 <b>Yeni Canlı Destek Mesajı</b>\n"
+                        f"💬 <b>Mesaj:</b> {msg['message']}\n"
+                        f"🕐 <b>Saat:</b> {msg['timestamp']}"
+                    )
+                send_telegram(telegram_text)
+
+                self._send_json({"success": True, "message": msg})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            return
+
+        # API: /api/admin/chat/reply (auth required) — admin sends a reply
+        if path == "/api/admin/chat/reply":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                msg = {
+                    "id": CHAT_ID,
+                    "message": body.get("message", ""),
+                    "timestamp": datetime.now().isoformat(),
+                    "isAdmin": True,
+                    "adminName": user,
+                    "read": True,
+                    "sessionId": body.get("sessionId", ""),
+                    "name": body.get("name", f"Admin ({user})"),
+                    "phone": ""
+                }
+                if not msg["message"]:
+                    self._send_error("Mesaj boş olamaz.", 400)
+                    return
+                CHAT_MESSAGES.append(msg)
+                CHAT_ID += 1
+                self._send_json({"success": True, "message": msg})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            return
+
+        # API: /api/admin/chat/read (auth required) — mark messages as read
+        if path == "/api/admin/chat/read":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                session_id = body.get("sessionId", "")
+                for m in CHAT_MESSAGES:
+                    if m.get("sessionId") == session_id and not m.get("isAdmin"):
+                        m["read"] = True
+                self._send_json({"success": True})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
@@ -763,7 +965,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         img["alt"] = "Slider Görseli"
                     SLIDER_IMAGES.append(img)
                     self._send_json({"success": True, "images": SLIDER_IMAGES})
-
                 elif action == "reorder":
                     from_index = body.get("fromIndex")
                     to_index = body.get("toIndex")
@@ -784,6 +985,27 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 self._send_error("Geçersiz JSON.", 400)
             except Exception as e:
                 self._send_error(str(e), 500)
+            return
+
+        # API: /api/admin/telegram/config (auth required) — update Telegram config
+        if path == "/api/admin/telegram/config":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                global TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+                if "botToken" in body:
+                    TELEGRAM_BOT_TOKEN = body["botToken"]
+                if "chatId" in body:
+                    TELEGRAM_CHAT_ID = str(body["chatId"])
+                self._send_json({"success": True, "config": {
+                    "botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "",
+                    "chatId": TELEGRAM_CHAT_ID
+                }})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
             return
 
         # API: /api/admin/reservations (auth required) — update or delete reservation
@@ -859,7 +1081,7 @@ if __name__ == "__main__":
     load_reservations()
     print(f"[i] Toplam {len(RESERVATIONS)} rezervasyon yüklendi.")
     print(f"[i] Sunucu {HOST}:{PORT} üzerinde başlatılıyor...")
-    server = http.server.HTTPServer((HOST, PORT), GülizVipHandler)
+    server = http.server.HTTPServer((HOST, PORT), GulizHandler)
     scheduler = threading.Thread(target=scheduler_loop, daemon=True)
     scheduler.start()
     server.serve_forever()
