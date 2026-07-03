@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Gazipaşa VIP Vito Kiralama & Havalimanı Transfer | Güliz Transfer</title>
+    <meta name="description" content="Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı (AYT) VIP Vito kiralama, şoförlü lüks transfer hizmetleri. Alanya, Mahmutlar, Avsallar bölgelerine 7/24 premium ulaşım.">
+    <meta name="keywords" content="Gazipaşa Havalimanı transfer, Gazipaşa VIP vito kiralama, Alanya VIP transfer, şoförlü araç kiralama Antalya, Mahmutlar transfer, Oba, Avsallar lüks ulaşım, Güliz Transfer, Gazipaşa havaş alternatif">
+    <meta name="author" content="Güliz Lojistik">
+    <meta name="robots" content="index, follow">
+    
+    <meta property="og:title" content="Güliz Transfer | Premium VIP Havalimanı Ulaşımı">
+    <meta property="og:description" content="Gazipaşa ve Antalya havalimanlarında kesintisiz VIP Vito kiralama ve şoförlü transfer ayrıcalığı.">
+    <meta property="og:type" content="website">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Google Maps API - lazy load -->
+    <script>
+        var GOOGLE_MAPS_API_KEY = '';
+        var mapsInitialized = false;
+        var mapsCallbacks = [];
+        var mapsLoadAttempted = false;
+
+        function fetchMapsConfig(cb) {
+            fetch('/api/maps/config')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if(d.success && d.apiKey) {
+                        GOOGLE_MAPS_API_KEY = d.apiKey;
+                        loadMapsApi();
+                    } else {
+                        showMapError('API anahtari alinamadi');
+                    }
+                })
+                .catch(function() {
+                    showMapError('Sunucuya baglanilamiyor');
+                });
+        }
+
+        function loadMapsApi() {
+            if(mapsInitialized || mapsLoadAttempted) return;
+            mapsLoadAttempted = true;
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_API_KEY + '&loading=async&callback=onMapsReady&language=tr&region=TR&libraries=places';
+            script.async = true;
+            script.defer = true;
+            script.onerror = function() { showMapError('Google Haritalar yuklenemedi (baglanti hatasi)'); };
+            document.head.appendChild(script);
+        }
+
+        function showMapError(msg) {
+            var el = document.getElementById('mapError');
+            if(el) { el.textContent = msg; el.style.display = 'block'; }
+        }
+
+        // Google Maps auth hatası yakalama
+        window.gm_authFailure = function() {
+            showMapError('Google Haritalar: API anahtari gecersiz veya kisitli. Google Cloud Console\'da Maps JavaScript API, Geocoding API, Directions API ve Distance Matrix API\'i etkinlestirin.');
+        };
+
+        function onMapsReady() {
+            mapsInitialized = true;
+            for(var i = 0; i < mapsCallbacks.length; i++) {
+                mapsCallbacks[i]();
+            }
+            mapsCallbacks = [];
+            // Input'lara dinleyici ekle (Maps yüklendikten sonra manuel autocomplete başlat)
+            setTimeout(initPlacesAutocomplete, 500);
+        }
+
+        function onMapsReadyOrQueue(cb) {
+            if(mapsInitialized) {
+                cb();
+            } else {
+                mapsCallbacks.push(cb);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() { fetchMapsConfig(); });
+
+        // Admin tarafından belirlenen km başı birim fiyatı backend'den al
+        var UNIT_PRICE = 25;
+        function fetchUnitPrice() {
+            fetch('/api/unit-price')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if(d.success && d.unitPrice > 0) {
+                        UNIT_PRICE = d.unitPrice;
+                    }
+                })
+                .catch(function() {});
+        }
+        fetchUnitPrice();
+
+        // Banka hesap bilgilerini backend'den al
+        var BANK_ACCOUNTS = {};
+        function fetchBankAccounts() {
+            fetch('/api/bank-accounts')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if(d.success && d.accounts) {
+                        BANK_ACCOUNTS = d.accounts;
+                        updateBankDetails();
+                    }
+                })
+                .catch(function() {});
+        }
+
+        function updateBankDetails() {
+            var keys = Object.keys(BANK_ACCOUNTS);
+            ['transfer', 'tahsis'].forEach(function(formType) {
+                keys.forEach(function(key) {
+                    var acct = BANK_ACCOUNTS[key];
+                    if(!acct) return;
+                    var nameEl = document.querySelector('#' + formType + '-' + key + '-label .bank-name');
+                    var ibanEl = document.querySelector('#' + formType + '-' + key + '-label .bank-iban');
+                    if(nameEl) nameEl.textContent = acct.name;
+                    if(ibanEl) ibanEl.textContent = acct.iban;
+                });
+            });
+        }
+        fetchBankAccounts();
+    </script>
+
+    <style>
+        :root {
+            --primary-navy: #1B2B4C;
+            --primary-red: #E31837;
+            --pure-white: #FFFFFF;
+            --bg-light: #F8FAFC;
+            --text-dark: #0F172A;
+            --text-gray: #64748B;
+            --border-light: #E2E8F0;
+            --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.03);
+            --shadow-strong: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        html { scroll-behavior: smooth; } /* UX: Yumuşak kaydırma */
+        body { background-color: var(--bg-light); color: var(--text-dark); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        a { text-decoration: none; color: inherit; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        
+        .section-title { text-align: center; margin-bottom: 50px; }
+        .section-title h2 { font-size: 32px; font-weight: 800; color: var(--primary-navy); margin-bottom: 15px; }
+        .section-title p { color: var(--text-gray); font-size: 15px; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+
+        /* --- HEADER --- */
+        .header { background: var(--primary-navy); position: sticky; top: 0; z-index: 1000; box-shadow: 0 10px 30px rgba(27, 43, 76, 0.4); padding: 12px 0; }
+        .header .container { display: flex; justify-content: space-between; align-items: center; max-width: 1300px; }
+        .logo-container { cursor: pointer; }
+        .logo-container img { height: 55px; width: auto; display: block; }
+        .nav-menu { display: flex; gap: 32px; font-weight: 600; font-size: 14px; color: var(--pure-white); }
+        .nav-menu a { transition: var(--transition); position: relative; padding-bottom: 4px; }
+        .nav-menu a:hover { color: var(--primary-red); }
+
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+        .lang-switcher { display: flex; gap: 8px; color: var(--pure-white); font-size: 12px; font-weight: 700; margin-right: 10px; opacity: 0.9; cursor: pointer; }
+        .lang-switcher span:hover, .lang-switcher span.active { color: var(--primary-red); }
+        
+        .call-btn { background: transparent; color: var(--pure-white); border: 1px solid rgba(255, 255, 255, 0.3); padding: 12px 20px; border-radius: 8px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
+        .call-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--pure-white); }
+        .call-btn i { color: #25D366; font-size: 15px; }
+        .cta-button { background: var(--primary-red); color: var(--pure-white); padding: 13px 24px; border-radius: 8px; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; transition: var(--transition); border: none; cursor: pointer; }
+        .cta-button:hover { background: #C91530; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(227, 24, 55, 0.2); }
+
+        /* --- HERO & SLIDER --- */
+        .hero { position: relative; padding: 40px 24px 80px 24px; text-align: center; overflow: hidden; min-height: 85vh; display: flex; align-items: flex-start; justify-content: center; }
+        .hero-slider { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .hero-slider img.slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.5s ease-in-out; }
+        .hero-slider img.slide.active { opacity: 1; }
+        .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.5); z-index: 2; }
+
+        /* SEO için Gizli H1 Etiketi */
+        .seo-h1 { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+
+        /* --- BOOKING ENGINE --- */
+        .booking-engine { width: 100%; max-width: 1050px; background: var(--pure-white); border-radius: 16px; box-shadow: var(--shadow-strong); border: 1px solid var(--border-light); position: relative; z-index: 10; margin-bottom: -50px; }
+        .tab-header { display: flex; background: var(--bg-light); border-bottom: 1px solid var(--border-light); }
+        .tab-btn { flex: 1; padding: 24px; text-align: center; font-size: 15px; font-weight: 700; color: var(--text-gray); cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .tab-btn.active { background: var(--pure-white); color: var(--primary-navy); box-shadow: inset 0 4px 0 var(--primary-red); }
+        
+        .form-body { padding: 40px; display: none; animation: fadeIn 0.4s ease; }
+        .form-body.active-form { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; text-align: left; }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-group label { font-size: 12px; font-weight: 700; color: var(--primary-navy); text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-wrapper i { position: absolute; left: 16px; color: var(--primary-red); font-size: 18px; }
+        .input-wrapper input, .input-wrapper select { width: 100%; padding: 18px 18px 18px 48px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 15px; font-weight: 600; color: var(--text-dark); background: var(--bg-light); outline: none; transition: var(--transition); -webkit-appearance: none; }
+        .input-wrapper input:focus, .input-wrapper select:focus { border-color: var(--primary-navy); background: var(--pure-white); }
+        
+        .submit-btn { width: 100%; background: var(--primary-navy); color: var(--pure-white); padding: 20px; border-radius: 8px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 15px;}
+        .submit-btn:hover { background: var(--text-dark); box-shadow: var(--shadow-strong); }
+
+        /* MESAFE BİLGİSİ & PREMIUM MAPS STYLES */
+        .distance-info { display: flex; gap: 16px; padding: 18px 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; margin: 15px 0; justify-content: space-around; flex-wrap: wrap; }
+        .distance-detail { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--primary-navy); }
+        .distance-detail i { color: var(--primary-red); font-size: 18px; width: 22px; text-align: center; }
+        .distance-detail.highlight { background: var(--primary-navy); color: var(--pure-white); padding: 8px 18px; border-radius: 8px; }
+        .distance-detail.highlight i { color: #fbbf24; }
+        .distance-detail.highlight strong { color: var(--pure-white); font-size: 18px; }
+        .map-preview { width: 100%; height: 220px; border-radius: 12px; margin: 12px 0; border: 2px solid var(--border-light); overflow: hidden; }
+        .map-preview .gm-style .gm-style-iw-d { font-family: 'Montserrat', sans-serif; font-weight: 600; color: var(--primary-navy); }
+        .pac-container { border-radius: 8px; border: 1px solid var(--border-light); box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-family: 'Montserrat', sans-serif; margin-top: 2px; }
+        .pac-item { padding: 8px 12px; font-size: 13px; color: var(--text-dark); border-color: var(--border-light); cursor: pointer; }
+        .pac-item:hover, .pac-item-selected { background: var(--bg-light); }
+        .pac-icon { margin-right: 8px; }
+        .maps-loading { text-align: center; padding: 10px; color: var(--text-gray); font-size: 13px; display: none; }
+        
+        .trust-badges { display: flex; justify-content: center; flex-wrap: wrap; gap: 30px; margin-top: 25px; padding-top: 25px; border-top: 1px solid var(--border-light); }
+        .badge { display: flex; align-items: center; gap: 10px; color: var(--text-gray); font-size: 13px; font-weight: 600; }
+        .badge i { color: var(--primary-navy); font-size: 18px; }
+        .badge.highlight i { color: var(--primary-red); }
+
+        .vip-summary { background: #f8fafc; border: 1px dashed var(--border-light); border-radius: 8px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .vip-summary .title { font-size: 13px; color: var(--text-gray); font-weight: 600; text-transform: uppercase; }
+        .vip-summary .price { font-size: 24px; font-weight: 800; color: var(--primary-navy); }
+        .vip-summary .price span { font-size: 14px; color: var(--primary-red); }
+
+        /* 2-STEP FORM */
+        .form-step { transition: opacity 0.3s ease; }
+        .step-indicator { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 30px; }
+        .step-num { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #CBD5E1; }
+        .step-num .step-num-circle { width: 32px; height: 32px; border-radius: 50%; background: #E2E8F0; color: #94A3B8; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; transition: all 0.3s ease; }
+        .step-num.active .step-num-circle { background: var(--primary-navy); color: var(--pure-white); }
+        .step-num.active { color: var(--primary-navy); }
+        .step-num.done .step-num-circle { background: #10B981; color: var(--pure-white); }
+        .step-num.done { color: #10B981; }
+        .step-sep { width: 60px; height: 2px; background: #E2E8F0; border-radius: 2px; }
+        .form-nav { display: flex; gap: 12px; margin-top: 15px; }
+        .back-btn { flex: 1; background: var(--bg-light); color: var(--primary-navy); padding: 20px; border-radius: 8px; font-size: 16px; font-weight: 700; border: 1px solid var(--border-light); cursor: pointer; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 12px; }
+        .back-btn:hover { background: var(--border-light); }
+        .next-btn { flex: 2; background: var(--primary-navy); color: var(--pure-white); padding: 20px; border-radius: 8px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 12px; }
+        .next-btn:hover { background: var(--text-dark); box-shadow: var(--shadow-strong); }
+        .final-btn { flex: 2; background: var(--primary-navy); color: var(--pure-white); padding: 20px; border-radius: 8px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 12px; }
+        .final-btn:hover { background: var(--text-dark); box-shadow: var(--shadow-strong); }
+
+        /* --- PAYMENT SECTION --- */
+        .payment-section { margin-top: 25px; padding-top: 25px; border-top: 2px solid #E2E8F0; }
+        .payment-section-title { font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .payment-methods { margin-bottom: 15px; }
+        .payment-methods-label { font-size: 13px; font-weight: 700; color: var(--text-gray); margin-bottom: 10px; }
+        .payment-methods-options { display: flex; gap: 12px; flex-wrap: wrap; }
+        .payment-option { flex: 1; min-width: 140px; display: flex; align-items: center; gap: 10px; padding: 14px 18px; border: 2px solid #E2E8F0; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; font-size: 14px; font-weight: 600; color: var(--text-gray); }
+        .payment-option i { font-size: 18px; }
+        .payment-option input[type="radio"] { display: none; }
+        .payment-option.selected { border-color: var(--primary-navy); background: #F0F4FF; color: var(--primary-navy); }
+        .bank-details { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-top: 5px; }
+        .bank-details-label { font-size: 13px; font-weight: 700; color: var(--text-gray); margin-bottom: 12px; }
+        .bank-options { display: flex; flex-direction: column; gap: 10px; }
+        .bank-option { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 2px solid #E2E8F0; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
+        .bank-option input[type="radio"] { display: none; }
+        .bank-option.selected { border-color: var(--primary-navy); background: #F0F4FF; }
+        .bank-info { display: flex; flex-direction: column; gap: 3px; }
+        .bank-name { font-size: 14px; font-weight: 700; color: var(--primary-navy); }
+        .bank-iban { font-size: 12px; color: var(--text-gray); font-family: 'Courier New', monospace; letter-spacing: 0.5px; }
+        .bank-option::before { content: ''; width: 20px; height: 20px; border: 2px solid #CBD5E1; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.3s ease; }
+        .bank-option.selected::before { border-color: var(--primary-navy); background: var(--primary-navy); box-shadow: inset 0 0 0 4px #F0F4FF; }
+
+        /* --- CREDIT CARD FORM --- */
+        .card-form { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-top: 5px; }
+        .card-form .card-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .card-form .card-form-grid .full-width { grid-column: 1 / -1; }
+        .card-form .input-group { margin-bottom: 0; display: flex; flex-direction: column; gap: 8px; }
+        .card-form .input-group label { font-size: 12px; font-weight: 700; color: var(--text-gray); margin-bottom: 0; display: block; }
+        .card-form .input-wrapper { position: relative; display: flex; align-items: center; gap: 8px; background: var(--pure-white); border: 2px solid #E2E8F0; border-radius: 8px; padding: 0 12px; transition: all 0.3s ease; }
+        .card-form .input-wrapper:focus-within { border-color: var(--primary-navy); }
+        .card-form .input-wrapper input { border: none; background: none; padding: 12px 0; font-size: 14px; width: 100%; outline: none; font-family: 'Courier New', monospace; letter-spacing: 0.5px; position: static; }
+        .card-form .input-wrapper i { position: static; color: #94A3B8; font-size: 16px; }
+        .card-icons { display: flex; gap: 6px; margin-left: auto; }
+        .card-icons img, .card-icons i { height: 22px; opacity: 0.3; transition: opacity 0.3s ease; }
+        .card-icons .active { opacity: 1; }
+        .card-type-hint { font-size: 11px; color: #94A3B8; font-weight: 500; margin-top: 4px; }
+
+        /* --- FİLOMUZ & GALERİ --- */
+        .fleet-section { padding: 100px 0; background: var(--primary-navy); color: var(--pure-white); }
+        .fleet-section .section-title h2 { color: var(--pure-white); }
+        .fleet-section .section-title p { color: #94A3B8; }
+        .fleet-showcase { display: flex; background: var(--pure-white); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-strong); color: var(--text-dark); }
+        .fleet-image-wrapper { flex: 1; display: flex; flex-direction: column; background: #f8fafc; padding: 20px; border-right: 1px solid var(--border-light); }
+        .fleet-main-img { width: 100%; height: 350px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; box-shadow: var(--shadow-subtle); transition: var(--transition); }
+        .fleet-gallery { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .fleet-gallery img { width: 80px; height: 60px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: var(--transition); opacity: 0.7; }
+        .fleet-gallery img:hover, .fleet-gallery img.active-thumb { opacity: 1; border-color: var(--primary-red); }
+        .fleet-details { flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+        .fleet-details h3 { font-size: 28px; font-weight: 800; color: var(--primary-navy); margin-bottom: 10px; }
+        .fleet-details .capacity { font-size: 14px; font-weight: 700; color: var(--primary-red); margin-bottom: 25px; display: flex; gap: 15px; }
+        .fleet-features { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .feature-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--text-gray); }
+        .feature-item i { color: #10B981; font-size: 18px; }
+
+        /* --- SEO UYUMLU BLOG / BÖLGE REHBERİ --- */
+        .blog-section { padding: 80px 0; background: var(--pure-white); }
+        .blog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        .blog-card { background: var(--bg-light); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-subtle); transition: var(--transition); border: 1px solid var(--border-light); }
+        .blog-card:hover { transform: translateY(-10px); box-shadow: var(--shadow-strong); }
+        .blog-card img { width: 100%; height: 200px; object-fit: cover; }
+        .blog-content { padding: 25px; }
+        .blog-content h3 { font-size: 18px; font-weight: 800; color: var(--primary-navy); margin-bottom: 10px; }
+        .blog-content p { font-size: 14px; color: var(--text-gray); line-height: 1.6; margin-bottom: 15px; }
+        .blog-link { font-size: 13px; font-weight: 700; color: var(--primary-red); display: flex; align-items: center; gap: 5px; }
+        .blog-link i { font-size: 11px; }
+
+        /* --- SSS (SIKÇA SORULAN SORULAR) AKORDEON YAPISI --- */
+        .faq-section { padding: 80px 0; background: var(--bg-light); }
+        .faq-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+        .faq-item { background: var(--pure-white); border-radius: 12px; border: 1px solid var(--border-light); overflow: hidden; transition: var(--transition); }
+        .faq-item.active { border-color: var(--primary-navy); box-shadow: var(--shadow-subtle); }
+        .faq-question { padding: 20px 25px; font-size: 15px; font-weight: 700; color: var(--primary-navy); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: var(--transition); }
+        .faq-question:hover { color: var(--primary-red); }
+        .faq-question i { transition: transform 0.3s ease; color: var(--primary-red); }
+        .faq-item.active .faq-question i { transform: rotate(180deg); }
+        .faq-answer { padding: 0 25px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+        .faq-item.active .faq-answer { padding: 0 25px 20px 25px; max-height: 200px; }
+        .faq-answer p { font-size: 14px; color: var(--text-gray); line-height: 1.6; }
+
+        /* --- CANLI UÇUŞ EKRANI --- */
+        .flight-board-section { padding: 80px 0; background: var(--pure-white); }
+
+        .flight-board-dual { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) {
+            .flight-board-dual { grid-template-columns: 1fr; gap: 16px; }
+        }
+
+        .flight-col { background: var(--bg-light); border-radius: 16px; border: 1px solid var(--border-light); overflow: hidden; box-shadow: var(--shadow-strong); }
+        .flight-col-header { background: var(--primary-navy); padding: 16px 20px; font-size: 16px; font-weight: 800; color: var(--pure-white); display: flex; align-items: center; gap: 10px; border-bottom: 3px solid var(--primary-red); }
+
+        .flight-tabs { display: flex; background: var(--primary-navy); }
+        .f-tab { flex: 1; text-align: center; padding: 14px; color: var(--pure-white); font-weight: 700; cursor: pointer; transition: var(--transition); opacity: 0.6; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; }
+        .f-tab:hover { opacity: 0.8; }
+        .f-tab.active { opacity: 1; background: var(--primary-red); }
+
+        .flight-table-container { padding: 0; overflow-x: auto; }
+        .flight-table { width: 100%; border-collapse: collapse; text-align: left; background: var(--pure-white); }
+        .flight-table th { padding: 14px 16px; font-size: 11px; font-weight: 800; color: var(--text-gray); text-transform: uppercase; border-bottom: 2px solid var(--border-light); background: #f8fafc; }
+        .flight-table td { padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--primary-navy); border-bottom: 1px solid var(--border-light); }
+        .flight-table tr:hover td { background: #f1f5f9; }
+
+        .status-badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; }
+        .status-badge.status-expected { background: #DBEAFE; color: #1E40AF; }
+        .status-badge.status-landed { background: #D1FAE5; color: #065F46; }
+        .status-badge.status-departed { background: #FEF3C7; color: #92400E; }
+        .status-badge.status-delayed { background: #FEE2E2; color: #991B1B; }
+
+        .flight-table .no-flights { text-align: center; padding: 40px 20px; color: var(--text-gray); font-weight: 400; font-size: 14px; }
+
+        @media (max-width: 768px) {
+            .flight-col-header { font-size: 14px; padding: 14px 16px; }
+            .flight-table th { padding: 10px 12px; font-size: 10px; }
+            .flight-table td { padding: 10px 12px; font-size: 12px; }
+            .f-tab { padding: 12px; font-size: 12px; }
+        }
+
+        /* DİĞER BÖLÜMLER */
+        .services-section { padding: 120px 0 80px 0; background: var(--pure-white); }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        .service-card { background: var(--bg-light); padding: 40px 30px; border-radius: 16px; text-align: center; border: 1px solid var(--border-light); }
+        .service-icon { width: 70px; height: 70px; background: rgba(227, 24, 55, 0.1); color: var(--primary-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 20px auto; }
+        .how-it-works { padding: 80px 0; background: var(--bg-light); }
+        .step-card { text-align: center; }
+        .step-number { width: 50px; height: 50px; background: var(--primary-navy); color: var(--pure-white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; margin: 0 auto 20px auto; }
+        
+        /* FOOTER */
+        .footer { background: var(--text-dark); color: var(--pure-white); padding: 80px 0 30px 0; }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 50px; margin-bottom: 60px; }
+        .footer-about p { color: #94A3B8; font-size: 14px; line-height: 1.7; margin: 20px 0; max-width: 400px; }
+        .footer-social { display: flex; gap: 15px; }
+        .footer-social a { width: 40px; height: 40px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: var(--transition); }
+        .footer-social a:hover { background: var(--primary-red); transform: translateY(-3px); }
+        
+        .footer-links h4 { font-size: 18px; font-weight: 700; margin-bottom: 25px; color: var(--pure-white); }
+        .footer-links ul { list-style: none; }
+        .footer-links ul li { margin-bottom: 15px; }
+        .footer-links ul li a { color: #94A3B8; font-size: 14px; transition: var(--transition); }
+        .footer-links ul li a:hover { color: var(--primary-red); padding-left: 5px; }
+        
+        .footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #94A3B8; }
+        .payment-methods { display: flex; gap: 15px; font-size: 24px; color: var(--pure-white); opacity: 0.8; }
+
+        /* CANLI DESTEK, WHATSAPP VE YUKARI ÇIK BUTONLARI */
+        .whatsapp-float { position: fixed; bottom: 30px; left: 30px; background: #25D366; color: var(--pure-white); padding: 16px 24px; border-radius: 50px; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 10px 25px rgba(37, 211, 102, 0.3); z-index: 999; transition: var(--transition); }
+        .whatsapp-float:hover { transform: scale(1.05); }
+
+        .chat-trigger { position: fixed; bottom: 30px; right: 30px; background: var(--primary-navy); color: var(--pure-white); padding: 16px 24px; border-radius: 50px; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 10px 25px rgba(27, 43, 76, 0.3); z-index: 999; cursor: pointer; transition: var(--transition); border: none; }
+        .chat-trigger:hover { transform: scale(1.05); }
+
+        .scroll-top-btn { position: fixed; bottom: 90px; left: 30px; background: var(--primary-red); color: var(--pure-white); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: var(--shadow-strong); cursor: pointer; border: none; z-index: 998; opacity: 0; visibility: hidden; transition: var(--transition); }
+        .scroll-top-btn.show { opacity: 1; visibility: visible; }
+        .scroll-top-btn:hover { background: var(--primary-navy); transform: translateY(-3px); }
+
+        .chat-widget { position: fixed; bottom: 90px; right: 30px; width: 320px; background: var(--pure-white); border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); z-index: 1000; display: none; flex-direction: column; overflow: hidden; border: 1px solid var(--border-light); }
+        .chat-header { background: var(--primary-navy); color: var(--pure-white); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; }
+        .chat-header button { background: none; border: none; color: var(--pure-white); cursor: pointer; font-size: 16px; }
+        .chat-body { padding: 20px; background: var(--bg-light); height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg-bot { background: var(--pure-white); padding: 12px 15px; border-radius: 10px 10px 10px 0; font-size: 13px; color: var(--text-dark); box-shadow: var(--shadow-subtle); line-height: 1.5; font-weight: 500; align-self: flex-start; max-width: 85%; }
+        .msg-user { background: var(--primary-red); color: var(--pure-white); padding: 12px 15px; border-radius: 10px 10px 0 10px; font-size: 13px; box-shadow: var(--shadow-subtle); line-height: 1.5; font-weight: 500; align-self: flex-end; max-width: 85%; }
+        .chat-footer { padding: 15px; background: var(--pure-white); border-top: 1px solid var(--border-light); display: flex; gap: 10px; }
+        .chat-footer input { flex: 1; padding: 10px 15px; border: 1px solid var(--border-light); border-radius: 20px; outline: none; font-size: 13px; font-family: 'Montserrat', sans-serif;}
+        .chat-footer button { background: var(--primary-red); color: var(--pure-white); border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+        .chat-footer button:hover { background: var(--primary-navy); }
+
+        /* ONAY MODALI (POPUP) */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: var(--pure-white); border-radius: 16px; padding: 40px; max-width: 450px; width: 100%; text-align: center; box-shadow: var(--shadow-strong); animation: modalIn 0.3s ease; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .modal-icon { font-size: 60px; color: #10B981; margin-bottom: 20px; }
+        .modal-box h3 { font-size: 24px; color: var(--primary-navy); margin-bottom: 10px; font-weight: 800; }
+        .modal-box p { color: var(--text-gray); font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
+        .modal-close { background: var(--primary-navy); color: var(--pure-white); padding: 14px 30px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .modal-close:hover { background: var(--primary-red); }
+
+        @media (max-width: 992px) {
+            .blog-grid { grid-template-columns: 1fr; }
+            .fleet-showcase { flex-direction: column; }
+            .form-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr; gap: 30px; }
+            .nav-menu { display: none; }
+            .footer-bottom { flex-direction: column; gap: 20px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="seo-h1">Gazipaşa VIP Vito Kiralama ve Alanya Havalimanı Lüks Transfer - Güliz Transfer</h1>
+
+    <audio id="chatSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <header class="header">
+        <div class="container">
+            <a href="#" onclick="window.scrollTo(0,0); return false;" class="logo-container">
+                <img src="logo.png" alt="Güliz Premium VIP Logo">
+            </a>
+            <nav class="nav-menu">
+                <a href="#hizmetler">Hizmetler</a>
+                <a href="#filo">Filomuz</a>
+                <a href="#blog">Bölgeler</a>
+                <a href="#ucus-ekrani">Canlı Uçuşlar</a>
+                <a href="#sss">S.S.S</a>
+            </nav>
+            <div class="header-actions">
+                <div class="lang-switcher"><span class="active">TR</span> | <span>EN</span> | <span>RU</span></div>
+                <a href="tel:+902426062548" class="call-btn"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a>
+                <button class="cta-button" onclick="window.scrollTo(0,0);">Hızlı Rezervasyon</button>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-slider" id="bgSlider">
+            <!-- Slides loaded dynamically from /api/slider-images -->
+        </div>
+        <div class="hero-overlay"></div>
+        
+        <div class="booking-engine">
+            <div class="tab-header">
+                <div class="tab-btn active" id="tab-transfer" onclick="switchForm('transfer')"><i class="fa-solid fa-route"></i> Havalimanı Transfer</div>
+                <div class="tab-btn" id="tab-tahsis" onclick="switchForm('tahsis')"><i class="fa-solid fa-clock"></i> Şoförlü VIP / Günlük Tahsis</div>
+            </div>
+            
+            <form class="form-body active-form" id="form-transfer" onsubmit="return false;">
+                <!-- Step Indicator -->
+                <div class="step-indicator" id="transfer-indicator">
+                    <div class="step-num active" id="transfer-step1-label"><span class="step-num-circle">1</span> Transfer Bilgileri</div>
+                    <div class="step-sep"></div>
+                    <div class="step-num" id="transfer-step2-label"><span class="step-num-circle">2</span> Kişisel Bilgiler</div>
+                    <div class="step-sep"></div>
+                    <div class="step-num" id="transfer-step3-label"><span class="step-num-circle">3</span> Ödeme</div>
+                </div>
+
+                <div class="form-step" id="transfer-step1" style="display:block;">
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                        <div class="input-group">
+                            <label>Alış Noktası</label>
+                        <div class="input-wrapper"><i class="fa-solid fa-map-pin"></i>
+                            <input type="text" id="pickup-input" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." required>
+                        </div>
+                    </div>
+                    <div class="input-group"><label>Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." required></div></div>
+                    <div class="input-group"><label>Uçuş Numarası</label><div class="input-wrapper"><i class="fa-solid fa-plane"></i><input type="text" id="transfer-flight" placeholder="Örn: TK2405 (Opsiyonel)"></div></div>
+                </div>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="input-group"><label>Tarih</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="transfer-date" required></div></div>
+                    <div class="input-group"><label>Saat</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="transfer-time" required></div></div>
+                </div>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="input-group"><label>Yolcu</label><div class="input-wrapper"><i class="fa-solid fa-users"></i><select id="transfer-passengers"><option>1 - 4 Kişi (VIP Vito)</option></select></div></div>
+                    <div class="input-group"><label>Notlar (Opsiyonel)</label><div class="input-wrapper"><i class="fa-solid fa-note-sticky"></i><input type="text" id="transfer-notes" placeholder="Özel istek, ek bilgi..."></div></div>
+                </div>
+                <div class="distance-info" id="distanceInfo" style="display:none;">
+                    <div class="distance-detail">
+                        <i class="fa-solid fa-road"></i>
+                        <span id="distanceText">—</span>
+                    </div>
+                    <div class="distance-detail">
+                        <i class="fa-solid fa-clock"></i>
+                        <span id="durationText">—</span>
+                    </div>
+                    <div class="distance-detail highlight">
+                        <i class="fa-solid fa-tag"></i>
+                        <span>Tahmini: <strong id="priceEstimate">—</strong></span>
+                    </div>
+                </div>
+                <div class="map-preview" id="mapPreview" style="display:none;">
+                    <div id="routeMap" style="width:100%;height:220px;border-radius:12px;"></div>
+                </div>
+                <div id="mapError" style="display:none; background:#fef2f2; color:#dc2626; padding:12px 16px; border-radius:10px; margin:10px 0; font-size:14px; text-align:center; border:1px solid #fca5a5;"></div>
+
+                <div class="form-nav">
+                    <div></div>
+                    <button type="button" class="next-btn" onclick="nextStep('transfer', 1)">Devam Et <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                </div>
+
+                <!-- Step 2: Kişisel Bilgiler -->
+                <div class="form-step" id="transfer-step2" style="display:none;">
+                    <div class="payment-section-title">İletişim Bilgileri</div>
+                    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                        <div class="input-group"><label>Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="transfer-name" placeholder="Adınız ve soyadınız" required></div></div>
+                        <div class="input-group"><label>Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="transfer-phone" placeholder="05XX XXX XX XX" required></div></div>
+                    </div>
+                    <div class="form-nav">
+                        <button type="button" class="back-btn" onclick="goToStep('transfer', 1)"><i class="fa-solid fa-arrow-left"></i> Geri</button>
+                        <button type="button" class="next-btn" onclick="nextStep('transfer', 2)">Devam Et <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Ödeme -->
+                <div class="form-step" id="transfer-step3" style="display:none;">
+                    <div class="payment-section-title">Ödeme Yöntemi</div>
+                    <div class="payment-methods">
+                        <div class="payment-methods-label">Nasıl ödeyeceksiniz?</div>
+                        <div class="payment-methods-options">
+                            <label class="payment-option selected" id="transfer-cc-label">
+                                <input type="radio" name="transfer-payment" value="credit-card" checked onchange="toggleBankTransfer('transfer')">
+                                <i class="fa-solid fa-credit-card"></i> Kredi Kartı
+                            </label>
+                            <label class="payment-option" id="transfer-bank-label">
+                                <input type="radio" name="transfer-payment" value="bank-transfer" onchange="toggleBankTransfer('transfer')">
+                                <i class="fa-solid fa-university"></i> Havale / EFT
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bank-details" id="transfer-bank-details" style="display:none;">
+                        <div class="bank-details-label">Banka Seçiniz</div>
+                        <div class="bank-options">
+                            <label class="bank-option selected" id="transfer-halkbank-label">
+                                <input type="radio" name="transfer-bank" value="halkbank" checked>
+                                <div class="bank-info">
+                                    <div class="bank-name">Halkbank</div>
+                                    <div class="bank-iban">TR12 0001 2009 4321 1234 5678 90</div>
+                                </div>
+                            </label>
+                            <label class="bank-option" id="transfer-vakifbank-label">
+                                <input type="radio" name="transfer-bank" value="vakifbank">
+                                <div class="bank-info">
+                                    <div class="bank-name">VakıfBank</div>
+                                    <div class="bank-iban">TR34 0001 5001 2345 6789 0123 45</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Credit Card Form -->
+                    <div class="card-form" id="transfer-card-form">
+                        <div class="payment-section-title" style="font-size:14px; margin-bottom:12px; border:none; padding:0;"><i class="fa-solid fa-lock" style="color:#10B981; font-size:13px;"></i> Kart Bilgileri</div>
+                        <div class="card-form-grid">
+                            <div class="full-width">
+                                <div class="input-group">
+                                    <label>Kart Üzerindeki İsim</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-regular fa-user"></i>
+                                        <input type="text" id="transfer-card-name" placeholder="Adınız Soyadınız" maxlength="50" autocomplete="cc-name">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="full-width">
+                                <div class="input-group">
+                                    <label>Kart Numarası</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-regular fa-credit-card"></i>
+                                        <input type="text" id="transfer-card-number" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" oninput="formatCardNumber(this)">
+                                        <div class="card-icons">
+                                            <i class="fa-brands fa-cc-visa" id="transfer-card-visa"></i>
+                                            <i class="fa-brands fa-cc-mastercard" id="transfer-card-mastercard"></i>
+                                        </div>
+                                    </div>
+                                    <div class="card-type-hint" id="transfer-card-type-hint"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="input-group">
+                                    <label>Son Kullanma</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-regular fa-calendar"></i>
+                                        <input type="text" id="transfer-card-expiry" inputmode="numeric" placeholder="AA / YY" maxlength="5" autocomplete="cc-exp" oninput="formatCardExpiry(this)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="input-group">
+                                    <label>CVV</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-lock"></i>
+                                        <input type="text" id="transfer-card-cvv" inputmode="numeric" placeholder="***" maxlength="4" autocomplete="cc-csc" oninput="formatCardCvv(this)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-nav">
+                        <button type="button" class="back-btn" onclick="goToStep('transfer', 2)"><i class="fa-solid fa-arrow-left"></i> Geri</button>
+                        <button type="submit" class="final-btn" onclick="submitForm(event)">Rezervasyonu Tamamla <i class="fa-solid fa-check"></i></button>
+                    </div>
+                </div>
+            </form>
+
+            <form class="form-body" id="form-tahsis" onsubmit="return false;">
+                <!-- Step Indicator -->
+                <div class="step-indicator" id="tahsis-indicator">
+                    <div class="step-num active" id="tahsis-step1-label"><span class="step-num-circle">1</span> Tahsis Bilgileri</div>
+                    <div class="step-sep"></div>
+                    <div class="step-num" id="tahsis-step2-label"><span class="step-num-circle">2</span> Kişisel Bilgiler</div>
+                    <div class="step-sep"></div>
+                    <div class="step-num" id="tahsis-step3-label"><span class="step-num-circle">3</span> Ödeme</div>
+                </div>
+
+                <div class="form-step" id="tahsis-step1" style="display:block;">
+                    <div class="form-grid">
+                    <div class="input-group"><label>Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" placeholder="Aracın sizi alacağı konum" required></div></div>
+                    <div class="input-group"><label>Tahsis Süresi</label>
+                        <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
+                            <select id="vDuration" onchange="calculateVipPrice()">
+                                <option value="4" data-price="3500">4 Saatlik (Şehir İçi Tur)</option>
+                                <option value="8" data-price="6000">8 Saatlik (Yarım Günlük Tur)</option>
+                                <option value="12" data-price="8000">12 Saatlik (Uzun Mesafe Tur)</option>
+                                <option value="24" data-price="12000">Tam Gün (24 Saat Şoförlü Tahsis)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div class="input-group"><label>Alış Tarihi</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="tahsis-date" required></div></div>
+                    <div class="input-group"><label>Alış Saati</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="tahsis-time" required></div></div>
+                    <div class="input-group"><label>Araç Tipi</label><div class="input-wrapper"><i class="fa-solid fa-car"></i><select><option>VIP Mercedes Vito</option></select></div></div>
+                </div>
+                <div class="vip-summary"><div class="title">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">3.500 <span>₺</span></div></div>
+
+                <div class="form-nav">
+                    <div></div>
+                    <button type="button" class="next-btn" onclick="nextStep('tahsis', 1)">Devam Et <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                </div>
+
+                <!-- Step 2: Kişisel Bilgiler -->
+                <div class="form-step" id="tahsis-step2" style="display:none;">
+                    <div class="payment-section-title">İletişim Bilgileri</div>
+                    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                        <div class="input-group"><label>Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="tahsis-name" placeholder="Adınız ve soyadınız" required></div></div>
+                        <div class="input-group"><label>Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="tahsis-phone" placeholder="05XX XXX XX XX" required></div></div>
+                    </div>
+                    <div class="form-nav">
+                        <button type="button" class="back-btn" onclick="goToStep('tahsis', 1)"><i class="fa-solid fa-arrow-left"></i> Geri</button>
+                        <button type="button" class="next-btn" onclick="nextStep('tahsis', 2)">Devam Et <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Ödeme -->
+                <div class="form-step" id="tahsis-step3" style="display:none;">
+                    <div class="payment-section-title">Ödeme Yöntemi</div>
+                    <div class="payment-methods">
+                        <div class="payment-methods-label">Nasıl ödeyeceksiniz?</div>
+                        <div class="payment-methods-options">
+                            <label class="payment-option selected" id="tahsis-cc-label">
+                                <input type="radio" name="tahsis-payment" value="credit-card" checked onchange="toggleBankTransfer('tahsis')">
+                                <i class="fa-solid fa-credit-card"></i> Kredi Kartı
+                            </label>
+                            <label class="payment-option" id="tahsis-bank-label">
+                                <input type="radio" name="tahsis-payment" value="bank-transfer" onchange="toggleBankTransfer('tahsis')">
+                                <i class="fa-solid fa-university"></i> Havale / EFT
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bank-details" id="tahsis-bank-details" style="display:none;">
+                        <div class="bank-details-label">Banka Seçiniz</div>
+                        <div class="bank-options">
+                            <label class="bank-option selected" id="tahsis-halkbank-label">
+                                <input type="radio" name="tahsis-bank" value="halkbank" checked>
+                                <div class="bank-info">
+                                    <div class="bank-name">Halkbank</div>
+                                    <div class="bank-iban">TR12 0001 2009 4321 1234 5678 90</div>
+                                </div>
+                            </label>
+                            <label class="bank-option" id="tahsis-vakifbank-label">
+                                <input type="radio" name="tahsis-bank" value="vakifbank">
+                                <div class="bank-info">
+                                    <div class="bank-name">VakıfBank</div>
+                                    <div class="bank-iban">TR34 0001 5001 2345 6789 0123 45</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Credit Card Form -->
+                    <div class="card-form" id="tahsis-card-form">
+                        <div class="payment-section-title" style="font-size:14px; margin-bottom:12px; border:none; padding:0;"><i class="fa-solid fa-lock" style="color:#10B981; font-size:13px;"></i> Kart Bilgileri</div>
+                        <div class="card-form-grid">
+                            <div class="full-width">
+                                <div class="input-group">
+                                    <label>Kart Üzerindeki İsim</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-regular fa-user"></i>
+                                        <input type="text" id="tahsis-card-name" placeholder="Adınız Soyadınız" maxlength="50" autocomplete="cc-name">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="full-width">
+                                <div class="input-group">
+                                    <label>Kart Numarası</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-regular fa-credit-card"></i>
+                                        <input type="text" id="tahsis-card-number" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" oninput="formatCardNumber(this)">
+                                        <div class="card-icons">
+                                            <i class="fa-brands fa-cc-visa" id="tahsis-card-visa"></i>
+                                            <i class="fa-brands fa-cc-mastercard" id="tahsis-card-mastercard"></i>
+                                        </div>
+                                    </div>
+                                    <div class="card-type-hint" id="tahsis-card-type-hint"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="input-group">
+                                    <label>Son Kullanma</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-regular fa-calendar"></i>
+                                        <input type="text" id="tahsis-card-expiry" inputmode="numeric" placeholder="AA / YY" maxlength="5" autocomplete="cc-exp" oninput="formatCardExpiry(this)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="input-group">
+                                    <label>CVV</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-lock"></i>
+                                        <input type="text" id="tahsis-card-cvv" inputmode="numeric" placeholder="***" maxlength="4" autocomplete="cc-csc" oninput="formatCardCvv(this)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-nav">
+                        <button type="button" class="back-btn" onclick="goToStep('tahsis', 2)"><i class="fa-solid fa-arrow-left"></i> Geri</button>
+                        <button type="submit" class="final-btn" onclick="submitForm(event)">Rezervasyonu Tamamla <i class="fa-solid fa-check"></i></button>
+                    </div>
+                </div>
+            </form>
+                </div>
+        </div>
+    </section>
+
+    <section class="services-section" id="hizmetler">
+        <div class="container">
+            <div class="section-title"><h2>Premium Hizmetlerimiz</h2><p>Antalya ve Gazipaşa bölgesinde lüksü, güvenliği ve konforu bir araya getiren ayrıcalıklı ulaşım çözümleri sunuyoruz.</p></div>
+            <div class="grid-3">
+                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-plane-departure"></i></div><h3>Havalimanı Transfer</h3><p>Antalya (AYT) ve Gazipaşa (GZP) havalimanlarında isimle karşılama ve otelinize direkt, beklemesiz ulaşım.</p></div>
+                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-user-tie"></i></div><h3>Şoförlü VIP Tahsis</h3><p>İster birkaç saatlik şehir turu, ister tam günlük rotalarınız için size özel tahsis edilmiş lüks Vito ve profesyonel şoför.</p></div>
+                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-building"></i></div><h3>Kurumsal Çözümler</h3><p>İş toplantıları, kongreler ve özel VIP etkinlikleriniz için prestijli ve tam zamanında ulaşım planlaması.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="blog-section" id="blog">
+        <div class="container">
+            <div class="section-title">
+                <h2>Popüler Turistik Bölgeler</h2>
+                <p>Gazipaşa Havalimanı'ndan Alanya'nın her noktasına doğrudan VIP ulaşım ayrıcalığı.</p>
+            </div>
+            <div class="blog-grid">
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1554223090-bc1f04afcc51?ixlib=rb-4.0.3&w=600&q=80" alt="Mahmutlar VIP Transfer">
+                    <div class="blog-content">
+                        <h3>Mahmutlar VIP Transfer</h3>
+                        <p>Gazipaşa Havalimanı'na en yakın turizm merkezlerinden biri olan Mahmutlar'a, lüks Vito araçlarımızla beklemeden sadece 30 dakikada güvenle ulaşın.</p>
+                        <a href="#" class="blog-link">Detaylı İncele <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1518182170546-076616fd4651?ixlib=rb-4.0.3&w=600&q=80" alt="Alanya Kleopatra Plajı Transfer">
+                    <div class="blog-content">
+                        <h3>Alanya Merkez & Kleopatra</h3>
+                        <p>Alanya'nın kalbine ve dünyaca ünlü Kleopatra Plajı etrafındaki otellere, trafik stresinden uzak, şoförlü premium transfer hizmetimizle geçiş yapın.</p>
+                        <a href="#" class="blog-link">Detaylı İncele <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1563241527-3004b7be0ffd?ixlib=rb-4.0.3&w=600&q=80" alt="Avsallar VIP Transfer">
+                    <div class="blog-content">
+                        <h3>Avsallar & İncekum Transfer</h3>
+                        <p>Lüks 5 yıldızlı otellerin kalbi olan Avsallar ve İncekum bölgesine, çocuk koltuklu, ikramlı ve geniş bagaj hacmine sahip VIP Vito araçlarımızla seyahat edin.</p>
+                        <a href="#" class="blog-link">Detaylı İncele <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="fleet-section" id="filo">
+        <div class="container">
+            <div class="section-title">
+                <h2>Lüks Araç Filomuz</h2>
+                <p>Seyahatinizi unutulmaz kılacak, en üst düzey donanıma sahip VIP araçlarla hizmet veriyoruz.</p>
+            </div>
+            <div class="fleet-showcase">
+                <div class="fleet-image-wrapper">
+                    <img id="mainFleetImg" src="vitoaracimiz.jpeg" class="fleet-main-img" alt="Gazipaşa VIP Vito">
+                    <div class="fleet-gallery">
+                        <img src="vitoaracimiz.jpeg" class="thumb active-thumb" onclick="changeImage(this)">
+                        <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&w=400&q=80" class="thumb" onclick="changeImage(this)">
+                        <img src="https://images.unsplash.com/photo-1619551734325-81aaf323686c?ixlib=rb-4.0.3&w=400&q=80" class="thumb" onclick="changeImage(this)">
+                    </div>
+                </div>
+
+                <div class="fleet-details">
+                    <h3>Mercedes-Benz Vito VIP</h3>
+                    <div class="capacity">
+                        <span><i class="fa-solid fa-users"></i> 1-6 Yolcu</span>
+                        <span><i class="fa-solid fa-suitcase"></i> 6 Bavul</span>
+                    </div>
+                    <div class="fleet-features">
+                        <div class="feature-item"><i class="fa-solid fa-check"></i> Hakiki Deri Koltuklar</div>
+                        <div class="feature-item"><i class="fa-solid fa-check"></i> Ücretsiz Hızlı Wi-Fi</div>
+                        <div class="feature-item"><i class="fa-solid fa-check"></i> VIP İkram ve İçecekler</div>
+                        <div class="feature-item"><i class="fa-solid fa-check"></i> Klima / İklimlendirme</div>
+                        <div class="feature-item"><i class="fa-solid fa-check"></i> Bebek Koltuğu (Talep Üzerine)</div>
+                        <div class="feature-item"><i class="fa-solid fa-check"></i> Araçta Kredi Kartı Geçerli</div>
+                    </div>
+                    <button class="cta-button" style="width: fit-content;" onclick="window.scrollTo(0,0);">Hemen Rezervasyon Yap</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works" id="nasil-calisir">
+        <div class="container">
+            <div class="section-title">
+                <h2>Nasıl Çalışır?</h2>
+                <p>Sıfır sürtünme. 3 basit adımda rezervasyonunuzu tamamlayın, gerisini operasyon ekibimize bırakın.</p>
+            </div>
+            <div class="grid-3">
+                <div class="step-card"><div class="step-number">1</div><h4>Rotanızı Belirleyin</h4><p>Sistem üzerinden alış ve varış noktanızı, uçuş tarihinizi ve yolcu sayınızı seçin.</p></div>
+                <div class="step-card"><div class="step-number">2</div><h4>Onaylayın</h4><p>Şeffaf fiyatlarımızı görün ve kredi kartı veya araçta ödeme seçeneğiyle işlemi tamamlayın.</p></div>
+                <div class="step-card"><div class="step-number">3</div><h4>Keyfini Çıkarın</h4><p>Havalimanında isminizle karşılanın ve VIP aracınızda pürüzsüz yolculuğun tadını çıkarın.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="flight-board-section" id="ucus-ekrani">
+        <div class="container">
+            <div class="section-title">
+                <h2>Canlı Uçuş Ekranı <span style="font-size: 0.7em; font-weight: 400; color: var(--text-gray);">(GZP & AYT)</span></h2>
+                <p>Gazipaşa-Alanya ve Antalya Havalimanları anlık varış ve kalkış bilgileri. Uçuşunuzu takip edin, transferinizi güvenle planlayın.</p>
+            </div>
+
+            <div class="flight-board-dual">
+                <!-- GZP Column -->
+                <div class="flight-col">
+                    <div class="flight-col-header">
+                        <i class="fa-solid fa-plane"></i> Gazipaşa (GZP)
+                    </div>
+                    <div class="flight-tabs">
+                        <div class="f-tab active" onclick="switchGzpTab('gelen')" id="gzp-tab-gelen"><i class="fa-solid fa-plane-arrival"></i> Gelen</div>
+                        <div class="f-tab" onclick="switchGzpTab('giden')" id="gzp-tab-giden"><i class="fa-solid fa-plane-departure"></i> Giden</div>
+                    </div>
+                    <div class="flight-table-container">
+                        <table class="flight-table" id="gzp-table-gelen">
+                            <thead><tr><th>Saat</th><th>Uçuş No</th><th>Nereden</th><th>Tür</th><th>Havayolu</th><th>Durum</th></tr></thead>
+                            <tbody id="gzp-tbody-gelen"></tbody>
+                        </table>
+                        <table class="flight-table" id="gzp-table-giden" style="display: none;">
+                            <thead><tr><th>Saat</th><th>Uçuş No</th><th>Nereye</th><th>Tür</th><th>Havayolu</th><th>Durum</th></tr></thead>
+                            <tbody id="gzp-tbody-giden"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- AYT Column -->
+                <div class="flight-col">
+                    <div class="flight-col-header">
+                        <i class="fa-solid fa-plane"></i> Antalya (AYT)
+                    </div>
+                    <div class="flight-tabs">
+                        <div class="f-tab active" onclick="switchAytTab('gelen')" id="ayt-tab-gelen"><i class="fa-solid fa-plane-arrival"></i> Gelen</div>
+                        <div class="f-tab" onclick="switchAytTab('giden')" id="ayt-tab-giden"><i class="fa-solid fa-plane-departure"></i> Giden</div>
+                    </div>
+                    <div class="flight-table-container">
+                        <table class="flight-table" id="ayt-table-gelen">
+                            <thead><tr><th>Saat</th><th>Uçuş No</th><th>Nereden</th><th>Tür</th><th>Havayolu</th><th>Durum</th></tr></thead>
+                            <tbody id="ayt-tbody-gelen"></tbody>
+                        </table>
+                        <table class="flight-table" id="ayt-table-giden" style="display: none;">
+                            <thead><tr><th>Saat</th><th>Uçuş No</th><th>Nereye</th><th>Tür</th><th>Havayolu</th><th>Durum</th></tr></thead>
+                            <tbody id="ayt-tbody-giden"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="faq-section" id="sss">
+        <div class="container">
+            <div class="section-title">
+                <h2>Sıkça Sorulan Sorular</h2>
+                <p>Transfer ve kiralama süreçlerimizle ilgili aklınıza takılan tüm detaylar.</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">Uçağım rötar yaparsa ne olur? Ek ücret öder miyim? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="faq-answer">
+                        <p>Hayır, ek ücret ödemezsiniz. Operasyon ekibimiz uçuşunuzu uçuş numarası üzerinden anlık olarak takip eder. Uçağınız ne kadar rötar yaparsa yapsın, VIP aracımız ve şoförümüz sizi beklemeye devam edecektir.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">Ödemeyi nasıl yapabilirim? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="faq-answer">
+                        <p>Ödemelerinizi sistemimiz üzerinden online olarak veya transferiniz sonrasında araç içerisinde nakit/kredi kartı ile güvenle gerçekleştirebilirsiniz.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">Bebek veya çocuk koltuğu sağlıyor musunuz? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="faq-answer">
+                        <p>Evet, VIP Vito araçlarımızda rezervasyon esnasında talep etmeniz durumunda ücretsiz olarak hijyenik bebek veya çocuk koltuğu sağlıyoruz.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">Gece uçuşları için transfer hizmetiniz var mı? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="faq-answer">
+                        <p>Evet, hizmetlerimiz 7 gün 24 saat kesintisiz devam etmektedir. Gece yarısı uçuşlarınızda dahi aynı VIP standartlarda karşılanırsınız.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <img src="logo.png" alt="Güliz VIP" style="height: 50px; margin-bottom: 20px;">
+                    <p>Antalya ve Gazipaşa bölgelerinde lüks, güvenli ve zamanında ulaşım çözümleri sunan premium VIP transfer markası.</p>
+                    <div class="footer-social">
+                        <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#"><i class="fa-brands fa-whatsapp"></i></a>
+                        <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Hızlı Menü</h4>
+                    <ul>
+                        <li><a href="#hizmetler">Hizmetlerimiz</a></li>
+                        <li><a href="#filo">VIP Filomuz</a></li>
+                        <li><a href="#blog">Turistik Bölgeler</a></li>
+                        <li><a href="#sss">Sıkça Sorulan Sorular</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>İletişim & Kurumsal</h4>
+                    <ul>
+                        <li><a href="tel:+902426062548"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a></li>
+                        <li><a href="mailto:operasyon@guliztransfer.com"><i class="fa-solid fa-envelope"></i> operasyon@guliztransfer.com</a></li>
+                        <li><a href="#"><i class="fa-solid fa-location-dot"></i> Gazipaşa / Antalya</a></li>
+                        <li style="margin-top: 10px;"><a href="#">Mesafeli Satış Sözleşmesi</a></li>
+                        <li><a href="#">İptal ve İade Koşulları</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 <a href="http://www.gulizlojistik.com" target="_blank" style="color:var(--primary-red); font-weight: 700;">Güliz Lojistik</a> Tüm Hakları Saklıdır.</p>
+                <div class="payment-methods">
+                    <i class="fa-brands fa-cc-visa"></i>
+                    <i class="fa-brands fa-cc-mastercard"></i>
+                    <i class="fa-brands fa-cc-amex"></i>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <button class="scroll-top-btn" id="scrollTopBtn" onclick="scrollToTop()">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <a href="https://wa.me/902426062548" class="whatsapp-float"><i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i> WhatsApp</a>
+    
+    <button class="chat-trigger" onclick="toggleChat()" id="chatBtn">
+        <i class="fa-solid fa-comment-dots"></i> Canlı Destek
+    </button>
+
+    <div class="chat-widget" id="chatWidget">
+        <div class="chat-header">
+            <div><i class="fa-solid fa-headset"></i> Güliz Asistan</div>
+            <button onclick="toggleChat()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="msg-bot">Merhaba! Antalya ve Gazipaşa VIP transferleriniz için size nasıl yardımcı olabilirim? 🚘✨</div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Mesajınızı yazın..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-box">
+            <i class="fa-regular fa-circle-check modal-icon"></i>
+            <h3>Talebiniz Alındı!</h3>
+            <div id="modalSummary" style="text-align:left;background:#F8FAFC;border-radius:8px;padding:16px;margin-bottom:20px;"></div>
+            <p style="margin-bottom:25px;">Müsaitlik onayı ve net fiyat bilgilendirmesi için müşteri temsilcimiz <b>5 dakika içinde</b> sizinle iletişime geçecektir.</p>
+            <button class="modal-close" onclick="closeModal()">Tamam, Teşekkürler</button>
+        </div>
+    </div>
+
+    <script>
+        // --- SES DOSYASINI OYNATMA FONKSİYONU ---
+        function playChatSound() {
+            var sound = document.getElementById("chatSound");
+            sound.currentTime = 0; 
+            sound.play().catch(function(error) { console.log("Otomatik ses politikası engeli."); });
+        }
+
+        // --- SIKÇA SORULAN SORULAR (SSS) AÇ/KAPAT ---
+        function toggleFaq(element) {
+            const item = element.parentElement;
+            const isActive = item.classList.contains('active');
+            
+            const allFaqs = document.querySelectorAll('.faq-item');
+            allFaqs.forEach(faq => faq.classList.remove('active'));
+            
+            if(!isActive) {
+                item.classList.add('active');
+            }
+        }
+
+        // --- YUKARI ÇIK BUTONU GÖSTER/GİZLE ---
+        window.onscroll = function() {
+            const scrollBtn = document.getElementById("scrollTopBtn");
+            if (document.body.scrollTop > 500 || document.documentElement.scrollTop > 500) {
+                scrollBtn.classList.add("show");
+            } else {
+                scrollBtn.classList.remove("show");
+            }
+        };
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- CANLI DESTEK MESAJ GÖNDERME MANTIĞI ---
+        function sendMessage() {
+            var input = document.getElementById("chatInput");
+            var msg = input.value.trim();
+            
+            if(msg !== "") {
+                var chatBody = document.getElementById("chatBody");
+                chatBody.innerHTML += '<div class="msg-user">' + msg + '</div>';
+                input.value = "";
+                chatBody.scrollTop = chatBody.scrollHeight; 
+                playChatSound(); 
+                
+                setTimeout(function() {
+                    chatBody.innerHTML += '<div class="msg-bot">Harika! Mesajınızı operasyon ekibimize ilettim. Size en kısa sürede dönüş yapacağız.</div>';
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                    playChatSound(); 
+                }, 1000);
+            }
+        }
+
+        function handleKeyPress(e) {
+            if(e.key === 'Enter') { sendMessage(); }
+        }
+
+        // --- 3 SANİYE SONRA CANLI DESTEĞİ OTOMATİK AÇ ---
+        setTimeout(function() {
+            var widget = document.getElementById("chatWidget");
+            if (widget.style.display !== "flex") {
+                toggleChat();
+                playChatSound(); 
+            }
+        }, 3000);
+
+        function toggleChat() {
+            var widget = document.getElementById("chatWidget");
+            var btn = document.getElementById("chatBtn");
+            if (widget.style.display === "flex") {
+                widget.style.display = "none";
+                btn.style.display = "flex";
+            } else {
+                widget.style.display = "flex";
+                btn.style.display = "none";
+            }
+        }
+
+        // 3-STEP FORM NAVIGATION
+        function goToStep(formType, step) {
+            // Hide all steps for this form
+            for (var i = 1; i <= 3; i++) {
+                document.getElementById(formType + '-step' + i).style.display = 'none';
+                var label = document.getElementById(formType + '-step' + i + '-label');
+                if (label) {
+                    label.classList.remove('active');
+                    label.classList.remove('done');
+                }
+            }
+
+            // Show the target step
+            document.getElementById(formType + '-step' + step).style.display = 'block';
+
+            // Update indicator
+            var label = document.getElementById(formType + '-step' + step + '-label');
+            if (label) label.classList.add('active');
+            for (var j = 1; j < step; j++) {
+                var prevLabel = document.getElementById(formType + '-step' + j + '-label');
+                if (prevLabel) prevLabel.classList.add('done');
+            }
+        }
+
+        function nextStep(formType, currentStep) {
+            // Per-step validation
+            if (formType === 'transfer') {
+                if (currentStep === 1) {
+                    var pickup = document.getElementById('pickup-input');
+                    var dest = document.getElementById('dest-input');
+                    var date = document.getElementById('transfer-date');
+                    var time = document.getElementById('transfer-time');
+                    if (!pickup.value.trim()) { shakeField(pickup); pickup.focus(); return; }
+                    if (!dest.value.trim()) { shakeField(dest); dest.focus(); return; }
+                    if (!date.value) { shakeField(date); date.focus(); return; }
+                    if (!time.value) { shakeField(time); time.focus(); return; }
+                }
+            } else if (formType === 'tahsis') {
+                if (currentStep === 1) {
+                    var pickup = document.getElementById('tahsis-pickup-input');
+                    var tahsisDate = document.getElementById('tahsis-date');
+                    var tahsisTime = document.getElementById('tahsis-time');
+                    if (!pickup.value.trim()) { shakeField(pickup); pickup.focus(); return; }
+                    if (!tahsisDate.value) { shakeField(tahsisDate); tahsisDate.focus(); return; }
+                    if (!tahsisTime.value) { shakeField(tahsisTime); tahsisTime.focus(); return; }
+                }
+            }
+            if (currentStep === 2) {
+                var nameField = document.getElementById(formType + '-name');
+                var phoneField = document.getElementById(formType + '-phone');
+                if (!nameField.value.trim()) { shakeField(nameField); nameField.focus(); return; }
+                if (!phoneField.value.trim()) { shakeField(phoneField); phoneField.focus(); return; }
+                // Basic phone validation
+                var phone = phoneField.value.replace(/\s/g, '');
+                if (phone.length < 10) { shakeField(phoneField); phoneField.focus(); return; }
+            }
+
+            goToStep(formType, currentStep + 1);
+        }
+
+        function shakeField(el) {
+            el.style.borderColor = '#ef4444';
+            el.style.animation = 'none';
+            el.offsetHeight; // reflow
+            el.style.animation = 'shake 0.4s ease';
+            setTimeout(function() { el.style.borderColor = ''; }, 1500);
+        }
+
+        // Toggle bank transfer / credit card details
+        function toggleBankTransfer(formType) {
+            var selectedPayment = document.querySelector('input[name="' + formType + '-payment"]:checked');
+            var bankDetails = document.getElementById(formType + '-bank-details');
+            var cardForm = document.getElementById(formType + '-card-form');
+            var ccLabel = document.getElementById(formType + '-cc-label');
+            var bankLabel = document.getElementById(formType + '-bank-label');
+
+            if(selectedPayment && selectedPayment.value === 'bank-transfer') {
+                bankDetails.style.display = 'block';
+                cardForm.style.display = 'none';
+                ccLabel.classList.remove('selected');
+                bankLabel.classList.add('selected');
+            } else {
+                bankDetails.style.display = 'none';
+                cardForm.style.display = 'block';
+                ccLabel.classList.add('selected');
+                bankLabel.classList.remove('selected');
+            }
+        }
+
+        // Card number formatting: auto-add space every 4 digits
+        function formatCardNumber(input) {
+            var val = input.value.replace(/\D/g, '').substring(0, 16);
+            var formatted = val.replace(/(\d{4})(?=\d)/g, '$1 ');
+            input.value = formatted;
+            detectCardType(input);
+        }
+
+        // Card type detection (Visa / MasterCard)
+        function detectCardType(input) {
+            var val = input.value.replace(/\D/g, '');
+            var formPrefix = input.id.split('-card-number')[0];
+            var visaIcon = document.getElementById(formPrefix + '-card-visa');
+            var mcIcon = document.getElementById(formPrefix + '-card-mastercard');
+            var hint = document.getElementById(formPrefix + '-card-type-hint');
+
+            visaIcon.classList.remove('active');
+            mcIcon.classList.remove('active');
+
+            if (val.length >= 2) {
+                if (val[0] === '4') {
+                    visaIcon.classList.add('active');
+                    hint.textContent = 'Visa kart algılandı';
+                } else if (val[0] === '5' && val[1] >= '1' && val[1] <= '5') {
+                    mcIcon.classList.add('active');
+                    hint.textContent = 'MasterCard kart algılandı';
+                } else {
+                    hint.textContent = '';
+                }
+            } else {
+                hint.textContent = '';
+            }
+        }
+
+        // Expiry date formatting: MM/YY
+        function formatCardExpiry(input) {
+            var val = input.value.replace(/\D/g, '').substring(0, 4);
+            if (val.length > 2) {
+                val = val.substring(0, 2) + ' / ' + val.substring(2);
+            }
+            input.value = val;
+        }
+
+        // CVV: digits only, max 4
+        function formatCardCvv(input) {
+            input.value = input.value.replace(/\D/g, '').substring(0, 4);
+        }
+
+        // Handle bank option selection styling
+        document.addEventListener('click', function(e) {
+            var bankOption = e.target.closest('.bank-option');
+            if(bankOption) {
+                var radio = bankOption.querySelector('input[type="radio"]');
+                if(radio) {
+                    radio.checked = true;
+                    var parent = bankOption.closest('.bank-options');
+                    parent.querySelectorAll('.bank-option').forEach(function(opt) {
+                        opt.classList.remove('selected');
+                    });
+                    bankOption.classList.add('selected');
+                }
+            }
+        });
+
+        // 1. FORM SEKME DEĞİŞTİRME
+        function switchForm(formType) {
+            document.getElementById('tab-transfer').classList.remove('active');
+            document.getElementById('tab-tahsis').classList.remove('active');
+            document.getElementById('form-transfer').classList.remove('active-form');
+            document.getElementById('form-tahsis').classList.remove('active-form');
+
+            // Reset both forms to step 1
+            goToStep('transfer', 1);
+            goToStep('tahsis', 1);
+
+            if(formType === 'transfer') {
+                document.getElementById('tab-transfer').classList.add('active');
+                document.getElementById('form-transfer').classList.add('active-form');
+            } else {
+                document.getElementById('tab-tahsis').classList.add('active');
+                document.getElementById('form-tahsis').classList.add('active-form');
+                calculateVipPrice();
+            }
+        }
+
+        // 2. YENİ YAPI: ADMİN PANELİNDEN GELEN DATA-PRICE HESAPLAMASI
+        function calculateVipPrice() {
+            const selectElement = document.getElementById('vDuration');
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            const price = selectedOption.getAttribute('data-price'); 
+            const priceDisplay = document.getElementById('vipPriceDisplay');
+            priceDisplay.innerHTML = parseInt(price).toLocaleString('tr-TR') + ' <span>₺</span>';
+        }
+
+        // 3. FİLO GALERİ FOTO DEĞİŞTİRME
+        function changeImage(element) {
+            document.getElementById('mainFleetImg').src = element.src;
+            const thumbs = document.querySelectorAll('.fleet-gallery .thumb');
+            thumbs.forEach(thumb => thumb.classList.remove('active-thumb'));
+            element.classList.add('active-thumb');
+        }
+
+        // 4. CANLI UÇUŞ TABLOSU - DUAL AIRPORT
+        function switchGzpTab(tab) {
+            document.getElementById('gzp-tab-gelen').classList.remove('active');
+            document.getElementById('gzp-tab-giden').classList.remove('active');
+            document.getElementById('gzp-table-gelen').style.display = 'none';
+            document.getElementById('gzp-table-giden').style.display = 'none';
+            if(tab === 'gelen') {
+                document.getElementById('gzp-tab-gelen').classList.add('active');
+                document.getElementById('gzp-table-gelen').style.display = 'table';
+            } else {
+                document.getElementById('gzp-tab-giden').classList.add('active');
+                document.getElementById('gzp-table-giden').style.display = 'table';
+            }
+        }
+        function switchAytTab(tab) {
+            document.getElementById('ayt-tab-gelen').classList.remove('active');
+            document.getElementById('ayt-tab-giden').classList.remove('active');
+            document.getElementById('ayt-table-gelen').style.display = 'none';
+            document.getElementById('ayt-table-giden').style.display = 'none';
+            if(tab === 'gelen') {
+                document.getElementById('ayt-tab-gelen').classList.add('active');
+                document.getElementById('ayt-table-gelen').style.display = 'table';
+            } else {
+                document.getElementById('ayt-tab-giden').classList.add('active');
+                document.getElementById('ayt-table-giden').style.display = 'table';
+            }
+        }
+
+        // 4b. API'DEN UÇUŞ VERİLERİNİ ÇEK
+        function getStatusBadge(status, code) {
+            return '<span class="status-badge status-' + code + '">' + status + '</span>';
+        }
+        function renderFlights(airport) {
+            fetch('/api/flights')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if(!d.success) return;
+                    var data = d.data;
+                    var ap = data[airport];
+                    function renderTable(dir, tbodyId, isArrival) {
+                        var tbody = document.getElementById(tbodyId);
+                        var flights = ap[dir].slice(0, 10);
+                        var html = '';
+                        for(var i = 0; i < flights.length; i++) {
+                            var f = flights[i];
+                            var loc = isArrival ? f.from : f.to;
+                            var typeText = f.type === 'ic' ? 'İç Hat' : 'Dış Hat';
+                            html += '<tr><td>' + f.saat + '</td><td>' + f.flight + '</td><td>' + loc + '</td><td>' + typeText + '</td><td>' + f.airline + '</td><td>' + getStatusBadge(f.status, f.code) + '</td></tr>';
+                        }
+                        tbody.innerHTML = html || '<tr><td colspan="6" class="no-flights">Henüz uçuş bilgisi bulunmuyor.</td></tr>';
+                    }
+                    renderTable('gelen', airport + '-tbody-gelen', true);
+                    renderTable('giden', airport + '-tbody-giden', false);
+                })
+                .catch(function() {});
+        }
+
+        // 4c. SAYFA YÜKLENİNCE UÇUŞ VERİLERİNİ ÇEK
+        document.addEventListener("DOMContentLoaded", function() {
+            renderFlights('gzp');
+            renderFlights('ayt');
+            // Reset forms to step1 on load
+            goToStep('transfer', 1);
+            goToStep('tahsis', 1);
+
+            // Auto-fill date/time: bugünün tarihi ve saati +1 saat
+            var now = new Date();
+            now.setHours(now.getHours() + 1);
+
+            var year = now.getFullYear();
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var day = String(now.getDate()).padStart(2, '0');
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+
+            var dateStr = year + '-' + month + '-' + day;
+            var timeStr = hours + ':' + minutes;
+
+            var dateFields = ['transfer-date', 'tahsis-date'];
+            var timeFields = ['transfer-time', 'tahsis-time'];
+
+            dateFields.forEach(function(id) {
+                var el = document.getElementById(id);
+                if(el) el.value = dateStr;
+            });
+            timeFields.forEach(function(id) {
+                var el = document.getElementById(id);
+                if(el) el.value = timeStr;
+            });
+
+            // Client-side validation on submit
+            document.querySelectorAll('.form-body').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    var requiredFields = form.querySelectorAll('input[required]');
+                    var valid = true;
+                    requiredFields.forEach(function(field) {
+                        if(!field.value.trim()) {
+                            field.style.borderColor = '#E31837';
+                            valid = false;
+                        } else {
+                            field.style.borderColor = '';
+                        }
+                    });
+                    if(!valid) {
+                        e.preventDefault();
+                        alert('Lütfen gerekli alanları doldurunuz.');
+                    }
+                });
+            });
+
+            // Her 2 dakikada bir güncelle
+            setInterval(function() {
+                renderFlights('gzp');
+                renderFlights('ayt');
+            }, 120000);
+        });
+
+        // 5. FORM GÖNDERME VE POPUP AÇMA
+        function submitForm(event) {
+            event.preventDefault();
+            var activeForm = document.querySelector('.form-body.active-form');
+            var formType = activeForm.id === 'form-transfer' ? 'transfer' : 'tahsis';
+            var summaryEl = document.getElementById('modalSummary');
+            var btn = event.target || document.querySelector('.final-btn');
+            var originalText = btn ? btn.innerHTML : '';
+
+            // Build payload
+            var payload = { type: formType };
+
+            if(formType === 'transfer') {
+                payload.pickup = document.getElementById('pickup-input').value;
+                payload.destination = document.getElementById('dest-input').value;
+                payload.flightNumber = document.getElementById('transfer-flight').value;
+                payload.date = document.getElementById('transfer-date').value;
+                payload.time = document.getElementById('transfer-time').value;
+                payload.passengers = document.getElementById('transfer-passengers').value;
+                payload.notes = document.getElementById('transfer-notes').value;
+                payload.customerName = document.getElementById('transfer-name').value;
+                payload.customerPhone = document.getElementById('transfer-phone').value;
+                payload.price = document.getElementById('priceEstimate').textContent.replace(/[^0-9]/g, '') || 0;
+            } else {
+                payload.pickup = document.getElementById('tahsis-pickup-input').value;
+                var vDuration = document.getElementById('vDuration');
+                payload.duration = vDuration.options[vDuration.selectedIndex].text;
+                payload.date = document.getElementById('tahsis-date').value;
+                payload.time = document.getElementById('tahsis-time').value;
+                payload.customerName = document.getElementById('tahsis-name').value;
+                payload.customerPhone = document.getElementById('tahsis-phone').value;
+                payload.price = document.getElementById('vipPriceDisplay').textContent.replace(/[^0-9]/g, '') || 0;
+            }
+
+            // Show loading state
+            if(btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...'; btn.disabled = true; }
+
+            // Send to backend
+            fetch('/api/reservations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    // Build summary details
+                    var details = [];
+                    details.push('Rezervasyon #' + data.reservation.id);
+                    details.push('Alış: ' + payload.pickup);
+                    if(payload.destination) details.push('Varış: ' + payload.destination);
+                    if(payload.flightNumber) details.push('Uçuş: ' + payload.flightNumber);
+                    if(payload.duration) details.push('Süre: ' + payload.duration);
+                    details.push('Tarih: ' + payload.date);
+                    details.push('Saat: ' + payload.time);
+                    if(payload.passengers) details.push('Yolcu: ' + payload.passengers);
+                    details.push('İsim: ' + payload.customerName);
+                    details.push('Telefon: ' + payload.customerPhone);
+                    if(payload.price) details.push('Tahmini: ' + payload.price + ' ₺');
+                    if(payload.notes) details.push('Not: ' + payload.notes);
+
+                    if(summaryEl) {
+                        summaryEl.innerHTML = details.map(function(d) {
+                            return '<div style="padding:6px 0;border-bottom:1px solid #E2E8F0;font-size:14px;color:#1B2B4C;font-weight:500;">' + d + '</div>';
+                        }).join('');
+                    }
+                    document.getElementById('successModal').classList.add('open');
+                } else {
+                    alert('Rezervasyon oluşturulamadı: ' + (data.error || 'Bilinmeyen hata'));
+                }
+            })
+            .catch(function(err) {
+                alert('Sunucuya bağlanılamadı. Lütfen daha sonra tekrar deneyin.');
+            })
+            .finally(function() {
+                if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
+            });
+        }
+        function closeModal() {
+            document.getElementById('successModal').classList.remove('open');
+        }
+
+        // 5b. KONUM ÇÖZÜMLEME (Geocoding API üzerinden + client-side fallback)
+        var selectedDestLat = null;
+        var selectedDestLng = null;
+        var selectedPickupLat = null;
+        var selectedPickupLng = null;
+
+        // Bilinen konum koordinatları — API kapalıyken bile çalışır
+        var KNOWN_LOCATIONS = {
+            'gazipaşa':         { lat: 36.2992, lng: 32.3014 },
+            'gzp':              { lat: 36.2992, lng: 32.3014 },
+            'antalya havalimanı': { lat: 36.9019, lng: 30.7917 },
+            'ayt':              { lat: 36.9019, lng: 30.7917 },
+            'alanya':           { lat: 36.5467, lng: 32.0017 },
+            'side':             { lat: 36.7667, lng: 31.3889 },
+            'manavgat':         { lat: 36.7867, lng: 31.4417 },
+            'konaklı':          { lat: 36.5826, lng: 31.8856 },
+            'türkler':          { lat: 36.6046, lng: 31.8081 },
+            'mahmutlar':        { lat: 36.4944, lng: 32.0861 },
+            'kargıcak':         { lat: 36.4618, lng: 32.1018 },
+            'obaköy':           { lat: 36.5528, lng: 32.0036 },
+            'kestel':           { lat: 36.5223, lng: 32.0594 },
+            'tosmur':           { lat: 36.5597, lng: 32.0175 },
+            'avsallar':         { lat: 36.6238, lng: 31.7736 },
+            'incekum':          { lat: 36.6469, lng: 31.6819 },
+            'payallar':         { lat: 36.6134, lng: 31.8032 },
+            'demirtaş':         { lat: 36.4575, lng: 32.1477 },
+        };
+
+        function resolveLocation(text) {
+            if(!text || text.trim().length < 2) return null;
+            var lower = text.toLowerCase().trim();
+            for(var key in KNOWN_LOCATIONS) {
+                if(lower.includes(key)) {
+                    return KNOWN_LOCATIONS[key];
+                }
+            }
+            return null;
+        }
+
+        function initPlacesAutocomplete() {
+            // Google Places Autocomplete widget'larını oluştur
+            var destInput = document.getElementById('dest-input');
+            var pickupInput = document.getElementById('pickup-input');
+            var tahsisInput = document.getElementById('tahsis-pickup-input');
+
+            if(typeof google === 'undefined' || !google.maps || !google.maps.places) return;
+
+            var bounds = new google.maps.LatLngBounds(
+                new google.maps.LatLng(36.0, 31.0),
+                new google.maps.LatLng(37.2, 32.8)
+            );
+            var opts = { bounds: bounds, strictBounds: false, fields: ['formatted_address', 'geometry', 'name', 'place_id'] };
+
+            if(destInput) {
+                var destAuto = new google.maps.places.Autocomplete(destInput, opts);
+                destAuto.addListener('place_changed', function() {
+                    var place = destAuto.getPlace();
+                    if(place && place.geometry) {
+                        selectedDestLat = place.geometry.location.lat();
+                        selectedDestLng = place.geometry.location.lng();
+                        showRouteMap();
+                        calculateTransferDistance();
+                    }
+                });
+            }
+
+            if(pickupInput) {
+                var pickupAuto = new google.maps.places.Autocomplete(pickupInput, opts);
+                pickupAuto.addListener('place_changed', function() {
+                    var place = pickupAuto.getPlace();
+                    if(place && place.geometry) {
+                        selectedPickupLat = place.geometry.location.lat();
+                        selectedPickupLng = place.geometry.location.lng();
+                        showRouteMap();
+                    }
+                });
+            }
+
+            if(tahsisInput) {
+                var tahsisAuto = new google.maps.places.Autocomplete(tahsisInput, opts);
+                tahsisAuto.addListener('place_changed', function() {
+                    var place = tahsisAuto.getPlace();
+                    if(place && place.geometry) {
+                        selectedPickupLat = place.geometry.location.lat();
+                        selectedPickupLng = place.geometry.location.lng();
+                        showRouteMap();
+                    }
+                });
+            }
+        }
+
+        function geocodePickup(val) {
+            if(!val || val.trim().length < 2) return;
+            // Önce client-side bilinen konumlarda ara
+            var known = resolveLocation(val);
+            if(known) {
+                selectedPickupLat = known.lat;
+                selectedPickupLng = known.lng;
+                showRouteMap();
+                return;
+            }
+            // Client-side Google Geocoder kullan (backend proxy'yi atla)
+            if(typeof google !== 'undefined' && google.maps && google.maps.Geocoder) {
+                var geocoder = new google.maps.Geocoder();
+                var address = val;
+                // Daha doğru sonuç için bölge ekle
+                if(!address.toLowerCase().includes('alanya') && !address.toLowerCase().includes('gazipaşa') && !address.toLowerCase().includes('antalya') && !address.toLowerCase().includes('side') && !address.toLowerCase().includes('manavgat')) {
+                    address = val + ', Alanya/Antalya';
+                }
+                geocoder.geocode({ address: address, region: 'TR', language: 'tr' }, function(results, status) {
+                    if(status === 'OK' && results && results.length > 0) {
+                        selectedPickupLat = results[0].geometry.location.lat();
+                        selectedPickupLng = results[0].geometry.location.lng();
+                        showRouteMap();
+                    }
+                });
+            }
+        }
+
+        function geocodeDest(val) {
+            if(!val || val.trim().length < 2) return;
+            // Önce client-side bilinen konumlarda ara
+            var known = resolveLocation(val);
+            if(known) {
+                selectedDestLat = known.lat;
+                selectedDestLng = known.lng;
+                showRouteMap();
+                calculateTransferDistance();
+                return;
+            }
+            // Client-side Google Geocoder kullan (backend proxy'yi atla)
+            if(typeof google !== 'undefined' && google.maps && google.maps.Geocoder) {
+                var geocoder = new google.maps.Geocoder();
+                var address = val;
+                if(!address.toLowerCase().includes('alanya') && !address.toLowerCase().includes('gazipaşa') && !address.toLowerCase().includes('antalya') && !address.toLowerCase().includes('side') && !address.toLowerCase().includes('manavgat')) {
+                    address = val + ', Alanya/Antalya';
+                }
+                geocoder.geocode({ address: address, region: 'TR', language: 'tr' }, function(results, status) {
+                    if(status === 'OK' && results && results.length > 0) {
+                        selectedDestLat = results[0].geometry.location.lat();
+                        selectedDestLng = results[0].geometry.location.lng();
+                        showRouteMap();
+                        calculateTransferDistance();
+                    }
+                });
+            }
+        }
+
+        // 5c. MESAFE HESAPLAMA (KM + TAHMİNİ FİYAT)
+        function calculateTransferDistance() {
+            var destVal = document.getElementById('dest-input').value.trim();
+            var pickupVal = document.getElementById('pickup-input').value.trim();
+
+            if(!destVal || destVal.length < 3) {
+                document.getElementById('distanceInfo').style.display = 'none';
+                return;
+            }
+
+            var distanceInfo = document.getElementById('distanceInfo');
+
+            // Use selected coords first, fallback to text address
+            if(selectedDestLat && selectedDestLng) {
+                var origins = null;
+                if(selectedPickupLat && selectedPickupLng) {
+                    origins = new google.maps.LatLng(selectedPickupLat, selectedPickupLng);
+                } else if(pickupVal && pickupVal.length > 2) {
+                    origins = pickupVal;
+                } else {
+                    origins = 'Alanya';
+                }
+                var destinations = new google.maps.LatLng(selectedDestLat, selectedDestLng);
+                fetchDistance(origins, destinations);
+            } else {
+                var origins = null;
+                if(selectedPickupLat && selectedPickupLng) {
+                    origins = new google.maps.LatLng(selectedPickupLat, selectedPickupLng);
+                } else if(pickupVal && pickupVal.length > 2) {
+                    origins = pickupVal;
+                } else {
+                    origins = 'Alanya';
+                }
+                var destinations = destVal;
+                fetchDistance(origins, destinations);
+            }
+        }
+
+        function fetchDistance(origins, destinations) {
+            var distanceInfo = document.getElementById('distanceInfo');
+            distanceInfo.style.display = 'flex';
+            document.getElementById('distanceText').textContent = 'Hesaplanıyor...';
+            document.getElementById('durationText').textContent = '—';
+            document.getElementById('priceEstimate').textContent = '—';
+
+            // Client-side Distance Matrix Service kullan (backend proxy'yi atla)
+            if(typeof google !== 'undefined' && google.maps && google.maps.DistanceMatrixService) {
+                var dmService = new google.maps.DistanceMatrixService();
+                dmService.getDistanceMatrix({
+                    origins: [origins],
+                    destinations: [destinations],
+                    travelMode: 'DRIVING',
+                    unitSystem: google.maps.UnitSystem.METRIC,
+                    language: 'tr',
+                    region: 'TR'
+                }, function(response, status) {
+                    if(status === 'OK' && response.rows[0] && response.rows[0].elements[0]) {
+                        var el = response.rows[0].elements[0];
+                        if(el.status === 'OK') {
+                            var distKm = el.distance.text;
+                            var distMeters = el.distance.value;
+                            var duration = el.duration.text;
+
+                            document.getElementById('distanceText').textContent = distKm;
+                            document.getElementById('durationText').textContent = duration;
+
+                            var km = distMeters / 1000;
+                            var price = Math.max(500, Math.round(km * UNIT_PRICE));
+                            document.getElementById('priceEstimate').textContent = price.toLocaleString('tr-TR') + ' ₺';
+
+                            distanceInfo.style.display = 'flex';
+                        } else {
+                            document.getElementById('distanceText').textContent = 'Mesafe hesaplanamadı';
+                            priceFromDestFallback();
+                        }
+                    } else {
+                        document.getElementById('distanceText').textContent = 'Mesafe hesaplanamadı';
+                        priceFromDestFallback();
+                    }
+                });
+            } else {
+                // Google Maps henüz yüklenmediyse fallback
+                priceFromDestFallback();
+            }
+        }
+
+        var routeMap = null;
+        var routeDirectionsRenderer = null;
+
+        function showRouteMap() {
+            var mapDiv = document.getElementById('mapPreview');
+            mapDiv.style.display = 'block';
+            var mapEl = document.getElementById('routeMap');
+
+            if(!routeMap) {
+                routeMap = new google.maps.Map(mapEl, {
+                    zoom: 9,
+                    center: { lat: 36.8, lng: 31.5 },
+                    mapTypeId: 'roadmap',
+                    styles: [
+                        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+                        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+                    ],
+                    fullscreenControl: false,
+                    streetViewControl: false,
+                    mapTypeControl: false,
+                });
+            }
+
+            var hasPickup = selectedPickupLat !== null && selectedPickupLng !== null;
+            var hasDest = selectedDestLat !== null && selectedDestLng !== null;
+
+            // --- ALIŞ MARKER'I ---
+            if(hasPickup) {
+                var pickupPos = { lat: selectedPickupLat, lng: selectedPickupLng };
+                if(!window.pickupMarker) {
+                    window.pickupMarker = new google.maps.Marker({
+                        position: pickupPos,
+                        map: routeMap,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 8,
+                            fillColor: '#E31837',
+                            fillOpacity: 1,
+                            strokeColor: '#fff',
+                            strokeWeight: 2
+                        },
+                        label: { text: 'Alış', color: '#fff', fontSize: '10px', fontWeight: 'bold' }
+                    });
+                } else {
+                    window.pickupMarker.setPosition(pickupPos);
+                    window.pickupMarker.setMap(routeMap);
+                }
+                // Info penceresi
+                if(window.pickupInfoWin) window.pickupInfoWin.close();
+                window.pickupInfoWin = new google.maps.InfoWindow({
+                    content: '<div style="font-weight:600;font-size:13px;color:#1B2B4C;">✅ Alış Noktası</div>',
+                });
+                window.pickupInfoWin.open(routeMap, window.pickupMarker);
+            } else {
+                // Marker varsa gizle
+                if(window.pickupMarker) window.pickupMarker.setMap(null);
+            }
+
+            // --- VARIŞ MARKER'I ---
+            if(hasDest) {
+                var destPos = { lat: selectedDestLat, lng: selectedDestLng };
+                if(!window.destMarker) {
+                    window.destMarker = new google.maps.Marker({
+                        position: destPos,
+                        map: routeMap,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 8,
+                            fillColor: '#1B2B4C',
+                            fillOpacity: 1,
+                            strokeColor: '#fff',
+                            strokeWeight: 2
+                        },
+                        label: { text: 'Varış', color: '#fff', fontSize: '10px', fontWeight: 'bold' }
+                    });
+                } else {
+                    window.destMarker.setPosition(destPos);
+                    window.destMarker.setMap(routeMap);
+                }
+                if(window.destInfoWin) window.destInfoWin.close();
+                window.destInfoWin = new google.maps.InfoWindow({
+                    content: '<div style="font-weight:600;font-size:13px;color:#1B2B4C;">✅ Varış Noktası</div>',
+                });
+                window.destInfoWin.open(routeMap, window.destMarker);
+            } else {
+                if(window.destMarker) window.destMarker.setMap(null);
+            }
+
+            // --- HARİTAYI KONUMA ORTALA ---
+            if(hasPickup && hasDest) {
+                var bounds = new google.maps.LatLngBounds();
+                bounds.extend({ lat: selectedPickupLat, lng: selectedPickupLng });
+                bounds.extend({ lat: selectedDestLat, lng: selectedDestLng });
+                routeMap.fitBounds(bounds);
+            } else if(hasPickup) {
+                routeMap.setCenter({ lat: selectedPickupLat, lng: selectedPickupLng });
+                routeMap.setZoom(14);
+            } else if(hasDest) {
+                routeMap.setCenter({ lat: selectedDestLat, lng: selectedDestLng });
+                routeMap.setZoom(14);
+            }
+
+            // --- ROTA ÇİZ ---
+            if(hasPickup && hasDest) {
+                if(!routeDirectionsRenderer) {
+                    routeDirectionsRenderer = new google.maps.DirectionsRenderer({
+                        map: routeMap,
+                        suppressMarkers: false,
+                        polylineOptions: {
+                            strokeColor: '#E31837',
+                            strokeWeight: 4,
+                            strokeOpacity: 0.9
+                        }
+                    });
+                }
+
+                var directionsService = new google.maps.DirectionsService();
+                var originStr = selectedPickupLat + ',' + selectedPickupLng;
+                var destStr = selectedDestLat + ',' + selectedDestLng;
+
+                directionsService.route({
+                    origin: originStr,
+                    destination: destStr,
+                    travelMode: 'DRIVING'
+                }, function(response, status) {
+                    if(status === 'OK') {
+                        routeDirectionsRenderer.setDirections(response);
+                    }
+                });
+            } else {
+                // Sadece tek nokta varsa rotayı temizle
+                if(routeDirectionsRenderer) {
+                    routeDirectionsRenderer.setMap(null);
+                    routeDirectionsRenderer = null;
+                }
+            }
+        }
+
+        function priceFromDestFallback() {
+            // Fallback: varış noktasına göre KM bazlı hesaplama
+            var destVal = (document.getElementById('dest-input').value || '').toLowerCase();
+            var baseKm = 0;
+            if(destVal.includes('mahmutlar')) baseKm = 32;
+            else if(destVal.includes('avsallar') || destVal.includes('incekum')) baseKm = 40;
+            else if(destVal.includes('alanya') || destVal.includes('kleopatra')) baseKm = 48;
+            else if(destVal.includes('konaklı') || destVal.includes('türkler')) baseKm = 52;
+            else if(destVal.includes('side') || destVal.includes('manavgat')) baseKm = 72;
+            else if(destVal.includes('antalya') || destVal.includes('kemer')) baseKm = 100;
+            var price = baseKm > 0 ? Math.max(500, Math.round(baseKm * UNIT_PRICE)) : 1500;
+
+            document.getElementById('durationText').textContent = '—';
+            document.getElementById('priceEstimate').textContent = price.toLocaleString('tr-TR') + ' ₺';
+        }
+
+        // Sayfa açılınca pickup input'ta varsayılan bir değer varsa geocode'la
+        document.addEventListener('DOMContentLoaded', function() {
+            var pickupInput = document.getElementById('pickup-input');
+            if(pickupInput && pickupInput.value.trim().length > 2) {
+                setTimeout(function() {
+                    geocodePickup(pickupInput.value);
+                }, 2000); // Maps'in yüklenmesi için kısa bekle
+            }
+        });
+
+        // 6. ARKA PLAN SLIDER — API'den yükle
+        document.addEventListener("DOMContentLoaded", function() {
+            var bgSlider = document.getElementById('bgSlider');
+            var slideInterval = null;
+            var currentSlideIndex = 0;
+            var slides = [];
+
+            function startSlider() {
+                slides = document.querySelectorAll('#bgSlider .slide');
+                currentSlideIndex = 0;
+                if(slides.length > 0) {
+                    slides.forEach(function(s) { s.classList.remove('active'); });
+                    slides[0].classList.add('active');
+                    if(slideInterval) clearInterval(slideInterval);
+                    slideInterval = setInterval(function() {
+                        slides[currentSlideIndex].classList.remove('active');
+                        currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+                        slides[currentSlideIndex].classList.add('active');
+                    }, 4000);
+                }
+            }
+
+            fetch('/api/slider-images')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if(data.success && Array.isArray(data.images) && data.images.length > 0) {
+                        bgSlider.innerHTML = '';
+                        data.images.forEach(function(img, idx) {
+                            var imgEl = document.createElement('img');
+                            imgEl.src = img.src;
+                            imgEl.alt = img.alt || 'Slider';
+                            imgEl.className = 'slide' + (idx === 0 ? ' active' : '');
+                            bgSlider.appendChild(imgEl);
+                        });
+                        startSlider();
+                    }
+                })
+                .catch(function() {});
+        });
+    </script>
+</body>
+</html>

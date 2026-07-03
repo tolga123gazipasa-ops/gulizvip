@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Güliz Transfer | Operasyon Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Google Maps API - lazy load -->
+    <script>
+        var GOOGLE_MAPS_API_KEY = '';
+        var mapsInitialized = false;
+        var mapsCallbacks = [];
+        var mapsLoadAttempted = false;
+
+        function fetchMapsConfig(cb) {
+            fetch('/api/maps/config')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if(d.success && d.apiKey) {
+                        GOOGLE_MAPS_API_KEY = d.apiKey;
+                        loadMapsApi();
+                    }
+                })
+                .catch(function() {});
+        }
+
+        function loadMapsApi() {
+            if(mapsInitialized || mapsLoadAttempted) return;
+            mapsLoadAttempted = true;
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_API_KEY + '&loading=async&callback=onMapsReady&language=tr&region=TR&libraries=places';
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+
+        function onMapsReady() {
+            mapsInitialized = true;
+            for(var i = 0; i < mapsCallbacks.length; i++) {
+                mapsCallbacks[i]();
+            }
+            mapsCallbacks = [];
+            setTimeout(initPlacesAutocomplete, 500);
+        }
+
+        function onMapsReadyOrQueue(cb) {
+            if(mapsInitialized) { cb(); }
+            else { mapsCallbacks.push(cb); }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() { fetchMapsConfig(); });
+    </script>
+    <style>
+        :root {
+            --admin-bg: #F8FAFC;
+            --admin-sidebar: #0F172A;
+            --admin-text: #334155;
+            --primary-navy: #1B2B4C;
+            --primary-red: #E31837;
+            --pure-white: #FFFFFF;
+            --border-color: #E2E8F0;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        body { background-color: var(--admin-bg); color: var(--admin-text); display: flex; height: 100vh; overflow: hidden; }
+
+        /* --- LOGIN EKRANI --- */
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--admin-sidebar); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-overlay.hidden { display: none; }
+        .login-box { background: var(--pure-white); padding: 50px 40px; border-radius: 20px; width: 420px; max-width: 92%; box-shadow: 0 25px 60px rgba(0,0,0,0.3); text-align: center; }
+        .login-box h1 { font-size: 28px; font-weight: 800; color: var(--primary-navy); margin-bottom: 5px; }
+        .login-box h1 span { color: var(--primary-red); }
+        .login-box p { font-size: 13px; color: #94A3B8; margin-bottom: 30px; }
+        .login-box .form-group { margin-bottom: 20px; text-align: left; }
+        .login-box .form-group label { font-size: 12px; font-weight: 700; color: var(--primary-navy); display: block; margin-bottom: 6px; }
+        .login-box .form-group input { width: 100%; padding: 14px 16px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 14px; outline: none; transition: var(--transition); }
+        .login-box .form-group input:focus { border-color: var(--primary-navy); }
+        .login-btn { width: 100%; background: var(--primary-red); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: var(--transition); }
+        .login-btn:hover { background: #C91530; }
+        .login-error { color: var(--danger); font-size: 13px; margin-top: 12px; display: none; }
+
+        /* --- SOL MENÜ (SIDEBAR) --- */
+        .sidebar { width: 260px; background-color: var(--admin-sidebar); color: var(--pure-white); display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-logo { padding: 25px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-logo h2 { font-weight: 800; font-size: 22px; color: var(--pure-white); letter-spacing: 1px; }
+        .sidebar-logo span { color: var(--primary-red); }
+        .sidebar-logo p { font-size: 11px; color: #94A3B8; margin-top: 5px; text-transform: uppercase; letter-spacing: 1.5px; }
+        
+        .sidebar-menu { padding: 20px 0; flex: 1; overflow-y: auto; }
+        .menu-item { padding: 16px 25px; display: flex; align-items: center; gap: 15px; color: #94A3B8; text-decoration: none; font-size: 14px; font-weight: 600; transition: var(--transition); border-left: 4px solid transparent; cursor: pointer; }
+        .menu-item:hover, .menu-item.active { background-color: rgba(255,255,255,0.03); color: var(--pure-white); border-left-color: var(--primary-red); }
+        .menu-item i { font-size: 18px; width: 20px; text-align: center; }
+        
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .logout-btn { display: flex; align-items: center; gap: 10px; color: var(--danger); text-decoration: none; font-weight: 600; font-size: 14px; transition: var(--transition); cursor: pointer; }
+        .logout-btn:hover { color: #DC2626; }
+
+        /* --- ANA İÇERİK ALANI --- */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--admin-bg); }
+        
+        .top-header { background: var(--pure-white); padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .header-title h1 { font-size: 20px; font-weight: 700; color: var(--primary-navy); }
+        .admin-profile { display: flex; align-items: center; gap: 15px; }
+        .admin-profile .avatar { width: 40px; height: 40px; background: var(--primary-navy); color: var(--pure-white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+        /* --- PANEL GÖRÜNÜMLERİ (SEKMELER) --- */
+        .dashboard-content { padding: 40px; overflow-y: auto; flex: 1; position: relative; }
+        .panel-view { display: none; animation: fadeIn 0.4s ease; }
+        .panel-view.active-view { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* KARTLAR VE TABLOLAR */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--pure-white); padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary-navy); }
+        .stat-card.red { border-left-color: var(--primary-red); }
+        .stat-card.green { border-left-color: var(--success); }
+        .stat-card.yellow { border-left-color: var(--warning); }
+        .stat-info h4 { font-size: 12px; color: var(--text-gray); text-transform: uppercase; margin-bottom: 8px; font-weight: 700; letter-spacing: 0.5px; }
+        .stat-info .number { font-size: 28px; font-weight: 800; color: var(--primary-navy); }
+        .stat-icon { width: 50px; height: 50px; background: var(--admin-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-gray); }
+
+        .panel-section { background: var(--pure-white); border-radius: 12px; border: 1px solid var(--border-color); padding: 25px; margin-bottom: 30px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-header h3 { font-size: 16px; font-weight: 700; color: var(--primary-navy); }
+        .btn-primary { background: var(--primary-red); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; transition: var(--transition); }
+        .btn-primary:hover { background: #C91530; }
+
+        /* FORM & TABLO DİZAYNI */
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .data-table th { padding: 15px; font-size: 12px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; border-bottom: 1px solid var(--border-color); background: #F8FAFC; }
+        .data-table td { padding: 15px; font-size: 13px; font-weight: 500; color: var(--primary-navy); border-bottom: 1px solid var(--border-color); }
+        .data-table tr:hover td { background: #F8FAFC; }
+        
+        .badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .badge-pending { background: #FEF3C7; color: #D97706; }
+        .badge-approved { background: #D1FAE5; color: #059669; }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btns button { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: 0.3s; font-size: 12px; color: var(--pure-white); font-weight: 600; }
+        .btn-view { background: var(--primary-navy); }
+        .btn-view:hover { background: #0F172A; }
+        .btn-approve { background: var(--success); }
+        .btn-approve:hover { background: #059669; }
+        .btn-delete { background: var(--danger); }
+
+        /* FORMLAR */
+        .form-row { display: flex; gap: 20px; margin-bottom: 20px; }
+        .form-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .form-group label { font-size: 12px; font-weight: 700; color: var(--primary-navy); }
+        .form-group input, .form-group select { padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; font-family: 'Montserrat', sans-serif; outline: none; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary-navy); }
+
+        /* GÖRSEL YÖNETİMİ GRID */
+        .image-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .image-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; text-align: center; position: relative; }
+        .image-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; }
+        .delete-img { position: absolute; top: 15px; right: 15px; background: var(--danger); color: white; border: none; width: 25px; height: 25px; border-radius: 50%; cursor: pointer; }
+        .add-image-card { border: 2px dashed var(--border-color); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; color: var(--text-gray); cursor: pointer; transition: var(--transition); }
+        .add-image-card:hover { border-color: var(--primary-red); color: var(--primary-red); }
+
+        /* CANLI DESTEK UI */
+        .chat-container { display: flex; height: 600px; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+        .chat-sidebar { width: 300px; background: var(--pure-white); border-right: 1px solid var(--border-color); overflow-y: auto; }
+        .chat-user { padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.3s; }
+        .chat-user:hover, .chat-user.active { background: #F8FAFC; border-left: 4px solid var(--primary-red); }
+        .chat-user h4 { font-size: 14px; color: var(--primary-navy); margin-bottom: 5px; }
+        .chat-user p { font-size: 12px; color: var(--text-gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-main { flex: 1; display: flex; flex-direction: column; background: #F8FAFC; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 70%; padding: 12px 15px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+        .msg.client { background: var(--pure-white); align-self: flex-start; border: 1px solid var(--border-color); color: var(--primary-navy); }
+        .msg.admin { background: var(--primary-navy); color: var(--pure-white); align-self: flex-end; }
+        .chat-input-area { padding: 20px; background: var(--pure-white); border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+        .chat-input-area input { flex: 1; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 20px; font-family: 'Montserrat', sans-serif; outline: none; }
+        .chat-input-area button { background: var(--primary-red); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
+
+        /* HARITA VE REZERVASYON FORMU */
+        .map-info-bar { display: flex; gap: 20px; margin-bottom: 15px; padding: 15px; background: #F8FAFC; border-radius: 8px; }
+        .map-info-item { flex: 1; }
+        .map-info-item span.label { font-size: 12px; color: var(--text-gray); display: block; margin-bottom: 4px; }
+        .map-info-item strong { font-size: 15px; color: var(--primary-navy); }
+        .map-info-item strong.price { color: var(--primary-red); }
+        .route-map-container { width: 100%; height: 300px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .form-actions { margin-top: 20px; display: flex; gap: 10px; }
+        .btn-secondary { background: var(--border-color); color: var(--primary-navy); border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; transition: var(--transition); }
+        .btn-secondary:hover { background: #CBD5E1; }
+
+    </style>
+</head>
+<body>
+
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h1>GÜLİZ <span>VIP</span></h1>
+            <p>Operasyon Merkezi'ne hoş geldiniz. Lütfen giriş yapın.</p>
+            <div class="form-group">
+                <label>Kullanıcı Adı</label>
+                <input type="text" id="loginUser" placeholder="Kullanıcı adınızı girin" value="admin">
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" id="loginPass" placeholder="Şifrenizi girin" value="gulizvip2026">
+            </div>
+            <button class="login-btn" onclick="handleLogin()"><i class="fa-solid fa-right-to-bracket"></i> Giriş Yap</button>
+            <p class="login-error" id="loginError">Kullanıcı adı veya şifre hatalı!</p>
+        </div>
+    </div>
+
+    <div id="appContainer" style="display:none;flex:1;height:100vh;">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <h2>GÜLİZ <span>VIP</span></h2>
+            <p>Operasyon Merkezi</p>
+        </div>
+        <nav class="sidebar-menu">
+            <a class="menu-item active" onclick="switchTab('view-dashboard', this)"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+            <a class="menu-item" onclick="switchTab('view-reservations', this)"><i class="fa-solid fa-list-check"></i> Rezervasyonlar</a>
+            <a class="menu-item" onclick="switchTab('view-pricing', this)"><i class="fa-solid fa-money-bill-wave"></i> Fiyat & Bölge Ayarları</a>
+            <a class="menu-item" onclick="switchTab('view-bank-accounts', this)"><i class="fa-solid fa-building-columns"></i> Banka Hesapları</a>
+            <a class="menu-item" onclick="switchTab('view-fleet', this)"><i class="fa-solid fa-image"></i> Filo & Görseller</a>
+            <a class="menu-item" onclick="switchTab('view-flights', this)"><i class="fa-solid fa-plane"></i> Canlı Uçuşlar (GZP)</a>
+            <a class="menu-item" onclick="switchTab('view-flights-ayt', this)"><i class="fa-solid fa-plane"></i> Canlı Uçuşlar (AYT)</a>
+            <a class="menu-item" onclick="switchTab('view-chat', this)"><i class="fa-solid fa-comment-dots"></i> Canlı Destek</a>
+            <a class="menu-item" onclick="switchTab('view-settings', this)"><i class="fa-solid fa-gear"></i> Sistem Ayarları</a>
+        </nav>
+        <div class="sidebar-footer">
+            <a class="logout-btn" onclick="handleLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sistemden Çıkış</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="top-header">
+            <div class="header-title">
+                <h1 id="header-title-text">Sistem Özeti</h1>
+            </div>
+            <div class="admin-profile">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-gray);">Yönetici</span>
+                <div class="avatar">G</div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            
+            <div id="view-dashboard" class="panel-view active-view">
+                <div class="stats-grid">
+                    <div class="stat-card red">
+                        <div class="stat-info"><h4>Bekleyen Talepler</h4><div class="number">3</div></div>
+                        <div class="stat-icon"><i class="fa-solid fa-bell" style="color: var(--primary-red);"></i></div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-info"><h4>Bugünkü Transferler</h4><div class="number">8</div></div>
+                        <div class="stat-icon"><i class="fa-solid fa-route" style="color: var(--success);"></i></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info"><h4>Aktif Araçlar</h4><div class="number">4</div></div>
+                        <div class="stat-icon"><i class="fa-solid fa-car" style="color: var(--primary-navy);"></i></div>
+                    </div>
+                    <div class="stat-card yellow">
+                        <div class="stat-info"><h4>Aylık Ciro (Tahmini)</h4><div class="number" style="font-size: 22px;">₺ 145.000</div></div>
+                        <div class="stat-icon"><i class="fa-solid fa-chart-line" style="color: var(--warning);"></i></div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3>Son Gelen Rezervasyon Talepleri</h3>
+                        <button class="btn-primary" onclick="document.querySelectorAll('.menu-item')[1].click()">Tümünü Gör</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Tarih / Saat</th><th>Müşteri Bilgisi</th><th>Güzergah / Uçuş</th><th>Hizmet Tipi</th><th>Durum</th><th>İşlemler</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Bugün<br><span style="color: var(--text-gray);">14:30</span></td>
+                                <td>Ahmet Yılmaz<br><span style="color: var(--text-gray);"><i class="fa-solid fa-phone"></i> +90 532...</span></td>
+                                <td>GZP Havalimanı &rarr; Mahmutlar<br><span style="color: var(--text-gray);"><i class="fa-solid fa-plane"></i> TK2405</span></td>
+                                <td>Havalimanı Transfer<br><span style="color: var(--primary-red);">₺ 2.500</span></td>
+                                <td><span class="badge badge-pending">Onay Bekliyor</span></td>
+                                <td class="action-btns"><button class="btn-approve"><i class="fa-solid fa-check"></i> Onayla</button><button class="btn-view"><i class="fa-solid fa-eye"></i> Detay</button></td>
+                            </tr>
+                            <tr>
+                                <td>Yarın<br><span style="color: var(--text-gray);">09:00</span></td>
+                                <td>Elena Ivanova<br><span style="color: var(--text-gray);"><i class="fa-brands fa-whatsapp"></i> +7 916...</span></td>
+                                <td>Alanya Merkez &rarr; Şehir Turu<br><span style="color: var(--text-gray);"><i class="fa-solid fa-hourglass-half"></i> 8 Saatlik Tahsis</span></td>
+                                <td>VIP Tahsis<br><span style="color: var(--primary-red);">₺ 6.000</span></td>
+                                <td><span class="badge badge-approved">Onaylandı</span></td>
+                                <td class="action-btns"><button class="btn-view"><i class="fa-solid fa-eye"></i> Detay</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-reservations" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3>Tüm Rezervasyonlar</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="reservation-search" placeholder="İsim veya Tel Ara..." style="padding: 8px 15px; border: 1px solid var(--border-color); border-radius: 6px; outline:none;" oninput="loadReservations()">
+                            <button class="btn-primary" onclick="toggleNewReservationForm()"><i class="fa-solid fa-plus"></i> Yeni Rezervasyon</button>
+                            <button class="btn-primary"><i class="fa-solid fa-filter"></i> Filtrele</button>
+                        </div>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>ID</th><th>Tarih</th><th>Müşteri</th><th>Güzergah</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr>
+                        </thead>
+                        <tbody id="reservations-tbody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Yeni Rezervasyon Formu (Harita Entegreli) -->
+                <div id="new-reservation-form" class="panel-section" style="display:none;">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-map-location-dot"></i> Yeni Rezervasyon & Rota Planlama</h3>
+                        <button class="btn-secondary" onclick="toggleNewReservationForm()">İptal</button>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Müşteri Adı</label>
+                            <input type="text" id="admin-customer-name" placeholder="Ad Soyad">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefon</label>
+                            <input type="text" id="admin-customer-phone" placeholder="+90 5XX XXX XX XX">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Alış Noktası (Pickup)</label>
+                            <input type="text" id="admin-pickup-input" placeholder="Örn: GZP Havalimanı, Alanya Merkez...">
+                        </div>
+                        <div class="form-group">
+                            <label>Varış Noktası (Destination)</label>
+                            <input type="text" id="admin-dest-input" placeholder="Örn: Mahmutlar, Avsallar...">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hizmet Tipi</label>
+                            <select id="admin-service-type">
+                                <option value="transfer">Havalimanı Transfer</option>
+                                <option value="tahsis">VIP Tahsis (Şoförlü)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tarih / Saat</label>
+                            <input type="datetime-local" id="admin-datetime">
+                        </div>
+                    </div>
+
+                    <!-- Harita Bilgi Çubuğu -->
+                    <div class="map-info-bar" id="admin-map-info" style="display:none;">
+                        <div class="map-info-item">
+                            <span class="label"><i class="fa-solid fa-road"></i> Mesafe</span>
+                            <strong id="admin-distance-text">—</strong>
+                        </div>
+                        <div class="map-info-item">
+                            <span class="label"><i class="fa-solid fa-clock"></i> Tahmini Süre</span>
+                            <strong id="admin-duration-text">—</strong>
+                        </div>
+                        <div class="map-info-item">
+                            <span class="label"><i class="fa-solid fa-money-bill-wave"></i> Tahmini Fiyat</span>
+                            <strong class="price" id="admin-price-estimate">—</strong>
+                        </div>
+                    </div>
+
+                    <!-- Harita Önizleme -->
+                    <div id="admin-map-preview" style="display:none;">
+                        <div id="admin-route-map" class="route-map-container"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn-primary" style="padding: 12px 30px;" onclick="adminSaveReservation()"><i class="fa-solid fa-check"></i> Rezervasyonu Kaydet</button>
+                        <button class="btn-secondary" onclick="toggleNewReservationForm()">Vazgeç</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-pricing" class="panel-view">
+                <div class="panel-section" style="margin-bottom: 16px;">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-sliders"></i> Km Başı Birim Fiyat</h3>
+                    </div>
+                    <div class="form-row" style="align-items: end;">
+                        <div class="form-group" style="max-width: 250px;">
+                            <label>Km Başı Fiyat (₺)</label>
+                            <input type="number" id="admin-unit-price" value="25" min="5" max="100" step="0.5" style="font-size: 18px; font-weight: 700; padding: 10px 15px;">
+                        </div>
+                        <button class="btn-primary" onclick="adminSaveUnitPrice()"><i class="fa-solid fa-floppy-disk"></i> Kaydet</button>
+                        <span id="unit-price-status" style="font-size: 13px; color: var(--success); display: none; margin-left: 10px;"><i class="fa-solid fa-check-circle"></i> Kaydedildi</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-gray); margin-top: 8px;">
+                        <i class="fa-solid fa-circle-info"></i> Bu fiyat, Distance Matrix ile hesaplanan KM mesafesiyle çarpılarak tahmini transfer ücreti belirlenir. Minimum 500₺ uygulanır.
+                    </p>
+                </div>
+
+                <div class="form-row">
+                    <div class="panel-section" style="flex: 1;">
+                        <div class="section-header"><h3>Havalimanı Rota Fiyatları</h3><button class="btn-primary"><i class="fa-solid fa-plus"></i> Yeni Rota</button></div>
+                        <table class="data-table">
+                            <thead><tr><th>Alış</th><th>Varış</th><th>Fiyat (₺)</th><th>İşlem</th></tr></thead>
+                            <tbody>
+                                <tr><td>Gazipaşa (GZP)</td><td>Mahmutlar</td><td><input type="number" value="2500" style="width: 80px; padding: 5px;"></td><td><button class="btn-approve">Kaydet</button></td></tr>
+                                <tr><td>Gazipaşa (GZP)</td><td>Alanya Merkez</td><td><input type="number" value="3000" style="width: 80px; padding: 5px;"></td><td><button class="btn-approve">Kaydet</button></td></tr>
+                                <tr><td>Antalya (AYT)</td><td>Avsallar</td><td><input type="number" value="4500" style="width: 80px; padding: 5px;"></td><td><button class="btn-approve">Kaydet</button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="panel-section" style="flex: 1;">
+                        <div class="section-header"><h3>Şoförlü Tahsis Fiyatları</h3></div>
+                        <div class="form-group"><label>4 Saatlik Tahsis (₺)</label><input type="number" value="3500"></div>
+                        <div class="form-group"><label>8 Saatlik Tahsis (₺)</label><input type="number" value="6000"></div>
+                        <div class="form-group"><label>12 Saatlik Tahsis (₺)</label><input type="number" value="8000"></div>
+                        <div class="form-group"><label>Tam Gün (24 Saat) (₺)</label><input type="number" value="12000"></div>
+                        <button class="btn-primary" style="margin-top: 15px; width: 100%;">Tahsis Fiyatlarını Güncelle</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-bank-accounts" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-building-columns"></i> Banka Hesap Bilgileri</h3>
+                        <button class="btn-primary" onclick="adminSaveBankAccounts()"><i class="fa-solid fa-floppy-disk"></i> Tümünü Kaydet</button>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 20px;">
+                        Bu bilgiler ana sayfadaki Havale/EFT ödeme seçeneğinde görüntülenir.
+                    </p>
+                    <div id="bank-accounts-form">
+                        <p style="color:var(--text-gray);">Yükleniyor...</p>
+                    </div>
+                    <span id="bank-accounts-status" style="font-size: 13px; color: var(--success); display: none; margin-top: 10px;"><i class="fa-solid fa-check-circle"></i> Kaydedildi</span>
+                </div>
+            </div>
+
+            <div id="view-fleet" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3>Ana Sayfa Slider (Kayan Resimler)</h3>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn-primary" onclick="showAddSliderModal()"><i class="fa-solid fa-plus"></i> URL Ekle</button>
+                            <button class="btn-primary" onclick="document.getElementById('slider-file-input').click()"><i class="fa-solid fa-cloud-arrow-up"></i> Dosya Yükle</button>
+                            <input type="file" id="slider-file-input" accept="image/*" style="display:none" onchange="uploadSliderImage(this)">
+                        </div>
+                    </div>
+                    <div class="image-grid" id="slider-admin-grid">
+                        <p style="color:var(--text-gray);grid-column:1/-1;text-align:center;padding:40px;">Yükleniyor...</p>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-header"><h3>Filomuz (Araç Galerisi)</h3></div>
+                    <div class="image-grid">
+                        <div class="image-card">
+                            <button class="delete-img"><i class="fa-solid fa-xmark"></i></button>
+                            <img src="vitoaracimiz.jpeg" alt="vito">
+                            <p style="font-size: 12px; font-weight: 600;">Ana Görsel</p>
+                        </div>
+                        <div class="image-card">
+                            <button class="delete-img"><i class="fa-solid fa-xmark"></i></button>
+                            <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&w=400&q=80" alt="vito ic">
+                            <p style="font-size: 12px; font-weight: 600;">İç Mekan</p>
+                        </div>
+                        <div class="add-image-card">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 30px; margin-bottom: 10px;"></i>
+                            <p style="font-size: 13px; font-weight: 600;">Yeni Araç Resmi Ekle</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-flights" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3>Canlı Uçuş Tablosu (Manuel Kontrol)</h3>
+                        <button class="btn-primary"><i class="fa-solid fa-plus"></i> Uçuş Ekle</button>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>Yön</th><th>Saat</th><th>Uçuş No</th><th>Şehir/Havalimanı</th><th>Tür</th><th>Durum</th><th>İşlem</th></tr></thead>
+                        <tbody id="gzp-admin-tbody">
+                    </table>
+                    <p style="margin-top: 15px; font-size: 12px; color: var(--text-gray);"><i class="fa-solid fa-circle-info"></i> İpucu: İleride bu alanı API ile otomatik çekecek şekilde programlayabiliriz.</p>
+                </div>
+            </div>
+
+            <div id="view-flights-ayt" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3>Canlı Uçuş Tablosu — Antalya (AYT)</h3>
+                        <button class="btn-primary" onclick="switchTab('view-flights', document.querySelectorAll('.menu-item')[7])"><i class="fa-solid fa-plane"></i> GZP Gör</button>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>Yön</th><th>Saat</th><th>Uçuş No</th><th>Şehir/Havalimanı</th><th>Tür</th><th>Durum</th><th>İşlem</th></tr></thead>
+                        <tbody id="ayt-admin-tbody">
+                            <tr><td colspan="7" style="text-align:center; color:var(--text-gray);">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+                <div class="chat-container">
+                    <div class="chat-sidebar">
+                        <div class="chat-user active">
+                            <h4>Ziyaretçi #1084 <span style="float:right; font-size:10px; color: var(--success);"><i class="fa-solid fa-circle"></i> Çevrimiçi</span></h4>
+                            <p>Gazipaşa transferi hakkında...</p>
+                        </div>
+                        <div class="chat-user">
+                            <h4>Ziyaretçi #1083</h4>
+                            <p>Teşekkürler, rezervasyonu yaptım.</p>
+                        </div>
+                    </div>
+                    <div class="chat-main">
+                        <div class="chat-messages">
+                            <div class="msg client">Merhaba, Gazipaşa havalimanından Avsallar'a gece 03:00'te aracınız var mı?</div>
+                            <div class="msg admin">Merhaba! Evet, 7/24 hizmet vermekteyiz. Sizi karşılayacak VIP aracımız hazır olacaktır.</div>
+                            <div class="msg client">Harika, fiyat ne kadar acaba?</div>
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" placeholder="Ziyaretçiye yanıt yazın...">
+                            <button><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-settings" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header"><h3>İletişim ve API Ayarları</h3></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>WhatsApp Destek Hattı</label><input type="text" value="+90 242 606 25 48"></div>
+                        <div class="form-group"><label>Operasyon Email</label><input type="email" value="operasyon@guliztransfer.com"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Netgsm API Key (SMS Bildirimleri İçin)</label><input type="password" value="************************"></div>
+                        <div class="form-group"><label>Cloudflare Durumu</label><input type="text" value="Aktif / Korumada" disabled style="background: #e2e8f0;"></div>
+                    </div>
+                    <button class="btn-primary">Ayarları Kaydet</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        function switchTab(tabId, element) {
+            // Tüm sekmeleri gizle
+            const views = document.querySelectorAll('.panel-view');
+            views.forEach(view => view.classList.remove('active-view'));
+            
+            // Seçilen sekmeyi göster
+            document.getElementById(tabId).classList.add('active-view');
+            
+            // Sol menüdeki active class'ını değiştir
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            // Başlığı güncelle
+            const titleText = element.innerText.trim();
+            document.getElementById('header-title-text').innerText = titleText;
+        }
+    </script>
+
+<script>
+    // ─── LOGIN / AUTH ──────────────────────────────────────────
+    async function handleLogin() {
+        const username = document.getElementById('loginUser').value;
+        const password = document.getElementById('loginPass').value;
+        const errorEl = document.getElementById('loginError');
+        errorEl.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username, password})
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('guliz_token', data.token);
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('appContainer').style.display = 'flex';
+                loadAdminFlights();
+                loadAytFlights();
+                loadSliderImages();
+                loadBankAccounts();
+                setInterval(loadAdminFlights, 120000);
+                setInterval(loadAytFlights, 120000);
+            } else {
+                errorEl.style.display = 'block';
+            }
+        } catch(e) {
+            errorEl.style.display = 'block';
+            errorEl.innerText = 'Sunucuya bağlanılamadı!';
+        }
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('guliz_token');
+        document.getElementById('loginOverlay').classList.remove('hidden');
+        document.getElementById('appContainer').style.display = 'none';
+    }
+
+    // ─── GZP UÇUŞLARI ──────────────────────────────────────────
+    async function loadAdminFlights() {
+        const token = localStorage.getItem('guliz_token');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/admin/flights', {
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            const data = await res.json();
+            if (data.success) {
+                const gzp = data.data.gzp;
+                renderAdminFlights(gzp.gelen, 'gzp-admin-tbody', 'Geliş');
+                renderAdminFlights(gzp.giden, 'gzp-admin-tbody', 'Gidiş');
+            } else if (res.status === 401) {
+                handleLogout();
+            }
+        } catch(e) {}
+    }
+
+    // ─── AYT UÇUŞLARI ──────────────────────────────────────────
+    async function loadAytFlights() {
+        const token = localStorage.getItem('guliz_token');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/admin/flights', {
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            const data = await res.json();
+            if (data.success) {
+                const ayt = data.data.ayt;
+                renderAdminFlights(ayt.gelen, 'ayt-admin-tbody', 'Geliş');
+                renderAdminFlights(ayt.giden, 'ayt-admin-tbody', 'Gidiş');
+            } else if (res.status === 401) {
+                handleLogout();
+            }
+        } catch(e) {}
+    }
+
+    // ─── TABLO RENDER ──────────────────────────────────────────
+    function renderAdminFlights(flights, tbodyId, direction) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+        let html = '';
+        const limited = flights.slice(0, 10);
+        limited.forEach(function(f) {
+            const loc = f.from || f.to || '';
+            const typeText = f.type === 'ic' ? 'İç Hat' : 'Dış Hat';
+            const badgeClass = f.code === 'landed' || f.code === 'departed' ? 'badge-approved' :
+                              f.code === 'delayed' ? 'badge-pending' : '';
+            html += '<tr>' +
+                '<td>' + direction + '</td>' +
+                '<td>' + f.saat + '</td>' +
+                '<td>' + f.flight + '</td>' +
+                '<td>' + loc + '</td>' +
+                '<td>' + typeText + '</td>' +
+                '<td>' + (badgeClass ? '<span class="badge ' + badgeClass + '">' + f.status + '</span>' : f.status) + '</td>' +
+                '<td><button class="btn-view" style="font-size:11px;padding:4px 10px;"><i class="fa-solid fa-rotate"></i> Güncelle</button></td>' +
+            '</tr>';
+        });
+        tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:var(--text-gray);">Henüz uçuş bulunmuyor.</td></tr>';
+    }
+
+    // ─── DOMContentLoaded ───────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('guliz_token');
+        if (token) {
+            fetch('/api/admin/check', {
+                headers: {'Authorization': 'Bearer ' + token}
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success) {
+                    document.getElementById('loginOverlay').classList.add('hidden');
+                    document.getElementById('appContainer').style.display = 'flex';
+                    loadAdminFlights();
+                    loadAytFlights();
+                    loadSliderImages();
+                    loadReservations();
+                    setInterval(loadAdminFlights, 120000);
+                    setInterval(loadAytFlights, 120000);
+                    setInterval(loadReservations, 30000);
+                } else {
+                    localStorage.removeItem('guliz_token');
+                }
+            })
+            .catch(function() {
+                localStorage.removeItem('guliz_token');
+            });
+        }
+        document.getElementById('loginPass').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleLogin();
+        });
+        document.getElementById('loginUser').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleLogin();
+        });
+    });
+
+    // ─── GOOGLE MAPS ENTEGRASYONU (ADMIN) ──────────────────────
+    var adminSelectedPickupLat = null;
+    var adminSelectedPickupLng = null;
+    var adminSelectedDestLat = null;
+    var adminSelectedDestLng = null;
+
+    var ADMIN_KNOWN_LOCATIONS = {
+        'gazipaşa':         { lat: 36.2992, lng: 32.3014 },
+        'gzp':              { lat: 36.2992, lng: 32.3014 },
+        'antalya havalimanı': { lat: 36.9019, lng: 30.7917 },
+        'ayt':              { lat: 36.9019, lng: 30.7917 },
+        'alanya':           { lat: 36.5467, lng: 32.0017 },
+        'side':             { lat: 36.7667, lng: 31.3889 },
+        'manavgat':         { lat: 36.7867, lng: 31.4417 },
+        'konaklı':          { lat: 36.5826, lng: 31.8856 },
+        'türkler':          { lat: 36.6046, lng: 31.8081 },
+        'mahmutlar':        { lat: 36.4944, lng: 32.0861 },
+        'kargıcak':         { lat: 36.4618, lng: 32.1018 },
+        'obaköy':           { lat: 36.5528, lng: 32.0036 },
+        'kestel':           { lat: 36.5223, lng: 32.0594 },
+        'tosmur':           { lat: 36.5597, lng: 32.0175 },
+        'avsallar':         { lat: 36.6238, lng: 31.7736 },
+        'incekum':          { lat: 36.6469, lng: 31.6819 },
+        'payallar':         { lat: 36.6134, lng: 31.8032 },
+        'demirtaş':         { lat: 36.4575, lng: 32.1477 },
+    };
+
+    function adminResolveLocation(text) {
+        if(!text || text.trim().length < 2) return null;
+        var lower = text.toLowerCase().trim();
+        for(var key in ADMIN_KNOWN_LOCATIONS) {
+            if(lower.includes(key)) {
+                return ADMIN_KNOWN_LOCATIONS[key];
+            }
+        }
+        return null;
+    }
+
+    function initPlacesAutocomplete() {
+        var destInput = document.getElementById('admin-dest-input');
+        var pickupInput = document.getElementById('admin-pickup-input');
+
+        if(!destInput && !pickupInput) return;
+        if(typeof google === 'undefined' || !google.maps || !google.maps.places) return;
+
+        var bounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(36.0, 31.0),
+            new google.maps.LatLng(37.2, 32.8)
+        );
+        var opts = { bounds: bounds, strictBounds: false, fields: ['formatted_address', 'geometry', 'name', 'place_id'] };
+
+        if(destInput) {
+            var destAuto = new google.maps.places.Autocomplete(destInput, opts);
+            destAuto.addListener('place_changed', function() {
+                var place = destAuto.getPlace();
+                if(place && place.geometry) {
+                    adminSelectedDestLat = place.geometry.location.lat();
+                    adminSelectedDestLng = place.geometry.location.lng();
+                    adminShowRouteMap();
+                    adminCalculateDistance();
+                }
+            });
+        }
+
+        if(pickupInput) {
+            var pickupAuto = new google.maps.places.Autocomplete(pickupInput, opts);
+            pickupAuto.addListener('place_changed', function() {
+                var place = pickupAuto.getPlace();
+                if(place && place.geometry) {
+                    adminSelectedPickupLat = place.geometry.location.lat();
+                    adminSelectedPickupLng = place.geometry.location.lng();
+                    adminShowRouteMap();
+                    adminCalculateDistance();
+                }
+            });
+        }
+    }
+
+    function adminGeocodePickup(val) {
+        if(!val || val.trim().length < 2) return;
+        var known = adminResolveLocation(val);
+        if(known) {
+            adminSelectedPickupLat = known.lat;
+            adminSelectedPickupLng = known.lng;
+            adminShowRouteMap();
+            return;
+        }
+        if(typeof google !== 'undefined' && google.maps && google.maps.Geocoder) {
+            var geocoder = new google.maps.Geocoder();
+            var address = val;
+            if(!address.toLowerCase().includes('alanya') && !address.toLowerCase().includes('gazipaşa') && !address.toLowerCase().includes('antalya') && !address.toLowerCase().includes('side') && !address.toLowerCase().includes('manavgat')) {
+                address = val + ', Alanya/Antalya';
+            }
+            geocoder.geocode({ address: address, region: 'TR', language: 'tr' }, function(results, status) {
+                if(status === 'OK' && results && results.length > 0) {
+                    adminSelectedPickupLat = results[0].geometry.location.lat();
+                    adminSelectedPickupLng = results[0].geometry.location.lng();
+                    adminShowRouteMap();
+                }
+            });
+        }
+    }
+
+    function adminGeocodeDest(val) {
+        if(!val || val.trim().length < 2) return;
+        var known = adminResolveLocation(val);
+        if(known) {
+            adminSelectedDestLat = known.lat;
+            adminSelectedDestLng = known.lng;
+            adminShowRouteMap();
+            adminCalculateDistance();
+            return;
+        }
+        if(typeof google !== 'undefined' && google.maps && google.maps.Geocoder) {
+            var geocoder = new google.maps.Geocoder();
+            var address = val;
+            if(!address.toLowerCase().includes('alanya') && !address.toLowerCase().includes('gazipaşa') && !address.toLowerCase().includes('antalya') && !address.toLowerCase().includes('side') && !address.toLowerCase().includes('manavgat')) {
+                address = val + ', Alanya/Antalya';
+            }
+            geocoder.geocode({ address: address, region: 'TR', language: 'tr' }, function(results, status) {
+                if(status === 'OK' && results && results.length > 0) {
+                    adminSelectedDestLat = results[0].geometry.location.lat();
+                    adminSelectedDestLng = results[0].geometry.location.lng();
+                    adminShowRouteMap();
+                    adminCalculateDistance();
+                }
+            });
+        }
+    }
+
+    function adminCalculateDistance() {
+        var destVal = document.getElementById('admin-dest-input').value.trim();
+        var pickupVal = document.getElementById('admin-pickup-input').value.trim();
+
+        if(!destVal || destVal.length < 3) {
+            document.getElementById('admin-map-info').style.display = 'none';
+            return;
+        }
+
+        var origins = null;
+        if(adminSelectedPickupLat && adminSelectedPickupLng) {
+            origins = new google.maps.LatLng(adminSelectedPickupLat, adminSelectedPickupLng);
+        } else if(pickupVal && pickupVal.length > 2) {
+            origins = pickupVal;
+        } else {
+            origins = 'Alanya';
+        }
+
+        var destinations = null;
+        if(adminSelectedDestLat && adminSelectedDestLng) {
+            destinations = new google.maps.LatLng(adminSelectedDestLat, adminSelectedDestLng);
+        } else {
+            destinations = destVal;
+        }
+
+        adminFetchDistance(origins, destinations);
+    }
+
+    function adminFetchDistance(origins, destinations) {
+        var infoBar = document.getElementById('admin-map-info');
+        infoBar.style.display = 'flex';
+        document.getElementById('admin-distance-text').textContent = 'Hesaplanıyor...';
+        document.getElementById('admin-duration-text').textContent = '—';
+        document.getElementById('admin-price-estimate').textContent = '—';
+
+        if(typeof google !== 'undefined' && google.maps && google.maps.DistanceMatrixService) {
+            var dmService = new google.maps.DistanceMatrixService();
+            dmService.getDistanceMatrix({
+                origins: [origins],
+                destinations: [destinations],
+                travelMode: 'DRIVING',
+                unitSystem: google.maps.UnitSystem.METRIC,
+                language: 'tr',
+                region: 'TR'
+            }, function(response, status) {
+                if(status === 'OK' && response.rows[0] && response.rows[0].elements[0]) {
+                    var el = response.rows[0].elements[0];
+                    if(el.status === 'OK') {
+                        var distKm = el.distance.text;
+                        var distMeters = el.distance.value;
+                        var duration = el.duration.text;
+
+                        document.getElementById('admin-distance-text').textContent = distKm;
+                        document.getElementById('admin-duration-text').textContent = duration;
+
+                        var km = distMeters / 1000;
+                        var unitPrice = adminGetUnitPrice();
+                        var price = Math.max(500, Math.round(km * unitPrice));
+                        document.getElementById('admin-price-estimate').textContent = price.toLocaleString('tr-TR') + ' ₺';
+                        infoBar.style.display = 'flex';
+                    } else {
+                        document.getElementById('admin-distance-text').textContent = 'Mesafe hesaplanamadı';
+                        adminPriceFromDestFallback();
+                    }
+                } else {
+                    document.getElementById('admin-distance-text').textContent = 'Mesafe hesaplanamadı';
+                    adminPriceFromDestFallback();
+                }
+            });
+        } else {
+            adminPriceFromDestFallback();
+        }
+    }
+
+    var adminRouteMap = null;
+    var adminDirectionsRenderer = null;
+
+    function adminShowRouteMap() {
+        var mapPreview = document.getElementById('admin-map-preview');
+        mapPreview.style.display = 'block';
+        var mapEl = document.getElementById('admin-route-map');
+
+        if(!adminRouteMap) {
+            adminRouteMap = new google.maps.Map(mapEl, {
+                zoom: 9,
+                center: { lat: 36.8, lng: 31.5 },
+                mapTypeId: 'roadmap',
+                styles: [
+                    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+                    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+                ],
+                fullscreenControl: false,
+                streetViewControl: false,
+                mapTypeControl: false,
+            });
+        }
+
+        var hasPickup = adminSelectedPickupLat !== null && adminSelectedPickupLng !== null;
+        var hasDest = adminSelectedDestLat !== null && adminSelectedDestLng !== null;
+
+        // Pickup marker
+        if(hasPickup) {
+            var pickupPos = { lat: adminSelectedPickupLat, lng: adminSelectedPickupLng };
+            if(!window.adminPickupMarker) {
+                window.adminPickupMarker = new google.maps.Marker({
+                    position: pickupPos,
+                    map: adminRouteMap,
+                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#E31837', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+                    label: { text: 'Alış', color: '#fff', fontSize: '10px', fontWeight: 'bold' }
+                });
+            } else {
+                window.adminPickupMarker.setPosition(pickupPos);
+                window.adminPickupMarker.setMap(adminRouteMap);
+            }
+            if(window.adminPickupInfoWin) window.adminPickupInfoWin.close();
+            window.adminPickupInfoWin = new google.maps.InfoWindow({
+                content: '<div style="font-weight:600;font-size:13px;color:#1B2B4C;">✅ Alış Noktası</div>'
+            });
+            window.adminPickupInfoWin.open(adminRouteMap, window.adminPickupMarker);
+        } else {
+            if(window.adminPickupMarker) window.adminPickupMarker.setMap(null);
+        }
+
+        // Dest marker
+        if(hasDest) {
+            var destPos = { lat: adminSelectedDestLat, lng: adminSelectedDestLng };
+            if(!window.adminDestMarker) {
+                window.adminDestMarker = new google.maps.Marker({
+                    position: destPos,
+                    map: adminRouteMap,
+                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#1B2B4C', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+                    label: { text: 'Varış', color: '#fff', fontSize: '10px', fontWeight: 'bold' }
+                });
+            } else {
+                window.adminDestMarker.setPosition(destPos);
+                window.adminDestMarker.setMap(adminRouteMap);
+            }
+            if(window.adminDestInfoWin) window.adminDestInfoWin.close();
+            window.adminDestInfoWin = new google.maps.InfoWindow({
+                content: '<div style="font-weight:600;font-size:13px;color:#1B2B4C;">✅ Varış Noktası</div>'
+            });
+            window.adminDestInfoWin.open(adminRouteMap, window.adminDestMarker);
+        } else {
+            if(window.adminDestMarker) window.adminDestMarker.setMap(null);
+        }
+
+        // Center map
+        if(hasPickup && hasDest) {
+            var bounds = new google.maps.LatLngBounds();
+            bounds.extend({ lat: adminSelectedPickupLat, lng: adminSelectedPickupLng });
+            bounds.extend({ lat: adminSelectedDestLat, lng: adminSelectedDestLng });
+            adminRouteMap.fitBounds(bounds);
+        } else if(hasPickup) {
+            adminRouteMap.setCenter({ lat: adminSelectedPickupLat, lng: adminSelectedPickupLng });
+            adminRouteMap.setZoom(14);
+        } else if(hasDest) {
+            adminRouteMap.setCenter({ lat: adminSelectedDestLat, lng: adminSelectedDestLng });
+            adminRouteMap.setZoom(14);
+        }
+
+        // Route line
+        if(hasPickup && hasDest) {
+            if(!adminDirectionsRenderer) {
+                adminDirectionsRenderer = new google.maps.DirectionsRenderer({
+                    map: adminRouteMap,
+                    suppressMarkers: false,
+                    polylineOptions: { strokeColor: '#E31837', strokeWeight: 4, strokeOpacity: 0.9 }
+                });
+            }
+            var directionsService = new google.maps.DirectionsService();
+            directionsService.route({
+                origin: adminSelectedPickupLat + ',' + adminSelectedPickupLng,
+                destination: adminSelectedDestLat + ',' + adminSelectedDestLng,
+                travelMode: 'DRIVING'
+            }, function(response, status) {
+                if(status === 'OK') {
+                    adminDirectionsRenderer.setDirections(response);
+                }
+            });
+        } else {
+            if(adminDirectionsRenderer) {
+                adminDirectionsRenderer.setMap(null);
+                adminDirectionsRenderer = null;
+            }
+        }
+    }
+
+    function adminPriceFromDestFallback() {
+        var destVal = (document.getElementById('admin-dest-input').value || '').toLowerCase();
+        var unitPrice = adminGetUnitPrice();
+        var baseKm = 0;
+        if(destVal.includes('mahmutlar')) baseKm = 32;
+        else if(destVal.includes('avsallar') || destVal.includes('incekum')) baseKm = 40;
+        else if(destVal.includes('alanya') || destVal.includes('kleopatra')) baseKm = 48;
+        else if(destVal.includes('konaklı') || destVal.includes('türkler')) baseKm = 52;
+        else if(destVal.includes('side') || destVal.includes('manavgat')) baseKm = 72;
+        else if(destVal.includes('antalya') || destVal.includes('kemer')) baseKm = 100;
+        var price = baseKm > 0 ? Math.max(500, Math.round(baseKm * unitPrice)) : 1500;
+
+        document.getElementById('admin-duration-text').textContent = '—';
+        document.getElementById('admin-price-estimate').textContent = price.toLocaleString('tr-TR') + ' ₺';
+    }
+
+    // ─── KM BAŞI BİRİM FİYAT ─────────────────────────────────
+    function adminGetUnitPrice() {
+        var saved = localStorage.getItem('guliz_unit_price');
+        if(saved !== null) {
+            var val = parseFloat(saved);
+            return (val > 0) ? val : 25;
+        }
+        return 25;
+    }
+
+    function adminSaveUnitPrice() {
+        var input = document.getElementById('admin-unit-price');
+        var val = parseFloat(input.value);
+        if(isNaN(val) || val < 1) {
+            alert('Geçerli bir fiyat girin (minimum 1₺)');
+            return;
+        }
+        localStorage.setItem('guliz_unit_price', val.toString());
+        // Backend'e de kaydet (public API'den index.html de faydalansın)
+        var token = localStorage.getItem('guliz_token');
+        if(token) {
+            fetch('/api/admin/unit-price', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+                body: JSON.stringify({unitPrice: val})
+            }).catch(function() {});
+        }
+        var status = document.getElementById('unit-price-status');
+        status.style.display = 'inline';
+        setTimeout(function() { status.style.display = 'none'; }, 2000);
+    }
+
+    // Sayfa yüklenince kaydedilmiş fiyatı input'a yükle
+    document.addEventListener('DOMContentLoaded', function() {
+        var saved = localStorage.getItem('guliz_unit_price');
+        if(saved !== null) {
+            var input = document.getElementById('admin-unit-price');
+            if(input) input.value = saved;
+        }
+    });
+
+    // ─── ADMIN UI FONKSİYONLARI ────────────────────────────────
+    function toggleNewReservationForm() {
+        var form = document.getElementById('new-reservation-form');
+        if(form.style.display === 'none') {
+            form.style.display = 'block';
+            // Autocomplete'i tekrar başlat (input'lar görünür hale geldi)
+            setTimeout(function() {
+                initPlacesAutocomplete();
+                // Input değişikliklerini dinle
+                var pickupInput = document.getElementById('admin-pickup-input');
+                var destInput = document.getElementById('admin-dest-input');
+                if(pickupInput) {
+                    pickupInput.addEventListener('blur', function() {
+                        setTimeout(function() { adminGeocodePickup(pickupInput.value); }, 300);
+                    });
+                }
+                if(destInput) {
+                    destInput.addEventListener('blur', function() {
+                        setTimeout(function() { adminGeocodeDest(destInput.value); }, 300);
+                    });
+                }
+            }, 200);
+        } else {
+            form.style.display = 'none';
+            // Formu sıfırla
+            document.getElementById('admin-map-info').style.display = 'none';
+            document.getElementById('admin-map-preview').style.display = 'none';
+            adminSelectedPickupLat = null;
+            adminSelectedPickupLng = null;
+            adminSelectedDestLat = null;
+            adminSelectedDestLng = null;
+        }
+    }
+
+    function showReservationDetail(id) {
+        fetch('/api/admin/reservations', {
+            method: 'GET',
+            headers: {'Authorization': 'Bearer ' + localStorage.getItem('guliz_token')}
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(!data.success) return;
+            var r = null;
+            for(var i = 0; i < data.reservations.length; i++) {
+                if(data.reservations[i].id === id) { r = data.reservations[i]; break; }
+            }
+            if(!r) { alert('Rezervasyon bulunamadı'); return; }
+
+            var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
+            var typeMap = { transfer: 'Havalimanı Transfer', tahsis: 'Şoförlü VIP Tahsis' };
+            var statusClass = { pending: 'badge-pending', approved: 'badge-approved', completed: '', cancelled: '' };
+            var durumHtml = '<span class="badge ' + (statusClass[r.status] || '') + '" style="' + (r.status === 'completed' ? 'background:#E2E8F0;color:#475569;' : r.status === 'cancelled' ? 'background:#FEE2E2;color:#DC2626;' : '') + '">' + (statusMap[r.status] || r.status) + '</span>';
+
+            var gzrh = r.type === 'tahsis' ? r.pickup + ' (' + r.duration + ' Saat)' : r.pickup + ' → ' + r.destination;
+
+            var actionsHtml = '';
+            if(r.status === 'pending') {
+                actionsHtml = '<button class="btn-approve" onclick="adminUpdateReservation(' + r.id + ',\'approved\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-check"></i> Onayla</button> ' +
+                    '<button class="btn-danger" onclick="adminUpdateReservation(' + r.id + ',\'cancelled\')" style="padding:8px 20px;font-size:14px;background:#DC2626;color:white;border:none;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-times"></i> İptal Et</button>';
+            } else if(r.status === 'approved') {
+                actionsHtml = '<button class="btn-approve" onclick="adminUpdateReservation(' + r.id + ',\'completed\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-check-double"></i> Tamamla</button> ' +
+                    '<button class="btn-danger" onclick="adminUpdateReservation(' + r.id + ',\'cancelled\')" style="padding:8px 20px;font-size:14px;background:#DC2626;color:white;border:none;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-times"></i> İptal Et</button>';
+            }
+
+            var detailHtml =
+                '<div id="reservation-detail-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;justify-content:center;align-items:center;" onclick="if(event.target===this)closeReservationDetail()">' +
+                '<div style="background:#fff;border-radius:16px;padding:32px;width:90%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
+                '<h3 style="color:#1B2B4C;margin:0;">Rezervasyon #' + r.id + '</h3>' +
+                '<button onclick="closeReservationDetail()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">&times;</button>' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Durum</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + durumHtml + '</div></div>' +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Hizmet</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + (typeMap[r.type] || r.type) + '</div></div>' +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Müşteri</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.customerName || '') + '</div></div>' +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Telefon</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.customerPhone || '') + '</div></div>' +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Güzergah</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(gzrh) + '</div></div>' +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Tarih / Saat</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.date || '') + ' ' + escapeHtml(r.time || '') + '</div></div>' +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Tutar</div><div style="font-size:15px;font-weight:700;margin-top:4px;">₺' + (r.price ? Number(r.price).toLocaleString('tr-TR') : '—') + '</div></div>' +
+                (r.flightNumber ? '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Uçuş No</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.flightNumber) + '</div></div>' : '') +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Yolcu</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + (r.passengers || 1) + ' Kişi</div></div>' +
+                (r.duration ? '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Süre</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + r.duration + ' Saat</div></div>' : '') +
+                (r.notes ? '<div style="grid-column:1/-1;background:#FFF9E6;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Notlar</div><div style="font-size:14px;margin-top:4px;">' + escapeHtml(r.notes) + '</div></div>' : '') +
+                '</div>' +
+                '<div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">' + actionsHtml + '</div>' +
+                '<div style="margin-top:12px;"><button onclick="adminDeleteReservation(' + r.id + ')" style="padding:8px 16px;font-size:13px;background:transparent;color:#DC2626;border:1px solid #FCA5A5;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-trash"></i> Rezervasyonu Sil</button></div>' +
+                '</div></div>';
+
+            var existing = document.getElementById('reservation-detail-modal');
+            if(existing) existing.remove();
+            document.body.insertAdjacentHTML('beforeend', detailHtml);
+        })
+        .catch(function() { alert('Rezervasyon bilgisi alınamadı.'); });
+    }
+
+    function closeReservationDetail() {
+        var el = document.getElementById('reservation-detail-modal');
+        if(el) el.remove();
+    }
+
+    function adminUpdateReservation(id, status) {
+        var labels = { approved: 'onaylamak', completed: 'tamamlamak', cancelled: 'iptal etmek' };
+        if(!confirm('Bu rezervasyonu ' + (labels[status] || status) + ' istediğinize emin misiniz?')) return;
+
+        var token = localStorage.getItem('guliz_token');
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        fetch('/api/admin/reservations', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify({ action: 'update-status', id: id, status: status })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                loadReservations();
+                closeReservationDetail();
+            } else {
+                alert('Hata: ' + (data.error || 'İşlem başarısız'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    function adminDeleteReservation(id) {
+        if(!confirm('Bu rezervasyonu kalıcı olarak silmek istediğinize emin misiniz?')) return;
+
+        var token = localStorage.getItem('guliz_token');
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        fetch('/api/admin/reservations', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify({ action: 'delete', id: id })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                loadReservations();
+                closeReservationDetail();
+            } else {
+                alert('Hata: ' + (data.error || 'Silme başarısız'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    function loadReservations() {
+        var token = localStorage.getItem('guliz_token');
+        if(!token) return;
+
+        fetch('/api/admin/reservations', {
+            method: 'GET',
+            headers: {'Authorization': 'Bearer ' + token}
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                renderReservations(data.reservations);
+            }
+        })
+        .catch(function() {});
+    }
+
+    function renderReservations(reservations) {
+        var tbody = document.getElementById('reservations-tbody');
+        if(!tbody) return;
+
+        var searchVal = (document.getElementById('reservation-search') ? document.getElementById('reservation-search').value : '').toLowerCase().trim();
+
+        // Filtre varsa uygula
+        var filtered = reservations;
+        if(searchVal) {
+            filtered = reservations.filter(function(r) {
+                return (r.customerName && r.customerName.toLowerCase().includes(searchVal)) ||
+                       (r.customerPhone && r.customerPhone.toLowerCase().includes(searchVal));
+            });
+        }
+
+        if(!filtered || filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#94A3B8;">' + (searchVal ? 'Aramanızla eşleşen rezervasyon bulunamadı.' : 'Henüz rezervasyon yok.') + '</td></tr>';
+            return;
+        }
+
+        var html = '';
+        var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
+
+        for(var i = 0; i < filtered.length; i++) {
+            var r = filtered[i];
+            var statusLabel = statusMap[r.status] || r.status;
+            var statusClass = r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-approved' : '';
+            var extraStyle = r.status === 'completed' ? 'style="background:#E2E8F0;color:#475569;"' : r.status === 'cancelled' ? 'style="background:#FEE2E2;color:#DC2626;"' : '';
+
+            var gzrh = r.type === 'tahsis' ? (r.pickup || '') + ' (' + (r.duration || '—') + ' Saat)' : (r.pickup || '') + ' → ' + (r.destination || '');
+
+            var dateStr = r.date || '';
+            if(dateStr) {
+                try {
+                    var parts = dateStr.split('-');
+                    if(parts.length === 3) {
+                        var months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+                        dateStr = parseInt(parts[2]) + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0];
+                    }
+                } catch(e) {}
+            }
+
+            html += '<tr>' +
+                '<td>#' + r.id + '</td>' +
+                '<td>' + dateStr + '</td>' +
+                '<td>' + escapeHtml(r.customerName || '') + '</td>' +
+                '<td>' + escapeHtml(gzrh) + '</td>' +
+                '<td>₺' + (r.price ? Number(r.price).toLocaleString('tr-TR') : '—') + '</td>' +
+                '<td><span class="badge ' + statusClass + '" ' + extraStyle + '>' + statusLabel + '</span></td>' +
+                '<td><button class="btn-view" onclick="showReservationDetail(' + r.id + ')">Detay</button></td>' +
+                '</tr>';
+        }
+
+        tbody.innerHTML = html;
+    }
+
+    function adminSaveReservation() {
+        var name = document.getElementById('admin-customer-name').value.trim();
+        var phone = document.getElementById('admin-customer-phone').value.trim();
+        var pickup = document.getElementById('admin-pickup-input').value.trim();
+        var dest = document.getElementById('admin-dest-input').value.trim();
+        var serviceType = document.getElementById('admin-service-type').value;
+        var datetime = document.getElementById('admin-datetime').value;
+
+        if(!name || !pickup || !dest) {
+            alert('Lütfen müşteri adı, alış ve varış noktalarını doldurun.');
+            return;
+        }
+
+        var date = '';
+        var time = '';
+        if(datetime) {
+            var parts = datetime.split('T');
+            date = parts[0] || '';
+            time = parts[1] || '';
+        }
+
+        var payload = {
+            type: serviceType,
+            customerName: name,
+            customerPhone: phone,
+            pickup: pickup,
+            destination: dest,
+            date: date,
+            time: time,
+            passengers: 1,
+            notes: '',
+            price: 0
+        };
+
+        var token = localStorage.getItem('guliz_token');
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        fetch('/api/reservations', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                alert('Rezervasyon başarıyla oluşturuldu! #' + data.reservation.id);
+                toggleNewReservationForm();
+                loadReservations();
+            } else {
+                alert('Hata: ' + (data.error || 'Rezervasyon oluşturulamadı'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    // ─── BANKA HESAP YÖNETİMİ ──────────────────────────────────
+    function loadBankAccounts() {
+        fetch('/api/bank-accounts')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if(data.success && data.accounts) {
+                    renderBankAccounts(data.accounts);
+                }
+            })
+            .catch(function(err) { console.error('Banka hesapları yüklenirken hata:', err); });
+    }
+
+    function renderBankAccounts(accounts) {
+        var container = document.getElementById('bank-accounts-form');
+        var html = '';
+        var order = ['halkbank', 'vakifbank'];
+        var bankLabels = {
+            'halkbank': 'Halkbank',
+            'vakifbank': 'VakıfBank'
+        };
+        var bankIcons = {
+            'halkbank': 'fa-solid fa-building-columns',
+            'vakifbank': 'fa-solid fa-building-columns'
+        };
+        for(var i = 0; i < order.length; i++) {
+            var key = order[i];
+            var acct = accounts[key] || {name: '', iban: ''};
+            html += '<div class="panel-section" style="margin-bottom:16px;">' +
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
+                '<i class="' + (bankIcons[key] || 'fa-solid fa-building-columns') + '" style="font-size:20px;color:var(--primary-red);"></i>' +
+                '<h4 style="margin:0;font-size:16px;font-weight:700;">' + (bankLabels[key] || key) + '</h4></div>' +
+                '<div class="form-row">' +
+                '<div class="form-group" style="flex:1;"><label>Banka Adı</label>' +
+                '<input type="text" id="bank-name-' + key + '" value="' + escapeHtml(acct.name) + '" style="font-size:15px;font-weight:600;padding:10px 12px;" placeholder="Örn: Halkbank"></div>' +
+                '<div class="form-group" style="flex:2;"><label>IBAN</label>' +
+                '<input type="text" id="bank-iban-' + key + '" value="' + escapeHtml(acct.iban) + '" style="font-size:14px;font-family:\'Courier New\',monospace;letter-spacing:0.5px;padding:10px 12px;" placeholder="TR12 0001 2009 4321 1234 5678 90"></div>' +
+                '</div></div>';
+        }
+        container.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        if(!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function adminSaveBankAccounts() {
+        var accounts = {
+            halkbank: {
+                name: document.getElementById('bank-name-halkbank').value.trim(),
+                iban: document.getElementById('bank-iban-halkbank').value.trim()
+            },
+            vakifbank: {
+                name: document.getElementById('bank-name-vakifbank').value.trim(),
+                iban: document.getElementById('bank-iban-vakifbank').value.trim()
+            }
+        };
+        if(!accounts.halkbank.name || !accounts.halkbank.iban) {
+            alert('Halkbank bilgilerini eksiksiz girin.');
+            return;
+        }
+        if(!accounts.vakifbank.name || !accounts.vakifbank.iban) {
+            alert('VakıfBank bilgilerini eksiksiz girin.');
+            return;
+        }
+        var token = localStorage.getItem('guliz_token');
+        fetch('/api/admin/bank-accounts', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({accounts: accounts})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                var status = document.getElementById('bank-accounts-status');
+                status.style.display = 'inline';
+                status.innerHTML = '<i class="fa-solid fa-check-circle"></i> Kaydedildi';
+                setTimeout(function() { status.style.display = 'none'; }, 3000);
+            } else {
+                alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        })
+        .catch(function(err) {
+            alert('Sunucu hatası: ' + err.message);
+        });
+    }
+
+    // ─── SLIDER YÖNETİMİ ──────────────────────────────────────
+    function loadSliderImages() {
+        fetch('/api/slider-images')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if(data.success && Array.isArray(data.images)) {
+                    renderSliderImages(data.images);
+                }
+            })
+            .catch(function(err) { console.error('Slider yüklenirken hata:', err); });
+    }
+
+    function renderSliderImages(images) {
+        var grid = document.getElementById('slider-admin-grid');
+        if(!grid) return;
+        if(!images || images.length === 0) {
+            grid.innerHTML = '<div class="add-image-card" onclick="showAddSliderModal()" style="cursor:pointer;grid-column:1/-1;"><i class="fa-solid fa-cloud-arrow-up" style="font-size:30px;margin-bottom:10px;"></i><p style="font-size:13px;font-weight:600;">Henüz slider görseli yok. Eklemek için tıklayın.</p></div>';
+            return;
+        }
+        var html = '';
+        for(var i = 0; i < images.length; i++) {
+            var img = images[i];
+            var altText = img.alt || 'slider';
+            html += '<div class="image-card" data-index="' + i + '">' +
+                '<div style="position:absolute;top:6px;left:6px;z-index:2;display:flex;gap:4px;">' +
+                    (i > 0 ? '<button class="btn-view" onclick="moveSliderImage(' + i + ', -1)" style="padding:3px 8px;font-size:11px;" title="Sola taşı"><i class="fa-solid fa-chevron-up"></i></button>' : '') +
+                    (i < images.length - 1 ? '<button class="btn-view" onclick="moveSliderImage(' + i + ', 1)" style="padding:3px 8px;font-size:11px;" title="Sağa taşı"><i class="fa-solid fa-chevron-down"></i></button>' : '') +
+                '</div>' +
+                '<button class="delete-img" onclick="deleteSliderImage(' + i + ')" title="Sil"><i class="fa-solid fa-xmark"></i></button>' +
+                '<img src="' + escapeHtml(img.src) + '" alt="' + escapeHtml(altText) + '" style="width:100%;height:160px;object-fit:cover;border-radius:8px;">' +
+                '<p style="font-size:12px;font-weight:600;margin:6px 0 0;padding:0 6px;text-align:center;word-break:break-word;">' + escapeHtml(altText) + '</p>' +
+            '</div>';
+        }
+        html += '<div class="add-image-card" onclick="showAddSliderModal()" style="cursor:pointer;"><i class="fa-solid fa-cloud-arrow-up" style="font-size:30px;margin-bottom:10px;"></i><p style="font-size:13px;font-weight:600;">Yeni Slider Ekle</p></div>';
+        grid.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        if(!text) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+
+    function showAddSliderModal() {
+        document.getElementById('slider-url-input').value = '';
+        document.getElementById('slider-alt-input').value = '';
+        document.getElementById('slider-modal-overlay').style.display = 'flex';
+    }
+
+    function closeSliderModal() {
+        document.getElementById('slider-modal-overlay').style.display = 'none';
+    }
+
+    function addSliderByUrl() {
+        var url = document.getElementById('slider-url-input').value.trim();
+        var alt = document.getElementById('slider-alt-input').value.trim() || 'Slider Görseli';
+        if(!url) { alert('Lütfen bir görsel URL\'si girin.'); return; }
+
+        var token = localStorage.getItem('guliz_token');
+        if(!token) { alert('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.'); return; }
+
+        fetch('/api/admin/slider-images', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify({ action: 'add', image: { src: url, alt: alt } })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                closeSliderModal();
+                loadSliderImages();
+            } else {
+                alert('Hata: ' + (data.message || 'Görsel eklenemedi'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    function uploadSliderImage(input) {
+        var file = input.files && input.files[0];
+        if(!file) return;
+
+        var token = localStorage.getItem('guliz_token');
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        var formData = new FormData();
+        formData.append('image', file);
+
+        fetch('/api/admin/slider-images/upload', {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + token},
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                loadSliderImages();
+            } else {
+                alert('Hata: ' + (data.message || 'Yükleme başarısız'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+
+        input.value = '';
+    }
+
+    function deleteSliderImage(index) {
+        if(!confirm('Bu görseli silmek istediğinize emin misiniz?')) return;
+
+        var token = localStorage.getItem('guliz_token');
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        fetch('/api/admin/slider-images', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify({ action: 'delete', index: index })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                loadSliderImages();
+            } else {
+                alert('Hata: ' + (data.message || 'Silme başarısız'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    function moveSliderImage(index, direction) {
+        var token = localStorage.getItem('guliz_token');
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        var fromIndex = index;
+        var toIndex = index + direction; // direction: -1 (yukarı), +1 (aşağı)
+
+        fetch('/api/admin/slider-images', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify({ action: 'reorder', fromIndex: fromIndex, toIndex: toIndex })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                loadSliderImages();
+            } else {
+                alert('Hata: ' + (data.message || 'Sıralama değiştirilemedi'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+</script>
+
+    <!-- ─── SLIDER URL EKLEME MODAL ──────────────────────────── -->
+    <div id="slider-modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;justify-content:center;align-items:center;">
+        <div style="background:#fff;border-radius:16px;padding:32px;width:90%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h3 style="color:#1B2B4C;margin:0;">Slider Görseli Ekle</h3>
+                <button onclick="closeSliderModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Görsel URL</label>
+                <input type="url" id="slider-url-input" placeholder="https://ornek.com/resim.jpg" style="width:100%;padding:12px;border:2px solid #E8EDF5;border-radius:10px;">
+            </div>
+            <div class="form-group">
+                <label>Açıklama (alt metni)</label>
+                <input type="text" id="slider-alt-input" placeholder="Örn: Gazipaşa Havalimanı" style="width:100%;padding:12px;border:2px solid #E8EDF5;border-radius:10px;">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+                <button onclick="closeSliderModal()" style="padding:10px 24px;border:2px solid #E8EDF5;border-radius:10px;background:transparent;cursor:pointer;font-weight:600;">İptal</button>
+                <button onclick="addSliderByUrl()" class="btn-primary">Ekle</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

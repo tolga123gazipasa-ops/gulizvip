@@ -1,0 +1,2 @@
+cd /d C:\Users\MSI\OneDrive\Desktop\gulizvip
+python server.py
