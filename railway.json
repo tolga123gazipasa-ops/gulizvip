@@ -1,10 +1,10 @@
 {
   "build": {
     "builder": "nixpacks",
-    "buildCommand": "echo 'Python stdlib only, no deps needed'"
+    "buildCommand": "apt-get update && apt-get install -y python3"
   },
   "deploy": {
-    "startCommand": "python server.py",
+    "startCommand": "python3 server.py",
     "healthcheckPath": "/api/flights",
     "healthcheckTimeout": 30,
     "restartPolicyType": "always"
