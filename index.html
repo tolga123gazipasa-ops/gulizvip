@@ -428,6 +428,135 @@
             .nav-menu { display: none; }
             .footer-bottom { flex-direction: column; gap: 20px; text-align: center; }
         }
+
+        /* Mobil düzenlemeler - 768px ve altı */
+        @media (max-width: 768px) {
+            .hero { min-height: auto; padding: 20px 16px 60px 16px; }
+            .booking-engine { margin-bottom: -30px; }
+            .form-body { padding: 24px; }
+            .tab-btn { padding: 16px 12px; font-size: 13px; gap: 6px; }
+            .step-indicator { gap: 6px; }
+            .step-num { font-size: 11px; gap: 4px; }
+            .step-num .step-num-circle { width: 24px; height: 24px; font-size: 11px; }
+            .step-sep { width: 24px; }
+            .section-title h2 { font-size: 24px; }
+            .fleet-section { padding: 60px 0; }
+            .blog-section { padding: 50px 0; }
+            .services-section { padding: 60px 0 50px 0; }
+            .how-it-works { padding: 50px 0; }
+            .flight-board-section { padding: 50px 0; }
+            .faq-section { padding: 50px 0; }
+            .footer { padding: 50px 0 20px 0; }
+            .grid-3 { grid-template-columns: 1fr; gap: 20px; }
+            .fleet-features { grid-template-columns: 1fr; }
+            .card-form .card-form-grid { grid-template-columns: 1fr; }
+            .payment-methods-options { flex-direction: column; }
+            .payment-option { min-width: auto; }
+            .header-actions .call-btn span { display: none; }
+            .header-actions .cta-button { display: none; }
+            .header .container { gap: 8px; }
+            .call-btn { padding: 10px 14px; font-size: 12px; }
+            .logo-container img { height: 42px; }
+            .whatsapp-float { bottom: 16px; left: 16px; padding: 12px 18px; font-size: 13px; }
+            .whatsapp-float span { display: none; }
+            .chat-trigger { bottom: 16px; right: 16px; padding: 12px 18px; font-size: 13px; }
+            .chat-widget { right: 16px; width: calc(100vw - 32px); max-width: 360px; bottom: 75px; }
+            .scroll-top-btn { bottom: 75px; left: 16px; width: 40px; height: 40px; }
+            .modal-box { padding: 24px; margin: 10px; }
+            .fleet-details { padding: 24px; }
+            .fleet-main-img { height: 220px; }
+            .distance-info { flex-direction: column; gap: 8px; align-items: flex-start; }
+            .distance-detail.highlight { align-self: stretch; text-align: center; }
+        }
+
+        /* Küçük telefonlar - 480px ve altı */
+        @media (max-width: 480px) {
+            .container { padding: 0 16px; }
+            .section-title { margin-bottom: 30px; }
+            .section-title h2 { font-size: 20px; }
+            .section-title p { font-size: 13px; }
+            .header { padding: 8px 0; }
+            .header .container { flex-wrap: nowrap; gap: 6px; }
+            .nav-menu { padding: 16px; gap: 12px; }
+            .nav-menu a { font-size: 13px; }
+            .logo-container img { height: 36px; }
+            .call-btn { padding: 8px 12px; font-size: 11px; }
+            .lang-switcher { font-size: 10px; gap: 4px; margin-right: 4px; }
+            .hero { padding: 12px 12px 40px 12px; }
+            .booking-engine { margin-bottom: -20px; border-radius: 12px; }
+            .tab-header { border-radius: 12px 12px 0 0; }
+            .tab-btn { padding: 14px 8px; font-size: 12px; }
+            .form-body { padding: 16px; }
+            .form-grid { gap: 14px; margin-bottom: 16px; }
+            .form-grid-3 { grid-template-columns: 1fr; }
+            .input-group label { font-size: 10px; }
+            .input-wrapper input, .input-wrapper select { padding: 14px 14px 14px 40px; font-size: 13px; }
+            .input-wrapper i { left: 12px; font-size: 15px; }
+            .submit-btn, .next-btn, .back-btn, .final-btn { padding: 16px; font-size: 14px; }
+            .step-indicator { gap: 4px; margin-bottom: 20px; }
+            .step-num { font-size: 10px; }
+            .step-num .step-num-circle { width: 20px; height: 20px; font-size: 10px; }
+            .step-sep { width: 16px; }
+            .form-nav { gap: 8px; margin-top: 10px; }
+            .payment-section-title { font-size: 14px; }
+            .bank-details { padding: 14px; }
+            .bank-option { padding: 12px; }
+            .bank-name { font-size: 12px; }
+            .bank-iban { font-size: 10px; }
+            .card-form { padding: 14px; }
+            .card-form .input-wrapper input { padding: 10px 0; font-size: 13px; }
+            .vip-summary { flex-direction: column; gap: 8px; text-align: center; }
+            .vip-summary .price { font-size: 20px; }
+            .fleet-section { padding: 40px 0; }
+            .fleet-image-wrapper { padding: 12px; }
+            .fleet-main-img { height: 180px; }
+            .fleet-details { padding: 16px; }
+            .fleet-details h3 { font-size: 20px; }
+            .fleet-features { gap: 10px; }
+            .feature-item { font-size: 12px; }
+            .service-card { padding: 24px 16px; }
+            .service-icon { width: 50px; height: 50px; font-size: 22px; }
+            .blog-card img { height: 160px; }
+            .blog-content { padding: 16px; }
+            .blog-content h3 { font-size: 16px; }
+            .faq-question { padding: 16px 18px; font-size: 13px; }
+            .faq-answer p { font-size: 13px; }
+            .flight-col-header { font-size: 12px; padding: 10px 12px; }
+            .f-tab { padding: 10px; font-size: 11px; }
+            .flight-table th { padding: 8px; font-size: 9px; }
+            .flight-table td { padding: 8px; font-size: 11px; }
+            .footer { padding: 40px 0 16px 0; }
+            .footer-links h4 { font-size: 15px; }
+            .footer-social a { width: 44px; height: 44px; }
+            .chat-footer button { width: 44px; height: 44px; }
+            .chat-trigger { font-size: 12px; padding: 10px 14px; }
+            .chat-trigger i { font-size: 16px; }
+            .whatsapp-float { padding: 10px 14px; font-size: 12px; }
+            .scroll-top-btn { width: 36px; height: 36px; font-size: 14px; }
+            .modal-box { padding: 16px; }
+            .modal-box h3 { font-size: 18px; }
+            .modal-icon { font-size: 40px; }
+            .modal-close { padding: 12px 20px; font-size: 13px; }
+            .grid-3 { gap: 14px; }
+            .step-card { padding: 16px; }
+            .step-number { width: 40px; height: 40px; font-size: 16px; }
+            .flight-table-container { overflow-x: auto; }
+            .flight-table th:nth-child(4),
+            .flight-table td:nth-child(4) { display: none; }
+            .container { padding: 0 12px; }
+        }
+
+        /* Hamburger menü */
+        .hamburger-btn { display: none; background: none; border: none; color: var(--pure-white); font-size: 24px; cursor: pointer; padding: 8px; }
+        @media (max-width: 992px) {
+            .hamburger-btn { display: block; }
+            .nav-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--primary-navy); flex-direction: column; padding: 20px; gap: 16px; z-index: 999; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+            .nav-menu.open { display: flex; }
+        }
+
+        /* Form-grid-3: 3-column grid class */
+        .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px; text-align: left; }
+        @media (max-width: 992px) { .form-grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -452,6 +581,7 @@
                 <div class="lang-switcher"><span class="active">TR</span> | <span>EN</span> | <span>RU</span></div>
                 <a href="tel:+902426062548" class="call-btn"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a>
                 <button class="cta-button" onclick="window.scrollTo(0,0);">Hızlı Rezervasyon</button>
+                <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Menüyü Aç/Kapat"><i class="fa-solid fa-bars"></i></button>
             </div>
         </div>
     </header>
@@ -479,7 +609,7 @@
                 </div>
 
                 <div class="form-step" id="transfer-step1" style="display:block;">
-                    <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div class="form-grid form-grid-3" id="transfer-pickup-grid">
                         <div class="input-group">
                             <label>Alış Noktası</label>
                         <div class="input-wrapper"><i class="fa-solid fa-map-pin"></i>
@@ -489,11 +619,11 @@
                     <div class="input-group"><label>Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." required></div></div>
                     <div class="input-group"><label>Uçuş Numarası</label><div class="input-wrapper"><i class="fa-solid fa-plane"></i><input type="text" id="transfer-flight" placeholder="Örn: TK2405 (Opsiyonel)"></div></div>
                 </div>
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-grid">
                     <div class="input-group"><label>Tarih</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="transfer-date" required></div></div>
                     <div class="input-group"><label>Saat</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="transfer-time" required></div></div>
                 </div>
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-grid">
                     <div class="input-group"><label>Yolcu</label><div class="input-wrapper"><i class="fa-solid fa-users"></i><select id="transfer-passengers"><option>1 - 4 Kişi (VIP Vito)</option></select></div></div>
                     <div class="input-group"><label>Notlar (Opsiyonel)</label><div class="input-wrapper"><i class="fa-solid fa-note-sticky"></i><input type="text" id="transfer-notes" placeholder="Özel istek, ek bilgi..."></div></div>
                 </div>
@@ -525,7 +655,7 @@
                 <!-- Step 2: Kişisel Bilgiler -->
                 <div class="form-step" id="transfer-step2" style="display:none;">
                     <div class="payment-section-title">İletişim Bilgileri</div>
-                    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                    <div class="form-grid">
                         <div class="input-group"><label>Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="transfer-name" placeholder="Adınız ve soyadınız" required></div></div>
                         <div class="input-group"><label>Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="transfer-phone" placeholder="05XX XXX XX XX" required></div></div>
                     </div>
@@ -648,7 +778,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="form-grid form-grid-3">
                     <div class="input-group"><label>Alış Tarihi</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="tahsis-date" required></div></div>
                     <div class="input-group"><label>Alış Saati</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="tahsis-time" required></div></div>
                     <div class="input-group"><label>Araç Tipi</label><div class="input-wrapper"><i class="fa-solid fa-car"></i><select><option>VIP Mercedes Vito</option></select></div></div>
@@ -664,7 +794,7 @@
                 <!-- Step 2: Kişisel Bilgiler -->
                 <div class="form-step" id="tahsis-step2" style="display:none;">
                     <div class="payment-section-title">İletişim Bilgileri</div>
-                    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                    <div class="form-grid">
                         <div class="input-group"><label>Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="tahsis-name" placeholder="Adınız ve soyadınız" required></div></div>
                         <div class="input-group"><label>Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="tahsis-phone" placeholder="05XX XXX XX XX" required></div></div>
                     </div>
@@ -1090,6 +1220,19 @@
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
+        // --- MOBİL MENÜ AÇ/KAPAT ---
+        function toggleMobileMenu() {
+            var menu = document.querySelector('.nav-menu');
+            menu.classList.toggle('open');
+        }
+        document.addEventListener('click', function(e) {
+            var menu = document.querySelector('.nav-menu');
+            var btn = document.getElementById('hamburgerBtn');
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.remove('open');
+            }
+        });
 
         // --- CANLI DESTEK SESSION VE KULLANICI BİLGİLERİ ---
         var chatSessionId = localStorage.getItem('chatSessionId');

@@ -38,6 +38,14 @@
 | `/api/slider-images` | GET | Hayır | Public slider görsel listesi |
 | `/api/admin/slider-images` | PUT | Bearer | Slider yönetimi (add/delete/reorder/replace) |
 | `/api/admin/slider-images/upload` | POST | Bearer | Slider dosya yükleme (multipart) |
+| `/api/chat/send` | POST | Hayır | Ziyaretçi canlı destek mesajı gönderme |
+| `/api/chat/messages` | GET | Hayır | Ziyaretçi kendi mesajlarını alma (since, sessionId) |
+| `/api/admin/chat/messages` | GET | Bearer | Admin tüm mesajları okuma |
+| `/api/admin/chat/reply` | POST | Bearer | Admin yanıt gönderme |
+| `/api/admin/chat/read` | POST | Bearer | Mesajları okundu işaretleme |
+| `/api/admin/telegram/config` | GET | Bearer | Telegram yapılandırmasını okuma (masked token) |
+| `/api/admin/telegram/config` | PUT | Bearer | Telegram bot token ve chat ID güncelleme |
+| `/api/admin/telegram/test` | POST | Bearer | Test mesajı gönderme |
 | Statik dosyalar | GET | Hayır | index.html, admin.html vs. |
 
 ## Frontend
@@ -57,6 +65,12 @@
   - Admin paneli "Fiyat Ayarları" sekmesinden km başı birim fiyat değiştirilebilir
   - `/api/unit-price` (public GET) — güncel birim fiyatı döndürür
   - `/api/admin/unit-price` (auth PUT) — admin birim fiyatı günceller
+- **Canlı Destek:** Chat widget (sağ alt köşe), 3sn polling ile `/api/chat/messages?since=<id>&sessionId=<uuid>`
+  - Ziyaretçi ad/soyad/telefon bilgisi alınır, UUID sessionId localStorage'da saklanır
+  - Admin yanıtları 3sn'de bir poll edilir, yeni mesajlar toast bildirimi gösterir
+- **Telegram Entegrasyonu:** Yeni canlı destek mesajı ve rezervasyonlarda admin Telegram kanalına bildirim
+  - Bot token ve chat ID admin paneli → Ayarlar → Telegram Ayarları'ndan yapılandırılır
+  - send_telegram() fonksiyonu HTML formatında mesaj gönderir
 
 ### admin.html
 - Operasyon paneli — HMAC-SHA256 token ile login

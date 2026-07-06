@@ -190,6 +190,60 @@
         .form-actions { margin-top: 20px; display: flex; gap: 10px; }
         .btn-secondary { background: var(--border-color); color: var(--primary-navy); border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; transition: var(--transition); }
         .btn-secondary:hover { background: #CBD5E1; }
+        .hamburger-admin { display: none; background: none; border: none; color: var(--primary-navy); font-size: 22px; cursor: pointer; padding: 6px; }
+
+        /* ===== RESPONSIVE — ADMIN PANEL ===== */
+        @media (max-width: 992px) {
+            .hamburger-admin { display: block; }
+            .admin-profile span { display: none; }
+            .top-header { padding: 14px 20px; }
+            .dashboard-content { padding: 24px; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; z-index: 1000; transition: left 0.3s ease; }
+            .sidebar.open { left: 0; }
+            .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+            .sidebar-overlay.show { display: block; }
+            .main-content { width: 100%; }
+            .top-header { padding: 12px 16px; }
+            .header-title h1 { font-size: 16px; }
+            .dashboard-content { padding: 16px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .stat-card { padding: 16px; }
+            .stat-info .number { font-size: 22px; }
+            .image-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .form-row { flex-direction: column; gap: 12px; }
+            .data-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .panel-section { padding: 16px; }
+            .chat-container { flex-direction: column; height: auto; }
+            .chat-sidebar { width: 100%; max-height: 200px; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .chat-main { height: 400px; }
+            .action-btns button { padding: 10px 14px; font-size: 13px; min-height: 44px; }
+            .section-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+            .section-header > div { flex-wrap: wrap; gap: 8px; }
+            .login-box { padding: 30px 20px; }
+            .login-box h1 { font-size: 24px; }
+            #slider-modal-overlay > div { padding: 24px; }
+            #reservation-detail-modal > div > div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+            .map-info-bar { flex-direction: column; gap: 8px; }
+            .map-info-item strong { font-size: 14px; }
+            .admin-profile .avatar { width: 36px; height: 36px; font-size: 14px; }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .image-grid { grid-template-columns: 1fr; }
+            .top-header { padding: 10px 12px; }
+            .dashboard-content { padding: 12px; }
+            .stat-card { padding: 12px; }
+            .stat-info .number { font-size: 20px; }
+            .panel-section { padding: 12px; }
+            .login-box { padding: 24px 16px; }
+            .action-btns { flex-wrap: wrap; }
+            .form-group input, .form-group select { font-size: 13px; padding: 10px 12px; }
+            .btn-primary, .btn-secondary { padding: 10px 14px; font-size: 12px; min-height: 44px; }
+        }
 
     </style>
 </head>
@@ -213,6 +267,7 @@
     </div>
 
     <div id="appContainer" style="display:none;flex:1;height:100vh;">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar">
         <div class="sidebar-logo">
             <h2>GÜLİZ <span>VIP</span></h2>
@@ -238,6 +293,7 @@
         
         <header class="top-header">
             <div class="header-title">
+                <button class="hamburger-admin" id="hamburgerAdminBtn" onclick="toggleAdminSidebar()">☰</button>
                 <h1 id="header-title-text">Sistem Özeti</h1>
             </div>
             <div class="admin-profile">
@@ -544,6 +600,25 @@
                     </div>
                     <button class="btn-primary">Ayarları Kaydet</button>
                 </div>
+
+                <div class="panel-section" style="margin-top:24px;">
+                    <div class="section-header"><h3>Telegram Ayarları</h3></div>
+                    <p style="font-size:13px;color:var(--text-gray);margin:0 0 16px;">Canlı destek mesajları ve yeni rezervasyonlar için Telegram bildirimleri. Ayarları kaydettikten sonra "Test Mesajı Gönder" butonuyla deneyebilirsiniz.</p>
+                    <div class="form-row">
+                        <div class="form-group"><label>Bot Token</label>
+                            <input type="password" id="telegram-bot-token" placeholder="123456789:ABCdefGHIjklmNOPqrstUVwxyz" style="font-family:'Courier New',monospace;font-size:13px;">
+                        </div>
+                        <div class="form-group"><label>Chat ID</label>
+                            <input type="text" id="telegram-chat-id" placeholder="-1001234567890" style="font-family:'Courier New',monospace;font-size:13px;">
+                        </div>
+                    </div>
+                    <div id="telegram-status" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;font-weight:600;"></div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn-primary" onclick="saveTelegramConfig()"><i class="fa-solid fa-floppy-disk"></i> Kaydet</button>
+                        <button class="btn-secondary" onclick="testTelegramConfig()" style="padding:10px 20px;border:2px solid var(--primary-red);border-radius:10px;background:transparent;color:var(--primary-red);cursor:pointer;font-weight:600;"><i class="fa-solid fa-paper-plane"></i> Test Mesajı Gönder</button>
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -592,6 +667,7 @@
                 loadAytFlights();
                 loadSliderImages();
                 loadBankAccounts();
+                loadTelegramConfig();
                 setInterval(loadAdminFlights, 120000);
                 setInterval(loadAytFlights, 120000);
                 startChatPolling();
@@ -603,6 +679,21 @@
             errorEl.innerText = 'Sunucuya bağlanılamadı!';
         }
     }
+
+    // ─── MOBİL SİDEBAR ────────────────────────────────────────
+    function toggleAdminSidebar() {
+        document.querySelector('.sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+    document.addEventListener('click', function(e) {
+        var sidebar = document.querySelector('.sidebar');
+        var btn = document.getElementById('hamburgerAdminBtn');
+        var overlay = document.getElementById('sidebarOverlay');
+        if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !btn.contains(e.target) && sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+    });
 
     function handleLogout() {
         localStorage.removeItem('guliz_token');
@@ -689,6 +780,7 @@
                     loadAytFlights();
                     loadSliderImages();
                     loadReservations();
+                    loadTelegramConfig();
                     setInterval(loadAdminFlights, 120000);
                     setInterval(loadAytFlights, 120000);
                     setInterval(loadReservations, 30000);
@@ -1787,6 +1879,95 @@
         } else {
             if (existingBadge) existingBadge.remove();
         }
+    }
+
+    // ─── TELEGRAM AYARLARI ─────────────────────────────────────────
+    function loadTelegramConfig() {
+        var token = localStorage.getItem('guliz_token');
+        if (!token) return;
+        fetch('/api/admin/telegram/config', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                document.getElementById('telegram-bot-token').value = data.config.botToken || '';
+                document.getElementById('telegram-chat-id').value = data.config.chatId || '';
+            }
+        })
+        .catch(function() {});
+    }
+
+    function saveTelegramConfig() {
+        var token = localStorage.getItem('guliz_token');
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+        var botToken = document.getElementById('telegram-bot-token').value.trim();
+        var chatId = document.getElementById('telegram-chat-id').value.trim();
+        if (!botToken || !chatId) {
+            showTelegramStatus('Lütfen Bot Token ve Chat ID alanlarını doldurun.', 'error');
+            return;
+        }
+        var statusEl = document.getElementById('telegram-status');
+        statusEl.style.display = 'block';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+        statusEl.style.background = '#f0f4ff';
+        statusEl.style.color = '#1B2B4C';
+        fetch('/api/admin/telegram/config', {
+            method: 'PUT',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ botToken: botToken, chatId: chatId })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showTelegramStatus('Telegram ayarları başarıyla kaydedildi!', 'success');
+            } else {
+                showTelegramStatus('Hata: ' + (data.error || 'Kaydedilemedi'), 'error');
+            }
+        })
+        .catch(function() {
+            showTelegramStatus('Sunucu hatası!', 'error');
+        });
+    }
+
+    function testTelegramConfig() {
+        var token = localStorage.getItem('guliz_token');
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+        var statusEl = document.getElementById('telegram-status');
+        statusEl.style.display = 'block';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Test mesajı gönderiliyor...';
+        statusEl.style.background = '#f0f4ff';
+        statusEl.style.color = '#1B2B4C';
+        fetch('/api/admin/telegram/test', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showTelegramStatus('Test mesajı başarıyla gönderildi! Telegram\'ınızı kontrol edin.', 'success');
+            } else {
+                showTelegramStatus('Hata: ' + (data.error || 'Gönderilemedi'), 'error');
+            }
+        })
+        .catch(function() {
+            showTelegramStatus('Sunucu hatası!', 'error');
+        });
+    }
+
+    function showTelegramStatus(message, type) {
+        var statusEl = document.getElementById('telegram-status');
+        statusEl.style.display = 'block';
+        if (type === 'success') {
+            statusEl.style.background = '#d4edda';
+            statusEl.style.color = '#155724';
+            statusEl.innerHTML = '<i class="fa-solid fa-check-circle"></i> ' + message;
+        } else {
+            statusEl.style.background = '#f8d7da';
+            statusEl.style.color = '#721c24';
+            statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> ' + message;
+        }
+        setTimeout(function() { statusEl.style.display = 'none'; }, 6000);
     }</script>
 
     <!-- ─── SLIDER URL EKLEME MODAL ──────────────────────────── -->

@@ -750,11 +750,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # API: /api/chat/send (public) — visitor sends a chat message
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            return
-
-        # API: /api/chat/send (public) — visitor sends a chat message
         if path == "/api/chat/send":
             try:
                 body = json.loads(self._read_body())
@@ -1084,4 +1079,4 @@ if __name__ == "__main__":
     server = http.server.HTTPServer((HOST, PORT), GulizHandler)
     scheduler = threading.Thread(target=scheduler_loop, daemon=True)
     scheduler.start()
-    server.serve_forever()
+    server.serve_forever()     
