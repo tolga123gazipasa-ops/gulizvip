@@ -14,9 +14,40 @@ import threading
 import random
 import urllib.parse
 import urllib.request
+import urllib.error
 from datetime import datetime, timedelta
 
 import db  # PostgreSQL modülü
+
+# ============================================================
+# HİZMET BÖLGESİ — Gazipaşa, Alanya, Antalya
+# ============================================================
+SERVICE_AREA_TERMS = [
+    # Alanya bölgesi
+    "alanya", "mahmutlar", "kargıcak", "kestel", "tosmur", "oba",
+    "konaklı", "avsallar", "incekum", "payallar", "türkler",
+    "okurcalar", "demirtaş", "kleopatra", "alanya merkez",
+    # Gazipaşa bölgesi
+    "gazipaşa", "gzp", "kahyalar", "zeytinada", "sugözü", "koru",
+    "gözüküçüklü", "çamlıca", "kaledran", "muzkent", "sarıağaç",
+    # Antalya merkez
+    "antalya", "ayt", "muratpaşa", "konyaaltı", "lara", "şirinyalı",
+    "fener", "çağlayan", "antalya havalimanı",
+    # Manavgat / Side koridoru
+    "manavgat", "side", "ılıca", "çolaklı", "gündoğdu",
+    # Serik / Belek
+    "serik", "belek", "kadriye",
+]
+
+def is_in_service_area(location_text):
+    """Verilen konum metninin hizmet bölgesi içinde olup olmadığını kontrol eder."""
+    if not location_text or not location_text.strip():
+        return False
+    lower = location_text.lower().strip()
+    for term in SERVICE_AREA_TERMS:
+        if term in lower:
+            return True
+    return False
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 HOST = "0.0.0.0"
@@ -83,9 +114,6 @@ def load_reservations():
         RESERVATION_ID = 1000
 
 def save_reservations():
-    # PostgreSQL'e de kaydet (arka planda)
-    # Rezervasyon kaydetme işlemi ayrıca do_POST içinde yapılır
-    # JSON dosyasına da yedek olarak kaydet
     try:
         with open(RESERVATIONS_FILE, "w", encoding="utf-8") as f:
             json.dump({"reservations": RESERVATIONS, "next_id": RESERVATION_ID}, f, ensure_ascii=False, indent=2)
@@ -152,30 +180,112 @@ AYT_FLIGHTS_GIDEN = [
     {"saat": "23:59", "flight": "XQ 9108", "to": "Munih (MUC)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
 ]
 
+# ─── OpenSky Network API ──────────────────────────────────────────────────────────
+
+AIRPORT_NAMES = {
+    "LTGZ": "Gazipaşa (GZP)", "LTAI": "Antalya (AYT)",
+    "LTBA": "İstanbul (IST)", "LTFM": "İstanbul (IST)", "LTFJ": "İstanbul (SAW)",
+    "LTAC": "Ankara (ESB)", "LTBJ": "İzmir (ADB)", "LTBS": "Dalaman (DLM)",
+    "LTBR": "Bursa (YEI)", "LTAF": "Adana (ADA)", "LTAU": "Kayseri (ASR)",
+    "LTCP": "Balıkesir (BZI)",
+    "EDDL": "Düsseldorf (DUS)", "EDDB": "Berlin (BER)", "EDDF": "Frankfurt (FRA)",
+    "EDDM": "Münih (MUC)", "EDDK": "Köln (CGN)",
+    "EHAM": "Amsterdam (AMS)",
+    "UUEE": "Moskova (SVO)", "UUDD": "Moskova (DME)", "UUWW": "Moskova (VKO)",
+    "LLBG": "Tel Aviv (TLV)", "EFHK": "Helsinki (HEL)",
+    "ESSA": "Stockholm (ARN)", "ENGM": "Oslo (OSL)", "EKCH": "Kopenhag (CPH)",
+    "EPWA": "Varşova (WAW)", "LKPR": "Prag (PRG)", "LOWW": "Viyana (VIE)",
+    "LSZH": "Zürih (ZRH)", "LEBL": "Barselona (BCN)", "LEMD": "Madrid (MAD)",
+    "LIRF": "Roma (FCO)", "LIML": "Milano (LIN)", "LPPT": "Lizbon (LIS)",
+    "LFPG": "Paris (CDG)", "LFPO": "Paris (ORY)",
+    "EGLL": "Londra (LHR)", "EGKK": "Londra (LGW)", "EGSS": "Londra (STN)",
+}
+
+AIRLINE_NAMES = {
+    "THY": "Turkish Airlines", "TK": "Turkish Airlines",
+    "PGT": "Pegasus", "PC": "Pegasus",
+    "SXS": "SunExpress", "XQ": "SunExpress",
+    "CAI": "Corendon", "XC": "Corendon",
+    "FH": "Freebird",
+}
+
+OPENSKY_BASE = "https://opensky-network.org/api"
+OPENSKY_LAST_CALL = 0.0
+OPENSKY_MIN_INTERVAL = 12
+
+def _icao_to_name(icao):
+    return AIRPORT_NAMES.get(icao, icao)
+
+def _callsign_to_airline(callsign):
+    c = callsign.upper().strip()
+    if len(c) >= 3 and c[:3] in AIRLINE_NAMES:
+        return AIRLINE_NAMES[c[:3]]
+    if len(c) >= 2 and c[:2] in AIRLINE_NAMES:
+        return AIRLINE_NAMES[c[:2]]
+    return c
+
+def _fetch_opensky_flights(airport_icao, is_arrival):
+    global OPENSKY_LAST_CALL
+    now = datetime.now()
+    today_start = datetime(now.year, now.month, now.day, 0, 0, 0)
+    today_end = today_start + timedelta(days=1)
+    begin_ts = int(today_start.timestamp())
+    end_ts = int(today_end.timestamp())
+    elapsed = time.time() - OPENSKY_LAST_CALL
+    if elapsed < OPENSKY_MIN_INTERVAL:
+        time.sleep(OPENSKY_MIN_INTERVAL - elapsed)
+    endpoint = "arrival" if is_arrival else "departure"
+    url = f"{OPENSKY_BASE}/flights/{endpoint}?airport={airport_icao}&begin={begin_ts}&end={end_ts}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "GulizVIP/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        OPENSKY_LAST_CALL = time.time()
+    except Exception as e:
+        print(f"[!] OpenSky {airport_icao} {endpoint}: {e}")
+        return None
+    if not isinstance(data, list) or len(data) == 0:
+        return None
+    flights = []
+    seen = set()
+    for f in data:
+        callsign = (f.get("callsign") or "").strip()
+        if not callsign or callsign in seen:
+            continue
+        seen.add(callsign)
+        ts = f.get("lastSeen" if is_arrival else "firstSeen")
+        if not ts:
+            continue
+        flight_time = datetime.fromtimestamp(ts)
+        saat = flight_time.strftime("%H:%M")
+        callsign_upper = callsign.upper().replace(" ", "")
+        airline = _callsign_to_airline(callsign_upper)
+        if is_arrival:
+            origin = _icao_to_name(f.get("estDepartureAirport") or "")
+            entry = {"saat": saat, "flight": callsign_upper, "from": origin, "to": "", "airline": airline, "status": "Bekleniyor", "code": "expected"}
+        else:
+            dest = _icao_to_name(f.get("estArrivalAirport") or "")
+            entry = {"saat": saat, "flight": callsign_upper, "from": "", "to": dest, "airline": airline, "status": "Bekleniyor", "code": "expected"}
+        entry["type"] = _classify_flight_type(entry)
+        flights.append(entry)
+    flights.sort(key=lambda x: (0 if x["type"] == "ic" else 1))
+    return flights[:10]
+
 # ─── In-Memory Cache ──────────────────────────────────────────────────────────
 
-flight_cache = {
-    "gzp": {"gelen": [], "giden": [], "updated_at": None},
-    "ayt": {"gelen": [], "giden": [], "updated_at": None},
-}
+flight_cache = {"gzp": {"gelen": [], "giden": [], "updated_at": None}, "ayt": {"gelen": [], "giden": [], "updated_at": None}}
 
 # ─── Live Chat ──────────────────────────────────────────────────────────────────
 CHAT_MESSAGES = []
 CHAT_ID = 1
 
-
 # ─── Telegram Bot ─────────────────────────────────────────────────────────────────
 def send_telegram(message):
-    """Send a message via Telegram Bot API. Returns True on success."""
     global TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return False
     try:
-        data = json.dumps({
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": message,
-            "parse_mode": "HTML"
-        }).encode("utf-8")
+        data = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}).encode("utf-8")
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
         urllib.request.urlopen(req, timeout=10)
@@ -184,79 +294,88 @@ def send_telegram(message):
         print(f"[!] Telegram mesajı gönderilemedi: {e}")
         return False
 
-STATUS_POOL = [
-    ("Bekleniyor", "expected"),
-    ("Zamanında", "expected"),
-    ("İndi", "landed"),
-    ("Kapı Kapandı", "departed"),
-    ("Biniş Başladı", "expected"),
-]
-
 def _classify_flight_type(flight):
-    """Determine if flight is domestic (ic) or international (dis)."""
     turkish_codes = ["(IST)", "(SAW)", "(ESB)", "(ADB)", "(AYT)", "(GZP)", "(DLM)"]
     loc = flight.get("from", "") or flight.get("to", "")
     return "ic" if any(code in loc for code in turkish_codes) else "dis"
 
 def refresh_flights():
-    """Simüle edilmiş uçuş verilerini zaman bilgisine göre güncelle."""
     now = datetime.now()
     current_time = now.strftime("%H:%M")
-
-    def get_status(flight_saat, is_arrival):
-        ft = flight_saat.split(":")
-        ct = current_time.split(":")
-        f_min = int(ft[0]) * 60 + int(ft[1])
-        c_min = int(ct[0]) * 60 + int(ct[1])
-        diff = c_min - f_min
-
-        if diff < -30:
-            return ("Bekleniyor", "expected")
-        elif -30 <= diff < 0:
-            return ("Zamanında", "expected")
-        elif 0 <= diff < 20:
-            return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
-        elif 20 <= diff < 60:
-            return ("İndi", "landed") if is_arrival else ("Biniş Başladı", "expected")
-        elif 60 <= diff < 120:
-            return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
+    airports = {"gzp": {"icao": "LTGZ"}, "ayt": {"icao": "LTAI"}}
+    for airport_key, ap in airports.items():
+        icao = ap["icao"]
+        real_gelen = _fetch_opensky_flights(icao, is_arrival=True)
+        real_giden = _fetch_opensky_flights(icao, is_arrival=False)
+        if real_gelen is not None and real_giden is not None:
+            def apply_status(flight, is_arrival):
+                f_min = int(flight["saat"].split(":")[0]) * 60 + int(flight["saat"].split(":")[1])
+                c_min = int(current_time.split(":")[0]) * 60 + int(current_time.split(":")[1])
+                diff = c_min - f_min
+                ft = flight
+                if diff < -30:
+                    ft["status"] = "Bekleniyor"; ft["code"] = "expected"
+                elif -30 <= diff < 0:
+                    ft["status"] = "Zamanında"; ft["code"] = "expected"
+                elif 0 <= diff < 20:
+                    ft["status"] = "İndi" if is_arrival else "Kapı Kapandı"
+                    ft["code"] = "landed" if is_arrival else "departed"
+                elif 20 <= diff < 60:
+                    ft["status"] = "İndi" if is_arrival else "Biniş Başladı"
+                    ft["code"] = "landed" if is_arrival else "expected"
+                elif 60 <= diff < 120:
+                    ft["status"] = "İndi" if is_arrival else "Kapı Kapandı"
+                    ft["code"] = "landed" if is_arrival else "departed"
+                else:
+                    if random.random() < 0.15:
+                        delay = random.randint(10, 45)
+                        new_time = (datetime.strptime(flight["saat"], "%H:%M") + timedelta(minutes=delay)).strftime("%H:%M")
+                        ft["status"] = f"Rötarlı ({new_time})"; ft["code"] = "delayed"
+                    else:
+                        ft["status"] = "Zamanında"; ft["code"] = "expected"
+                return ft
+            flight_cache[airport_key] = {"gelen": [apply_status(dict(f), True) for f in real_gelen], "giden": [apply_status(dict(f), False) for f in real_giden], "updated_at": now.isoformat()}
+            print(f"[{current_time}] {airport_key.upper()}: OpenSky'den {len(real_gelen)} gelen / {len(real_giden)} giden")
         else:
-            # Random delay simulation for expired slots
-            if random.random() < 0.15:
-                delay = random.randint(10, 45)
-                new_time = (datetime.strptime(flight_saat, "%H:%M") + timedelta(minutes=delay)).strftime("%H:%M")
-                return (f"Rötarlı ({new_time})", "delayed")
-            return ("Zamanında", "expected") if is_arrival else ("Biniş Başladı", "expected")
-
-    def process_flights(flights, is_arrival):
-        result = []
-        for f in flights:
-            stat_text, stat_code = get_status(f["saat"], is_arrival)
-            entry = dict(f)
-            entry["status"] = stat_text
-            entry["code"] = stat_code
-            entry["type"] = _classify_flight_type(f)
-            result.append(entry)
-        # Sort: domestic first, then international — then take up to 10
-        result.sort(key=lambda x: (0 if x["type"] == "ic" else 1))
-        return result[:10]
-
-    flight_cache["gzp"] = {
-        "gelen": process_flights(GZP_FLIGHTS_GELEN, True),
-        "giden": process_flights(GZP_FLIGHTS_GIDEN, False),
-        "updated_at": now.isoformat()
-    }
-    flight_cache["ayt"] = {
-        "gelen": process_flights(AYT_FLIGHTS_GELEN, True),
-        "giden": process_flights(AYT_FLIGHTS_GIDEN, False),
-        "updated_at": now.isoformat()
-    }
-
-    t = now.strftime("%H:%M:%S")
-    print(f"[{t}] Uçuş verileri güncellendi (GZP: {len(flight_cache['gzp']['gelen'])} gelen/{len(flight_cache['gzp']['giden'])} giden, AYT: {len(flight_cache['ayt']['gelen'])} gelen/{len(flight_cache['ayt']['giden'])} giden)")
+            mock_gelen = GZP_FLIGHTS_GELEN if airport_key == "gzp" else AYT_FLIGHTS_GELEN
+            mock_giden = GZP_FLIGHTS_GIDEN if airport_key == "gzp" else AYT_FLIGHTS_GIDEN
+            def get_status(flight_saat, is_arrival):
+                ft = flight_saat.split(":")
+                ct = current_time.split(":")
+                f_min = int(ft[0]) * 60 + int(ft[1])
+                c_min = int(ct[0]) * 60 + int(ct[1])
+                diff = c_min - f_min
+                if diff < -30:
+                    return ("Bekleniyor", "expected")
+                elif -30 <= diff < 0:
+                    return ("Zamanında", "expected")
+                elif 0 <= diff < 20:
+                    return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
+                elif 20 <= diff < 60:
+                    return ("İndi", "landed") if is_arrival else ("Biniş Başladı", "expected")
+                elif 60 <= diff < 120:
+                    return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
+                else:
+                    if random.random() < 0.15:
+                        delay = random.randint(10, 45)
+                        new_time = (datetime.strptime(flight_saat, "%H:%M") + timedelta(minutes=delay)).strftime("%H:%M")
+                        return (f"Rötarlı ({new_time})", "delayed")
+                    return ("Zamanında", "expected") if is_arrival else ("Biniş Başladı", "expected")
+            def process_flights(flights, is_arrival):
+                result = []
+                for f in flights:
+                    stat_text, stat_code = get_status(f["saat"], is_arrival)
+                    entry = dict(f)
+                    entry["status"] = stat_text
+                    entry["code"] = stat_code
+                    entry["type"] = _classify_flight_type(f)
+                    result.append(entry)
+                result.sort(key=lambda x: (0 if x["type"] == "ic" else 1))
+                return result[:10]
+            flight_cache[airport_key] = {"gelen": process_flights(mock_gelen, True), "giden": process_flights(mock_giden, False), "updated_at": now.isoformat()}
+            print(f"[{current_time}] {airport_key.upper()}: Mock veri kullanıldı")
 
 def scheduler_loop():
-    """Her 5 dakikada bir uçuş verilerini güncelle."""
     while True:
         refresh_flights()
         time.sleep(FLIGHT_REFRESH_INTERVAL)
@@ -277,22 +396,15 @@ def verify_token(token):
             return None
         payload_b64 = parts[0]
         sig_b64 = parts[1]
-        # Reconstruct padding
         payload_b64_pad = payload_b64 + "=" * (4 - len(payload_b64) % 4) if len(payload_b64) % 4 else payload_b64
         sig_b64_pad = sig_b64 + "=" * (4 - len(sig_b64) % 4) if len(sig_b64) % 4 else sig_b64
-
         payload_bytes = base64.urlsafe_b64decode(payload_b64_pad)
         payload = payload_bytes.decode()
         username, expiry_str = payload.split(":", 1)
         expiry = int(expiry_str)
-
         if time.time() > expiry:
             return None
-
         expected_sig = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).digest()
-        expected_b64 = base64.urlsafe_b64encode(expected_sig).decode().rstrip("=")
-
-        # Constant-time comparison
         sig_bytes = base64.urlsafe_b64decode(sig_b64_pad)
         if hmac.compare_digest(expected_sig, sig_bytes):
             return username
@@ -354,13 +466,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
         if not os.path.exists(full_path) or os.path.isdir(full_path):
             self._send_error("Dosya bulunamadı", 404)
             return
-
         ext = os.path.splitext(filepath)[1].lower()
         mime = MIME_TYPES.get(ext, "application/octet-stream")
-
         with open(full_path, "rb") as f:
             data = f.read()
-
         self.send_response(200)
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(data)))
@@ -378,133 +487,58 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         path, params = self._parse_path()
-
-        # API: /api/flights
         if path == "/api/flights":
-            self._send_json({
-                "success": True,
-                "data": {
-                    "gzp": flight_cache["gzp"],
-                    "ayt": flight_cache["ayt"]
-                },
-                "updated_at": max(
-                    flight_cache["gzp"]["updated_at"] or "",
-                    flight_cache["ayt"]["updated_at"] or ""
-                )
-            })
+            self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}, "updated_at": max(flight_cache["gzp"]["updated_at"] or "", flight_cache["ayt"]["updated_at"] or "")})
             return
-
-        # API: /api/maps/config — returns Google Maps API key for frontend
         if path == "/api/maps/config":
-            self._send_json({
-                "success": True,
-                "apiKey": GOOGLE_MAPS_API_KEY
-            })
+            self._send_json({"success": True, "apiKey": GOOGLE_MAPS_API_KEY})
             return
-
-        # API: /api/unit-price — returns current km-based unit price (public)
         if path == "/api/unit-price":
-            self._send_json({
-                "success": True,
-                "unitPrice": UNIT_PRICE
-            })
+            self._send_json({"success": True, "unitPrice": UNIT_PRICE})
             return
-
-        # API: /api/slider-images — returns slider images list (public)
         if path == "/api/slider-images":
-            self._send_json({
-                "success": True,
-                "images": SLIDER_IMAGES
-            })
+            self._send_json({"success": True, "images": SLIDER_IMAGES})
             return
-
-        # API: /api/bank-accounts — returns bank account list (public)
         if path == "/api/bank-accounts":
-            self._send_json({
-                "success": True,
-                "accounts": BANK_ACCOUNTS
-            })
+            self._send_json({"success": True, "accounts": BANK_ACCOUNTS})
             return
-
-        # API: /api/maps/distance — proxy for Google Distance Matrix API
         if path == "/api/maps/distance":
             origins = params.get("origins", "")
             destinations = params.get("destinations", "")
             mode = params.get("mode", "driving")
-
             if not origins or not destinations:
                 self._send_error("origins ve destinations parametreleri gereklidir.")
                 return
-
-            google_url = (
-                f"https://maps.googleapis.com/maps/api/distancematrix/json"
-                f"?origins={urllib.parse.quote(origins)}"
-                f"&destinations={urllib.parse.quote(destinations)}"
-                f"&mode={mode}"
-                f"&language=tr"
-                f"&key={GOOGLE_MAPS_API_KEY}"
-            )
-
+            google_url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={urllib.parse.quote(origins)}&destinations={urllib.parse.quote(destinations)}&mode={mode}&language=tr&key={GOOGLE_MAPS_API_KEY}"
             try:
                 req = urllib.request.Request(google_url)
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
-                self._send_json({
-                    "success": data["status"] == "OK",
-                    "data": data
-                })
+                self._send_json({"success": data["status"] == "OK", "data": data})
             except Exception as e:
-                self._send_json({
-                    "success": False,
-                    "error": str(e)
-                }, 500)
+                self._send_json({"success": False, "error": str(e)}, 500)
             return
-
-        # API: /api/maps/geocode — proxy for Google Geocoding API
         if path == "/api/maps/geocode":
             address = params.get("address", "")
             if not address:
                 self._send_error("address parametresi gereklidir.")
                 return
-
-            google_url = (
-                f"https://maps.googleapis.com/maps/api/geocode/json"
-                f"?address={urllib.parse.quote(address)}"
-                f"&language=tr"
-                f"&key={GOOGLE_MAPS_API_KEY}"
-            )
-
+            google_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&language=tr&key={GOOGLE_MAPS_API_KEY}"
             try:
                 req = urllib.request.Request(google_url)
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
-                self._send_json({
-                    "success": data["status"] == "OK",
-                    "data": data
-                })
+                self._send_json({"success": data["status"] == "OK", "data": data})
             except Exception as e:
-                self._send_json({
-                    "success": False,
-                    "error": str(e)
-                }, 500)
+                self._send_json({"success": False, "error": str(e)}, 500)
             return
-
-        # API: /api/admin/flights (auth required)
         if path == "/api/admin/flights":
             user = self._authenticate()
             if not user:
                 self._send_error("Yetkisiz erişim. Lütfen giriş yapın.", 401)
                 return
-            self._send_json({
-                "success": True,
-                "data": {
-                    "gzp": flight_cache["gzp"],
-                    "ayt": flight_cache["ayt"]
-                }
-            })
+            self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}})
             return
-
-        # API: /api/admin/check (auth check)
         if path == "/api/admin/check":
             user = self._authenticate()
             if user:
@@ -512,8 +546,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self._send_json({"success": False}, 401)
             return
-
-        # API: /api/admin/reservations (auth required)
         if path == "/api/admin/reservations":
             user = self._authenticate()
             if not user:
@@ -521,23 +553,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             self._send_json({"success": True, "reservations": RESERVATIONS})
             return
-
-        # API: /api/admin/telegram/config (auth required) — get Telegram config
         if path == "/api/admin/telegram/config":
             user = self._authenticate()
             if not user:
                 self._send_error("Yetkisiz erişim.", 401)
                 return
-            self._send_json({
-                "success": True,
-                "config": {
-                    "botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "",
-                    "chatId": TELEGRAM_CHAT_ID
-                }
-            })
+            self._send_json({"success": True, "config": {"botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "", "chatId": TELEGRAM_CHAT_ID}})
             return
-
-        # API: /api/chat/messages (public) — get messages since a given ID
         if path == "/api/chat/messages":
             since = params.get("since")
             if since:
@@ -550,76 +572,54 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 messages = CHAT_MESSAGES
             self._send_json({"success": True, "messages": messages})
             return
-
-        # API: /api/admin/chat/messages (auth required) — get all messages grouped by visitor
         if path == "/api/admin/chat/messages":
             user = self._authenticate()
             if not user:
                 self._send_error("Yetkisiz erişim.", 401)
                 return
-            self._send_json({"success": True, "messages": CHAT_MESSAGES,
-                             "unread": sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))})
+            self._send_json({"success": True, "messages": CHAT_MESSAGES, "unread": sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))})
             return
-
-        # Static files
         if path == "/" or path == "":
             self._serve_static("index.html")
         elif path.startswith("/"):
-            # Remove leading /
             self._serve_static(path.lstrip("/"))
         else:
             self._send_error("Bulunamadı", 404)
 
     def do_POST(self):
         path, _ = self._parse_path()
-
-        # API: /api/admin/login
         if path == "/api/admin/login":
             try:
                 body = json.loads(self._read_body())
                 username = body.get("username", "")
                 password = body.get("password", "")
-
                 if username == ADMIN_USER and password == ADMIN_PASS:
                     token = generate_token(username)
-                    self._send_json({
-                        "success": True,
-                        "token": token,
-                        "user": username
-                    })
+                    self._send_json({"success": True, "token": token, "user": username})
                 else:
                     self._send_error("Kullanıcı adı veya şifre hatalı.", 401)
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-
-        # API: /api/admin/slider-images/upload (auth required) — file upload
         if path == "/api/admin/slider-images/upload":
             user = self._authenticate()
             if not user:
                 self._send_error("Yetkisiz erişim.", 401)
                 return
-
             content_type = self.headers.get('Content-Type', '')
             if 'multipart/form-data' not in content_type:
                 self._send_error("multipart/form-data gerekli.", 400)
                 return
-
             length = int(self.headers.get('Content-Length', 0))
             raw = self.rfile.read(length)
-
-            # Parse boundary from Content-Type header
             boundary = content_type.split('boundary=')[1].strip()
             if boundary.startswith('"') and boundary.endswith('"'):
                 boundary = boundary[1:-1]
-
             boundary_bytes = ('--' + boundary).encode()
             parts = raw.split(boundary_bytes)
-
             file_data = None
             file_filename = None
             alt_text = 'Slider Görseli'
-
             for part in parts:
                 if b'Content-Disposition' not in part:
                     continue
@@ -644,37 +644,28 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         val = part[header_end + 4:content_end].strip().decode()
                         if val:
                             alt_text = val
-
             if not file_data or not file_filename:
                 self._send_error("Dosya gönderilmedi.", 400)
                 return
-
-            # Create slider/ directory if needed
             slider_dir = os.path.join(WORKSPACE, 'slider')
             os.makedirs(slider_dir, exist_ok=True)
-
-            # Save file with unique name
             ext = os.path.splitext(file_filename)[1] or '.jpg'
             unique_name = f"{int(time.time() * 1000)}{ext}"
             filepath = os.path.join(slider_dir, unique_name)
             with open(filepath, 'wb') as f:
                 f.write(file_data)
-
             global SLIDER_IMAGES
             img_entry = {"src": f"/slider/{unique_name}", "alt": alt_text}
             SLIDER_IMAGES.append(img_entry)
-
             self._send_json({"success": True, "image": img_entry, "images": SLIDER_IMAGES})
             return
-
-        # API: /api/reservations (public) — create a reservation
         if path == "/api/reservations":
             try:
                 body = json.loads(self._read_body())
                 global RESERVATION_ID
                 reservation = {
                     "id": RESERVATION_ID,
-                    "type": body.get("type", "transfer"),  # "transfer" or "tahsis"
+                    "type": body.get("type", "transfer"),
                     "customerName": body.get("customerName", ""),
                     "customerPhone": body.get("customerPhone", ""),
                     "pickup": body.get("pickup", ""),
@@ -689,25 +680,27 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "status": "pending",
                     "createdAt": datetime.now().isoformat()
                 }
-                # Validate required fields
                 if not reservation["customerName"] or not reservation["pickup"]:
                     self._send_error("Ad ve alış noktası zorunludur.", 400)
                     return
-
-                # PostgreSQL'e kaydet (varsa)
+                # Hizmet bölgesi doğrulama
+                pickup_ok = is_in_service_area(reservation["pickup"])
+                dest_ok = is_in_service_area(reservation["destination"]) if reservation["destination"] else True
+                if not pickup_ok:
+                    self._send_error("Üzgünüz, bu alış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.", 400)
+                    return
+                if not dest_ok:
+                    self._send_error("Üzgünüz, bu varış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.", 400)
+                    return
                 db_id = db.save_reservation_to_db(reservation)
                 if db_id:
                     reservation["id"] = db_id
                     RESERVATION_ID = db_id + 1
                 else:
-                    # JSON dosyasına yedek
                     RESERVATIONS.insert(0, reservation)
                     RESERVATION_ID += 1
                     save_reservations()
-
                 self._send_json({"success": True, "reservation": reservation})
-
-                # Telegram bildirimi — yeni rezervasyon
                 tip_etiket = "🚗 Transfer" if reservation["type"] == "transfer" else "👑 Şoförlü Günlük VIP"
                 telegram_rez = (
                     f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
@@ -727,73 +720,37 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-
-        # API: /api/admin/telegram/test (auth required) — test Telegram connection
         if path == "/api/admin/telegram/test":
             user = self._authenticate()
             if not user:
                 self._send_error("Yetkisiz erişim.", 401)
                 return
-            test_msg = (
-                "✅ <b>Telegram bağlantısı başarılı!</b>\n"
-                f"🕐 Test mesajı: {datetime.now().isoformat()}\n\n"
-                "Güliz VIP canlı destek ve rezervasyon bildirimleri bu kanala iletilecek."
-            )
+            test_msg = f"✅ <b>Telegram bağlantısı başarılı!</b>\n🕐 Test mesajı: {datetime.now().isoformat()}\n\nGüliz VIP canlı destek ve rezervasyon bildirimleri bu kanala iletilecek."
             success = send_telegram(test_msg)
             if success:
                 self._send_json({"success": True, "message": "Test mesajı gönderildi!"})
             else:
-                self._send_error(
-                    "Telegram mesajı gönderilemedi. Bot token ve Chat ID'yi kontrol edin.",
-                    400
-                )
+                self._send_error("Telegram mesajı gönderilemedi. Bot token ve Chat ID'yi kontrol edin.", 400)
             return
-
-        # API: /api/chat/send (public) — visitor sends a chat message
         if path == "/api/chat/send":
             try:
                 body = json.loads(self._read_body())
                 global CHAT_ID, CHAT_MESSAGES
-                msg = {
-                    "id": CHAT_ID,
-                    "name": body.get("name", ""),
-                    "phone": body.get("phone", ""),
-                    "message": body.get("message", ""),
-                    "timestamp": datetime.now().isoformat(),
-                    "isAdmin": False,
-                    "adminName": "",
-                    "read": False,
-                    "sessionId": body.get("sessionId", "")
-                }
+                msg = {"id": CHAT_ID, "name": body.get("name", ""), "phone": body.get("phone", ""), "message": body.get("message", ""), "timestamp": datetime.now().isoformat(), "isAdmin": False, "adminName": "", "read": False, "sessionId": body.get("sessionId", "")}
                 if not msg["message"]:
                     self._send_error("Mesaj boş olamaz.", 400)
                     return
                 CHAT_MESSAGES.append(msg)
                 CHAT_ID += 1
-
-                # Telegram bildirimi — yeni ziyaretçi mesajı
                 if msg["name"] or msg["phone"]:
-                    telegram_text = (
-                        f"🆕 <b>Yeni Canlı Destek Mesajı</b>\n"
-                        f"👤 <b>İsim:</b> {msg['name'] or 'Belirtilmemiş'}\n"
-                        f"📞 <b>Telefon:</b> {msg['phone'] or 'Belirtilmemiş'}\n"
-                        f"💬 <b>Mesaj:</b> {msg['message']}\n"
-                        f"🕐 <b>Saat:</b> {msg['timestamp']}"
-                    )
+                    telegram_text = f"🆕 <b>Yeni Canlı Destek Mesajı</b>\n👤 <b>İsim:</b> {msg['name'] or 'Belirtilmemiş'}\n📞 <b>Telefon:</b> {msg['phone'] or 'Belirtilmemiş'}\n💬 <b>Mesaj:</b> {msg['message']}\n🕐 <b>Saat:</b> {msg['timestamp']}"
                 else:
-                    telegram_text = (
-                        f"🆕 <b>Yeni Canlı Destek Mesajı</b>\n"
-                        f"💬 <b>Mesaj:</b> {msg['message']}\n"
-                        f"🕐 <b>Saat:</b> {msg['timestamp']}"
-                    )
+                    telegram_text = f"🆕 <b>Yeni Canlı Destek Mesajı</b>\n💬 <b>Mesaj:</b> {msg['message']}\n🕐 <b>Saat:</b> {msg['timestamp']}"
                 send_telegram(telegram_text)
-
                 self._send_json({"success": True, "message": msg})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-
-        # API: /api/admin/chat/reply (auth required) — admin sends a reply
         if path == "/api/admin/chat/reply":
             user = self._authenticate()
             if not user:
@@ -801,17 +758,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             try:
                 body = json.loads(self._read_body())
-                msg = {
-                    "id": CHAT_ID,
-                    "message": body.get("message", ""),
-                    "timestamp": datetime.now().isoformat(),
-                    "isAdmin": True,
-                    "adminName": user,
-                    "read": True,
-                    "sessionId": body.get("sessionId", ""),
-                    "name": body.get("name", f"Admin ({user})"),
-                    "phone": ""
-                }
+                msg = {"id": CHAT_ID, "message": body.get("message", ""), "timestamp": datetime.now().isoformat(), "isAdmin": True, "adminName": user, "read": True, "sessionId": body.get("sessionId", ""), "name": body.get("name", f"Admin ({user})"), "phone": ""}
                 if not msg["message"]:
                     self._send_error("Mesaj boş olamaz.", 400)
                     return
@@ -821,8 +768,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-
-        # API: /api/admin/chat/read (auth required) — mark messages as read
         if path == "/api/admin/chat/read":
             user = self._authenticate()
             if not user:
@@ -838,13 +783,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-
         self._send_error("Bulunamadı", 404)
 
     def do_PUT(self):
         path, _ = self._parse_path()
-
-        # API: /api/admin/flights (update flight)
         if path == "/api/admin/flights":
             user = self._authenticate()
             if not user:
@@ -852,15 +794,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             try:
                 body = json.loads(self._read_body())
-                airport = body.get("airport")  # "gzp" or "ayt"
-                direction = body.get("direction")  # "gelen" or "giden"
+                airport = body.get("airport")
+                direction = body.get("direction")
                 index = body.get("index")
                 updates = body.get("updates", {})
-
                 if airport not in ("gzp", "ayt") or direction not in ("gelen", "giden"):
                     self._send_error("Geçersiz parametre.", 400)
                     return
-
                 flights = flight_cache[airport][direction]
                 if index is not None and 0 <= index < len(flights):
                     flights[index].update(updates)
@@ -871,8 +811,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-
-        # API: /api/admin/unit-price (auth required) — update km-based unit price
         if path == "/api/admin/unit-price":
             user = self._authenticate()
             if not user:
@@ -890,8 +828,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except (ValueError, TypeError):
                 self._send_error("Geçersiz fiyat.", 400)
             return
-
-        # API: /api/admin/bank-accounts (auth required) — update bank accounts
         if path == "/api/admin/bank-accounts":
             user = self._authenticate()
             if not user:
@@ -901,7 +837,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 body = json.loads(self._read_body())
                 accounts = body.get("accounts", {})
                 global BANK_ACCOUNTS
-                # Validate required banks exist
                 for key in ("halkbank", "vakifbank"):
                     if key not in accounts:
                         self._send_error(f"'{key}' hesabı eksik.", 400)
@@ -917,8 +852,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-
-        # API: /api/admin/slider-images (auth required) — manage slider images
         if path == "/api/admin/slider-images":
             user = self._authenticate()
             if not user:
@@ -928,7 +861,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 body = json.loads(self._read_body())
                 action = body.get("action", "replace")
                 global SLIDER_IMAGES
-
                 if action == "replace":
                     images = body.get("images", [])
                     if not isinstance(images, list):
@@ -942,7 +874,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             img["alt"] = "Slider Görseli"
                     SLIDER_IMAGES = images
                     self._send_json({"success": True, "images": SLIDER_IMAGES})
-
                 elif action == "delete":
                     index = body.get("index")
                     if index is None or not isinstance(index, int) or index < 0 or index >= len(SLIDER_IMAGES):
@@ -950,7 +881,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         return
                     SLIDER_IMAGES.pop(index)
                     self._send_json({"success": True, "images": SLIDER_IMAGES})
-
                 elif action == "add":
                     img = body.get("image", {})
                     if not isinstance(img, dict) or "src" not in img:
@@ -972,17 +902,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     img = SLIDER_IMAGES.pop(from_index)
                     SLIDER_IMAGES.insert(to_index, img)
                     self._send_json({"success": True, "images": SLIDER_IMAGES})
-
                 else:
                     self._send_error("Bilinmeyen aksiyon: " + action, 400)
-
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             except Exception as e:
                 self._send_error(str(e), 500)
             return
-
-        # API: /api/admin/telegram/config (auth required) — update Telegram config
         if path == "/api/admin/telegram/config":
             user = self._authenticate()
             if not user:
@@ -995,15 +921,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     TELEGRAM_BOT_TOKEN = body["botToken"]
                 if "chatId" in body:
                     TELEGRAM_CHAT_ID = str(body["chatId"])
-                self._send_json({"success": True, "config": {
-                    "botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "",
-                    "chatId": TELEGRAM_CHAT_ID
-                }})
+                self._send_json({"success": True, "config": {"botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "", "chatId": TELEGRAM_CHAT_ID}})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-
-        # API: /api/admin/reservations (auth required) — update or delete reservation
         if path == "/api/admin/reservations":
             user = self._authenticate()
             if not user:
@@ -1013,17 +934,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 body = json.loads(self._read_body())
                 action = body.get("action", "")
                 global RESERVATIONS, RESERVATION_ID
-
                 if action == "update-status":
                     res_id = body.get("id")
                     new_status = body.get("status")
                     if new_status not in ("pending", "approved", "completed", "cancelled"):
                         self._send_error("Geçersiz durum.", 400)
                         return
-
-                    # PostgreSQL'de güncelle
                     if not db.update_reservation_status_in_db(res_id, new_status):
-                        # Fallback: in-memory güncelle
                         found = False
                         for r in RESERVATIONS:
                             if r["id"] == res_id:
@@ -1035,15 +952,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             self._send_error("Rezervasyon bulamadi.", 404)
                             return
                         save_reservations()
-
                     self._send_json({"success": True})
-
                 elif action == "delete":
                     res_id = body.get("id")
-
-                    # PostgreSQL'den sil
                     if not db.delete_reservation_from_db(res_id):
-                        # Fallback: in-memory sil
                         found = False
                         for i, r in enumerate(RESERVATIONS):
                             if r["id"] == res_id:
@@ -1054,22 +966,15 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             self._send_error("Rezervasyon bulamadi.", 404)
                             return
                         save_reservations()
-
                     self._send_json({"success": True})
-
                 else:
                     self._send_error("Bilinmeyen aksiyon: " + action, 400)
-
             except json.JSONDecodeError:
                 self._send_error("Gecersiz JSON.", 400)
             except Exception as e:
                 self._send_error(str(e), 500)
             return
-
         self._send_error("Bulunamadi", 404)
-
-
-# --- Server Startup -----------------------------------------------------------
 
 if __name__ == "__main__":
     db.init_db()
@@ -1079,4 +984,4 @@ if __name__ == "__main__":
     server = http.server.HTTPServer((HOST, PORT), GulizHandler)
     scheduler = threading.Thread(target=scheduler_loop, daemon=True)
     scheduler.start()
-    server.serve_forever()     
+    server.serve_forever()

@@ -85,6 +85,56 @@
 
         // Admin tarafından belirlenen km başı birim fiyatı backend'den al
         var UNIT_PRICE = 25;
+
+        // ============================================================
+        // HİZMET BÖLGESİ — Gazipaşa, Alanya, Antalya
+        // ============================================================
+        var SERVICE_AREA = [
+            // Alanya bölgesi
+            'alanya', 'mahmutlar', 'kargıcak', 'kestel', 'tosmur', 'oba',
+            'konaklı', 'avsallar', 'incekum', 'payallar', 'türkler',
+            'okurcalar', 'demirtaş', 'kleopatra',
+            // Gazipaşa bölgesi
+            'gazipaşa', 'gzp', 'kahyalar', 'zeytinada', 'sugözü', 'koru',
+            'gözüküçüklü', 'çamlıca', 'kaledran', 'muzkent', 'sarıağaç',
+            // Antalya merkez
+            'antalya', 'ayt', 'muratpaşa', 'konyaaltı', 'lara', 'şirinyalı',
+            'fener', 'çağlayan',
+            // Manavgat / Side koridoru
+            'manavgat', 'side', 'ılıca', 'çolaklı', 'gündoğdu',
+            // Serik / Belek
+            'serik', 'belek', 'kadriye',
+        ];
+
+        function isInServiceArea(text) {
+            if (!text || text.trim().length < 2) return true; // empty = don't block yet
+            var lower = text.toLowerCase().trim();
+            for (var i = 0; i < SERVICE_AREA.length; i++) {
+                if (lower.indexOf(SERVICE_AREA[i]) !== -1) return true;
+            }
+            return false;
+        }
+
+        function checkServiceArea(inputId, warningId) {
+            var input = document.getElementById(inputId);
+            var warning = document.getElementById(warningId);
+            if (!input || !warning) return true;
+            var val = input.value.trim();
+            if (val.length < 2) {
+                warning.style.display = 'none';
+                input.style.borderColor = '';
+                return true;
+            }
+            var ok = isInServiceArea(val);
+            if (ok) {
+                warning.style.display = 'none';
+                input.style.borderColor = '';
+            } else {
+                warning.style.display = 'block';
+                input.style.borderColor = '#E31837';
+            }
+            return ok;
+        }
         function fetchUnitPrice() {
             fetch('/api/unit-price')
                 .then(function(r) { return r.json(); })
@@ -580,7 +630,7 @@
             <div class="header-actions">
                 <div class="lang-switcher"><span class="active">TR</span> | <span>EN</span> | <span>RU</span></div>
                 <a href="tel:+902426062548" class="call-btn"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a>
-                <button class="cta-button" onclick="window.scrollTo(0,0);">Hızlı Rezervasyon</button>
+                <button class="cta-button" onclick="quickReservation()">Hızlı Rezervasyon</button>
                 <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Menüyü Aç/Kapat"><i class="fa-solid fa-bars"></i></button>
             </div>
         </div>
@@ -613,10 +663,11 @@
                         <div class="input-group">
                             <label>Alış Noktası</label>
                         <div class="input-wrapper"><i class="fa-solid fa-map-pin"></i>
-                            <input type="text" id="pickup-input" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." required>
+                            <input type="text" id="pickup-input" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." required oninput="checkServiceArea('pickup-input','pickup-area-warning')">
                         </div>
+                        <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</div>
                     </div>
-                    <div class="input-group"><label>Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." required></div></div>
+                    <div class="input-group"><label>Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." required oninput="checkServiceArea('dest-input','dest-area-warning')"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</div></div>
                     <div class="input-group"><label>Uçuş Numarası</label><div class="input-wrapper"><i class="fa-solid fa-plane"></i><input type="text" id="transfer-flight" placeholder="Örn: TK2405 (Opsiyonel)"></div></div>
                 </div>
                 <div class="form-grid">
@@ -766,7 +817,7 @@
 
                 <div class="form-step" id="tahsis-step1" style="display:block;">
                     <div class="form-grid">
-                    <div class="input-group"><label>Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa" placeholder="Aracın sizi alacağı konum" required></div></div>
+                    <div class="input-group"><label>Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa" placeholder="Aracın sizi alacağı konum" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</div></div>
                     <div class="input-group"><label>Tahsis Süresi</label>
                         <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
                             <select id="vDuration" onchange="calculateVipPrice()">
@@ -1406,6 +1457,20 @@
                     if (!dest.value.trim()) { shakeField(dest); dest.focus(); return; }
                     if (!date.value) { shakeField(date); date.focus(); return; }
                     if (!time.value) { shakeField(time); time.focus(); return; }
+                    // Hizmet bölgesi kontrolü — pickup
+                    if (!isInServiceArea(pickup.value)) {
+                        shakeField(pickup);
+                        pickup.focus();
+                        checkServiceArea('pickup-input', 'pickup-area-warning');
+                        return;
+                    }
+                    // Hizmet bölgesi kontrolü — destination
+                    if (!isInServiceArea(dest.value)) {
+                        shakeField(dest);
+                        dest.focus();
+                        checkServiceArea('dest-input', 'dest-area-warning');
+                        return;
+                    }
                 }
             } else if (formType === 'tahsis') {
                 if (currentStep === 1) {
@@ -1415,6 +1480,13 @@
                     if (!pickup.value.trim()) { shakeField(pickup); pickup.focus(); return; }
                     if (!tahsisDate.value) { shakeField(tahsisDate); tahsisDate.focus(); return; }
                     if (!tahsisTime.value) { shakeField(tahsisTime); tahsisTime.focus(); return; }
+                    // Hizmet bölgesi kontrolü
+                    if (!isInServiceArea(pickup.value)) {
+                        shakeField(pickup);
+                        pickup.focus();
+                        checkServiceArea('tahsis-pickup-input', 'tahsis-area-warning');
+                        return;
+                    }
                 }
             }
             if (currentStep === 2) {
@@ -1522,6 +1594,21 @@
                 }
             }
         });
+
+        // Hızlı Rezervasyon butonu — form alanına kaydır
+        function quickReservation() {
+            var engine = document.querySelector('.booking-engine');
+            if (engine) {
+                engine.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(function() {
+                    var activeForm = document.querySelector('.form-body.active-form');
+                    if (activeForm) {
+                        var firstInput = activeForm.querySelector('input:not([type=hidden]):not([type=radio])');
+                        if (firstInput) firstInput.focus();
+                    }
+                }, 600);
+            }
+        }
 
         // 1. FORM SEKME DEĞİŞTİRME
         function switchForm(formType) {
@@ -1693,6 +1780,16 @@
             if(formType === 'transfer') {
                 payload.pickup = document.getElementById('pickup-input').value;
                 payload.destination = document.getElementById('dest-input').value;
+
+                // Son güvenlik: hizmet bölgesi kontrolü — transfer
+                if (!isInServiceArea(payload.pickup)) {
+                    alert('Üzgünüz, bu alış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.');
+                    return;
+                }
+                if (payload.destination && !isInServiceArea(payload.destination)) {
+                    alert('Üzgünüz, bu varış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.');
+                    return;
+                }
                 payload.flightNumber = document.getElementById('transfer-flight').value;
                 payload.date = document.getElementById('transfer-date').value;
                 payload.time = document.getElementById('transfer-time').value;
@@ -1705,6 +1802,12 @@
                 payload.pickup = document.getElementById('tahsis-pickup-input').value;
                 var vDuration = document.getElementById('vDuration');
                 payload.duration = vDuration.options[vDuration.selectedIndex].text;
+
+                // Son güvenlik: hizmet bölgesi kontrolü — tahsis
+                if (!isInServiceArea(payload.pickup)) {
+                    alert('Üzgünüz, bu alış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.');
+                    return;
+                }
                 payload.date = document.getElementById('tahsis-date').value;
                 payload.time = document.getElementById('tahsis-time').value;
                 payload.customerName = document.getElementById('tahsis-name').value;
@@ -1820,6 +1923,7 @@
                     if(place && place.geometry) {
                         selectedDestLat = place.geometry.location.lat();
                         selectedDestLng = place.geometry.location.lng();
+                        checkServiceArea('dest-input', 'dest-area-warning');
                         showRouteMap();
                         calculateTransferDistance();
                     }
@@ -1833,6 +1937,7 @@
                     if(place && place.geometry) {
                         selectedPickupLat = place.geometry.location.lat();
                         selectedPickupLng = place.geometry.location.lng();
+                        checkServiceArea('pickup-input', 'pickup-area-warning');
                         showRouteMap();
                     }
                 });
@@ -1845,6 +1950,7 @@
                     if(place && place.geometry) {
                         selectedPickupLat = place.geometry.location.lat();
                         selectedPickupLng = place.geometry.location.lng();
+                        checkServiceArea('tahsis-pickup-input', 'tahsis-area-warning');
                         showRouteMap();
                     }
                 });

@@ -7,3 +7,5 @@ reservations.json
 .DS_Store
 .vscode/
 temp_*.py
+*.truncated
+sunucu baslat.txt
