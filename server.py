@@ -251,97 +251,6 @@ AYT_FLIGHTS_GIDEN = [
     {"saat": "23:59", "flight": "XQ 9108", "to": "Munih (MUC)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
 ]
 
-# ─── OpenSky Network API ──────────────────────────────────────────────────────────
-
-AIRPORT_NAMES = {
-    "LTGZ": "Gazipaşa (GZP)", "LTAI": "Antalya (AYT)",
-    "LTBA": "İstanbul (IST)", "LTFM": "İstanbul (IST)", "LTFJ": "İstanbul (SAW)",
-    "LTAC": "Ankara (ESB)", "LTBJ": "İzmir (ADB)", "LTBS": "Dalaman (DLM)",
-    "LTBR": "Bursa (YEI)", "LTAF": "Adana (ADA)", "LTAU": "Kayseri (ASR)",
-    "LTCP": "Balıkesir (BZI)",
-    "EDDL": "Düsseldorf (DUS)", "EDDB": "Berlin (BER)", "EDDF": "Frankfurt (FRA)",
-    "EDDM": "Münih (MUC)", "EDDK": "Köln (CGN)",
-    "EHAM": "Amsterdam (AMS)",
-    "UUEE": "Moskova (SVO)", "UUDD": "Moskova (DME)", "UUWW": "Moskova (VKO)",
-    "LLBG": "Tel Aviv (TLV)", "EFHK": "Helsinki (HEL)",
-    "ESSA": "Stockholm (ARN)", "ENGM": "Oslo (OSL)", "EKCH": "Kopenhag (CPH)",
-    "EPWA": "Varşova (WAW)", "LKPR": "Prag (PRG)", "LOWW": "Viyana (VIE)",
-    "LSZH": "Zürih (ZRH)", "LEBL": "Barselona (BCN)", "LEMD": "Madrid (MAD)",
-    "LIRF": "Roma (FCO)", "LIML": "Milano (LIN)", "LPPT": "Lizbon (LIS)",
-    "LFPG": "Paris (CDG)", "LFPO": "Paris (ORY)",
-    "EGLL": "Londra (LHR)", "EGKK": "Londra (LGW)", "EGSS": "Londra (STN)",
-}
-
-AIRLINE_NAMES = {
-    "THY": "Turkish Airlines", "TK": "Turkish Airlines",
-    "PGT": "Pegasus", "PC": "Pegasus",
-    "SXS": "SunExpress", "XQ": "SunExpress",
-    "CAI": "Corendon", "XC": "Corendon",
-    "FH": "Freebird",
-}
-
-OPENSKY_BASE = "https://opensky-network.org/api"
-OPENSKY_LAST_CALL = 0.0
-OPENSKY_MIN_INTERVAL = 12
-
-def _icao_to_name(icao):
-    return AIRPORT_NAMES.get(icao, icao)
-
-def _callsign_to_airline(callsign):
-    c = callsign.upper().strip()
-    if len(c) >= 3 and c[:3] in AIRLINE_NAMES:
-        return AIRLINE_NAMES[c[:3]]
-    if len(c) >= 2 and c[:2] in AIRLINE_NAMES:
-        return AIRLINE_NAMES[c[:2]]
-    return c
-
-def _fetch_opensky_flights(airport_icao, is_arrival):
-    global OPENSKY_LAST_CALL
-    now = datetime.now()
-    today_start = datetime(now.year, now.month, now.day, 0, 0, 0)
-    today_end = today_start + timedelta(days=1)
-    begin_ts = int(today_start.timestamp())
-    end_ts = int(today_end.timestamp())
-    elapsed = time.time() - OPENSKY_LAST_CALL
-    if elapsed < OPENSKY_MIN_INTERVAL:
-        time.sleep(OPENSKY_MIN_INTERVAL - elapsed)
-    endpoint = "arrival" if is_arrival else "departure"
-    url = f"{OPENSKY_BASE}/api/flights/{endpoint}?airport={airport_icao}&begin={begin_ts}&end={end_ts}"
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "GulizVIP/1.0"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        OPENSKY_LAST_CALL = time.time()
-    except Exception as e:
-        print(f"[!] OpenSky {airport_icao} {endpoint}: {e}")
-        return None
-    if not isinstance(data, list) or len(data) == 0:
-        return None
-    flights = []
-    seen = set()
-    for f in data:
-        callsign = (f.get("callsign") or "").strip()
-        if not callsign or callsign in seen:
-            continue
-        seen.add(callsign)
-        ts = f.get("lastSeen" if is_arrival else "firstSeen")
-        if not ts:
-            continue
-        flight_time = datetime.fromtimestamp(ts)
-        saat = flight_time.strftime("%H:%M")
-        callsign_upper = callsign.upper().replace(" ", "")
-        airline = _callsign_to_airline(callsign_upper)
-        if is_arrival:
-            origin = _icao_to_name(f.get("estDepartureAirport") or "")
-            entry = {"saat": saat, "flight": callsign_upper, "from": origin, "to": "", "airline": airline, "status": "Bekleniyor", "code": "expected"}
-        else:
-            dest = _icao_to_name(f.get("estArrivalAirport") or "")
-            entry = {"saat": saat, "flight": callsign_upper, "from": "", "to": dest, "airline": airline, "status": "Bekleniyor", "code": "expected"}
-        entry["type"] = _classify_flight_type(entry)
-        flights.append(entry)
-    flights.sort(key=lambda x: (0 if x["type"] == "ic" else 1))
-    return flights[:10]
-
 # ─── In-Memory Cache ──────────────────────────────────────────────────────────
 
 flight_cache = {"gzp": {"gelen": [], "giden": [], "updated_at": None}, "ayt": {"gelen": [], "giden": [], "updated_at": None}}
@@ -454,75 +363,43 @@ def refresh_flights():
     airports = {"gzp": {"icao": "LTGZ"}, "ayt": {"icao": "LTAI"}}
     for airport_key, ap in airports.items():
         icao = ap["icao"]
-        real_gelen = _fetch_opensky_flights(icao, is_arrival=True)
-        real_giden = _fetch_opensky_flights(icao, is_arrival=False)
-        if real_gelen is not None and real_giden is not None:
-            def apply_status(flight, is_arrival):
-                f_min = int(flight["saat"].split(":")[0]) * 60 + int(flight["saat"].split(":")[1])
-                c_min = int(current_time.split(":")[0]) * 60 + int(current_time.split(":")[1])
-                diff = c_min - f_min
-                ft = flight
-                if diff < -30:
-                    ft["status"] = "Bekleniyor"; ft["code"] = "expected"
-                elif -30 <= diff < 0:
-                    ft["status"] = "Zamanında"; ft["code"] = "expected"
-                elif 0 <= diff < 20:
-                    ft["status"] = "İndi" if is_arrival else "Kapı Kapandı"
-                    ft["code"] = "landed" if is_arrival else "departed"
-                elif 20 <= diff < 60:
-                    ft["status"] = "İndi" if is_arrival else "Biniş Başladı"
-                    ft["code"] = "landed" if is_arrival else "expected"
-                elif 60 <= diff < 120:
-                    ft["status"] = "İndi" if is_arrival else "Kapı Kapandı"
-                    ft["code"] = "landed" if is_arrival else "departed"
-                else:
-                    if random.random() < 0.15:
-                        delay = random.randint(10, 45)
-                        new_time = (datetime.strptime(flight["saat"], "%H:%M") + timedelta(minutes=delay)).strftime("%H:%M")
-                        ft["status"] = f"Rötarlı ({new_time})"; ft["code"] = "delayed"
-                    else:
-                        ft["status"] = "Zamanında"; ft["code"] = "expected"
-                return ft
-            flight_cache[airport_key] = {"gelen": [apply_status(dict(f), True) for f in real_gelen], "giden": [apply_status(dict(f), False) for f in real_giden], "updated_at": now.isoformat()}
-            print(f"[{current_time}] {airport_key.upper()}: OpenSky'den {len(real_gelen)} gelen / {len(real_giden)} giden")
-        else:
-            mock_gelen = GZP_FLIGHTS_GELEN if airport_key == "gzp" else AYT_FLIGHTS_GELEN
-            mock_giden = GZP_FLIGHTS_GIDEN if airport_key == "gzp" else AYT_FLIGHTS_GIDEN
-            def get_status(flight_saat, is_arrival):
-                ft = flight_saat.split(":")
-                ct = current_time.split(":")
-                f_min = int(ft[0]) * 60 + int(ft[1])
-                c_min = int(ct[0]) * 60 + int(ct[1])
-                diff = c_min - f_min
-                if diff < -30:
-                    return ("Bekleniyor", "expected")
-                elif -30 <= diff < 0:
-                    return ("Zamanında", "expected")
-                elif 0 <= diff < 20:
-                    return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
-                elif 20 <= diff < 60:
-                    return ("İndi", "landed") if is_arrival else ("Biniş Başladı", "expected")
-                elif 60 <= diff < 120:
-                    return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
-                else:
-                    if random.random() < 0.15:
-                        delay = random.randint(10, 45)
-                        new_time = (datetime.strptime(flight_saat, "%H:%M") + timedelta(minutes=delay)).strftime("%H:%M")
-                        return (f"Rötarlı ({new_time})", "delayed")
-                    return ("Zamanında", "expected") if is_arrival else ("Biniş Başladı", "expected")
-            def process_flights(flights, is_arrival):
-                result = []
-                for f in flights:
-                    stat_text, stat_code = get_status(f["saat"], is_arrival)
-                    entry = dict(f)
-                    entry["status"] = stat_text
-                    entry["code"] = stat_code
-                    entry["type"] = _classify_flight_type(f)
-                    result.append(entry)
-                result.sort(key=lambda x: (0 if x["type"] == "ic" else 1))
-                return result[:10]
-            flight_cache[airport_key] = {"gelen": process_flights(mock_gelen, True), "giden": process_flights(mock_giden, False), "updated_at": now.isoformat()}
-            print(f"[{current_time}] {airport_key.upper()}: Mock veri kullanıldı")
+        mock_gelen = GZP_FLIGHTS_GELEN if airport_key == "gzp" else AYT_FLIGHTS_GELEN
+        mock_giden = GZP_FLIGHTS_GIDEN if airport_key == "gzp" else AYT_FLIGHTS_GIDEN
+        def get_status(flight_saat, is_arrival):
+            ft = flight_saat.split(":")
+            ct = current_time.split(":")
+            f_min = int(ft[0]) * 60 + int(ft[1])
+            c_min = int(ct[0]) * 60 + int(ct[1])
+            diff = c_min - f_min
+            if diff < -30:
+                return ("Bekleniyor", "expected")
+            elif -30 <= diff < 0:
+                return ("Zamanında", "expected")
+            elif 0 <= diff < 20:
+                return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
+            elif 20 <= diff < 60:
+                return ("İndi", "landed") if is_arrival else ("Biniş Başladı", "expected")
+            elif 60 <= diff < 120:
+                return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
+            else:
+                if random.random() < 0.15:
+                    delay = random.randint(10, 45)
+                    new_time = (datetime.strptime(flight_saat, "%H:%M") + timedelta(minutes=delay)).strftime("%H:%M")
+                    return (f"Rötarlı ({new_time})", "delayed")
+                return ("Zamanında", "expected") if is_arrival else ("Biniş Başladı", "expected")
+        def process_flights(flights, is_arrival):
+            result = []
+            for f in flights:
+                stat_text, stat_code = get_status(f["saat"], is_arrival)
+                entry = dict(f)
+                entry["status"] = stat_text
+                entry["code"] = stat_code
+                entry["type"] = _classify_flight_type(f)
+                result.append(entry)
+            result.sort(key=lambda x: (0 if x["type"] == "ic" else 1))
+            return result[:10]
+        flight_cache[airport_key] = {"gelen": process_flights(mock_gelen, True), "giden": process_flights(mock_giden, False), "updated_at": now.isoformat()}
+        print(f"[{current_time}] {airport_key.upper()}: Mock veri kullanıldı")
 
 def scheduler_loop():
     while True:
@@ -1718,4 +1595,5 @@ if __name__ == "__main__":
             sys.stdout.flush()
     except Exception as e:
         print(f"[-] SUNUCU HATASI: {e}")
-        traceback.p
+        traceback.print_exc(file=sys.stdout)
+        sys.stdout.flush()
