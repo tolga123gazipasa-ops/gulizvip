@@ -867,25 +867,37 @@
                     <p style="font-size:13px;color:var(--text-gray);margin:0 0 16px;">
                         Aşağıdaki sayfaların içeriklerini düzenleyin. Değişiklikler otomatik olarak web sitesinde görünecektir.
                     </p>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-                        <button class="btn-primary" onclick="loadPageContent('hakkimizda')" style="padding:8px 18px;font-size:13px;" id="page-btn-hakkimizda">Hakkımızda</button>
-                        <button class="btn-primary" onclick="loadPageContent('gizlilik')" style="padding:8px 18px;font-size:13px;" id="page-btn-gizlilik">Gizlilik Sözleşmesi</button>
-                        <button class="btn-primary" onclick="loadPageContent('mesafeli-satis')" style="padding:8px 18px;font-size:13px;" id="page-btn-mesafeli-satis">Mesafeli Satış</button>
-                        <button class="btn-primary" onclick="loadPageContent('teslimat')" style="padding:8px 18px;font-size:13px;" id="page-btn-teslimat">Teslimat ve İade</button>
-                        <button class="btn-primary" onclick="loadPageContent('iade-sartlari')" style="padding:8px 18px;font-size:13px;" id="page-btn-iade-sartlari">İade Şartları</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;" id="page-btn-container">
+                        <!-- Butonlar JS tarafından /api/admin/pages ile doldurulacak -->
                     </div>
                     <div id="page-editor-area" style="display:none;">
                         <div class="form-group">
-                            <label>Sayfa Başlığı</label>
+                            <label>Sayfa Başlığı <span style="font-size:12px;color:var(--text-gray);">(Tarayıcı sekmesinde görünür)</span></label>
                             <input type="text" id="page-editor-title" placeholder="Sayfa başlığı..." maxlength="200" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:15px;">
+                        </div>
+                        <div class="form-group">
+                            <label>Sayfa Alt Başlığı</label>
+                            <input type="text" id="page-editor-subtitle" placeholder="Sayfa alt başlığı (hero bölümünde görünür)..." maxlength="300" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:15px;">
                         </div>
                         <div class="form-group">
                             <label>Sayfa İçeriği</label>
                             <div id="page-editor-quill" style="height:400px;background:#fff;border-radius:8px;"></div>
                         </div>
-                        <div style="display:flex;gap:10px;margin-top:16px;">
+                        <div style="display:flex;align-items:center;gap:20px;margin-top:16px;flex-wrap:wrap;">
                             <button class="btn-primary" onclick="savePageContent()"><i class="fa-solid fa-floppy-disk"></i> Sayfayı Kaydet</button>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                                <input type="checkbox" id="page-editor-active" checked style="width:18px;height:18px;cursor:pointer;">
+                                Sayfa Aktif
+                            </label>
                             <span id="page-editor-status" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;"></span>
+                        </div>
+                        <div id="page-editor-url" style="display:none;margin-top:12px;padding:10px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;">
+                            <i class="fa-solid fa-link"></i>
+                            <strong>Canlı URL:</strong>
+                            <a id="page-live-url" href="#" target="_blank" style="color:var(--primary-red);text-decoration:none;font-weight:600;margin:0 6px;"></a>
+                            <button onclick="copyLiveUrl()" style="background:none;border:none;color:var(--primary-red);cursor:pointer;font-size:13px;" title="Kopyala">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
                         </div>
                     </div>
                     <div id="page-editor-empty" style="padding:40px;text-align:center;color:var(--text-gray);">
@@ -1011,6 +1023,11 @@
         } else {
             stopDashboardRadar();
         }
+
+        // Sayfa Yönetimi sekmesi: dinamik butonları yükle
+        if (tabId === 'view-page-management') {
+            loadPageButtons();
+        }
     }
 </script>
 
@@ -1061,6 +1078,7 @@
                 setInterval(loadReservations, 30000);
                 startChatPolling();
                 startRadarPolling();
+                loadPageButtons();
             } else {
                 errorEl.style.display = 'block';
                 if (res.status === 401) {
@@ -3223,6 +3241,7 @@
 
     var pageQuill = null;
     var currentPageSlug = '';
+    var pageListData = []; // Admin sayfa listesini tut
 
     function initPageQuill() {
         if (!pageQuill) {
@@ -3243,23 +3262,57 @@
         }
     }
 
+    async function loadPageButtons() {
+        var token = getToken();
+        if (!token) return;
+        try {
+            var res = await fetch('/api/admin/pages', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            var data = await res.json();
+            if (data.success && data.pages) {
+                pageListData = data.pages;
+                renderPageButtons(data.pages);
+            }
+        } catch(e) {
+            console.error('Sayfa listesi yüklenemedi:', e);
+        }
+    }
+
+    function renderPageButtons(pages) {
+        var container = document.getElementById('page-btn-container');
+        container.innerHTML = '';
+        pages.forEach(function(p) {
+            var btn = document.createElement('button');
+            btn.className = 'btn-primary';
+            btn.id = 'page-btn-' + p.slug;
+            btn.style.padding = '8px 18px';
+            btn.style.fontSize = '13px';
+            btn.style.opacity = p.is_active ? '1' : '0.5';
+            btn.onclick = function() { loadPageContent(p.slug); };
+            btn.textContent = p.title;
+            container.appendChild(btn);
+        });
+    }
+
     async function loadPageContent(slug) {
         var emptyEl = document.getElementById('page-editor-empty');
         var editorArea = document.getElementById('page-editor-area');
         var statusEl = document.getElementById('page-editor-status');
+        var urlEl = document.getElementById('page-editor-url');
 
         emptyEl.style.display = 'none';
         editorArea.style.display = 'block';
         statusEl.style.display = 'none';
+        urlEl.style.display = 'none';
         currentPageSlug = slug;
 
         // Aktif buton stilini güncelle
-        var slugs = ['hakkimizda', 'gizlilik', 'mesafeli-satis', 'teslimat', 'iade-sartlari'];
-        slugs.forEach(function(s) {
-            var btn = document.getElementById('page-btn-' + s);
+        pageListData.forEach(function(s) {
+            var btn = document.getElementById('page-btn-' + s.slug);
             if (btn) {
-                btn.style.background = (s === slug) ? '#E31837' : '';
-                btn.style.opacity = (s === slug) ? '1' : '0.7';
+                btn.style.background = (s.slug === slug) ? '#E31837' : '';
+                btn.style.opacity = (s.slug === slug) ? '1' : (s.is_active ? '0.7' : '0.5');
             }
         });
 
@@ -3272,15 +3325,46 @@
             var data = await res.json();
             if (data.success && data.page) {
                 document.getElementById('page-editor-title').value = data.page.title || '';
+                document.getElementById('page-editor-subtitle').value = data.page.subtitle || '';
+                document.getElementById('page-editor-active').checked = data.page.is_active !== false;
                 pageQuill.root.innerHTML = data.page.content || '';
             } else {
                 document.getElementById('page-editor-title').value = '';
+                document.getElementById('page-editor-subtitle').value = '';
+                document.getElementById('page-editor-active').checked = true;
                 pageQuill.root.innerHTML = '';
             }
         } catch(e) {
             document.getElementById('page-editor-title').value = '';
+            document.getElementById('page-editor-subtitle').value = '';
+            document.getElementById('page-editor-active').checked = true;
             pageQuill.root.innerHTML = '';
         }
+    }
+
+    function copyLiveUrl() {
+        var linkEl = document.getElementById('page-live-url');
+        if (linkEl) {
+            var text = linkEl.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function() {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+    }
+
+    function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(ta);
     }
 
     async function savePageContent() {
@@ -3289,7 +3373,9 @@
         if (!currentPageSlug) { alert('Önce bir sayfa seçin.'); return; }
 
         var title = document.getElementById('page-editor-title').value.trim();
+        var subtitle = document.getElementById('page-editor-subtitle').value.trim();
         var content = pageQuill ? pageQuill.root.innerHTML : '';
+        var is_active = document.getElementById('page-editor-active').checked;
 
         var statusEl = document.getElementById('page-editor-status');
         statusEl.style.display = 'inline-block';
@@ -3304,7 +3390,12 @@
                     'Authorization': 'Bearer ' + token,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ title: title, content: content })
+                body: JSON.stringify({
+                    title: title,
+                    subtitle: subtitle,
+                    content: content,
+                    is_active: is_active
+                })
             });
             var data = await res.json();
             if (data.success) {
@@ -3312,6 +3403,17 @@
                 statusEl.style.color = '#155724';
                 statusEl.innerHTML = '<i class="fa-solid fa-check-circle"></i> Sayfa başarıyla kaydedildi!';
                 setTimeout(function() { statusEl.style.display = 'none'; }, 4000);
+
+                // Canlı URL'yi göster
+                var urlEl = document.getElementById('page-editor-url');
+                var linkEl = document.getElementById('page-live-url');
+                var domain = window.location.origin;
+                linkEl.href = domain + '/sayfa/' + currentPageSlug;
+                linkEl.textContent = domain + '/sayfa/' + currentPageSlug;
+                urlEl.style.display = 'block';
+
+                // Butonları yenile
+                loadPageButtons();
             } else {
                 statusEl.style.background = '#f8d7da';
                 statusEl.style.color = '#721c24';

@@ -84,22 +84,32 @@ SLUG_ALIASES = {
 PAGE_CONTENT = {
     "hakkimizda": {
         "title": "Hakkımızda",
+        "subtitle": "Premium VIP transfer hizmetinin ayrıcalıklı dünyası",
+        "is_active": True,
         "content": "<p class=\"last-updated\">Son Güncelleme: Temmuz 2026</p><h2>Güliz VIP Transfer</h2><p>Güliz VIP Transfer olarak, Gazipaşa Havalimanı ve Alanya bölgesinde lüks ve konforlu VIP transfer hizmeti sunuyoruz. Misafirlerimize güvenli, zamanında ve prestijli bir seyahat deneyimi yaşatmak en önemli önceliğimizdir.</p><h2>Vizyonumuz</h2><p>Akdeniz bölgesinin en güvenilir VIP transfer markası olmak. Her yolculuğu konfor ve lüksün buluştuğu unutulmaz bir deneyime dönüştürmek için çalışıyoruz.</p><h2>Misyonumuz</h2><p>Profesyonel ekibimiz ve modern araç filomuzla, misafirlerimize havalimanı transferi ve şoförlü günlük VIP hizmetlerinde kesintisiz, güvenli ve ayrıcalıklı bir deneyim sunmak.</p><h2>Değerlerimiz</h2><ul><li><strong>Güvenlik:</strong> Her yolculukta en üst düzey güvenlik standartları</li><li><strong>Konfor:</strong> Lüks araç filomuzla seyahat konforunda sıfır tolerans</li><li><strong>Zamanında Hizmet:</strong> Uçuş takibi ile %99 zamanında teslimat oranı</li><li><strong>Müşteri Memnuniyeti:</strong> Kişiye özel çözümlerle fark yaratan hizmet anlayışı</li></ul>"
     },
     "gizlilik": {
         "title": "Gizlilik Sözleşmesi",
+        "subtitle": "Kişisel verilerinizin korunması ve işlenmesi hakkında bilgilendirme",
+        "is_active": True,
         "content": "<p class=\"last-updated\">Son Güncelleme: Temmuz 2026</p><h2>1. Toplanan Bilgiler</h2><p>Güliz VIP Transfer olarak, rezervasyon işlemleri sırasında ad, soyad, telefon numarası, e-posta adresi ve ödeme bilgileri gibi kişisel verilerinizi toplamaktayız. Bu bilgiler yalnızca hizmetlerimizi sağlamak amacıyla kullanılır.</p><h2>2. Bilgi Kullanımı</h2><p>Toplanan kişisel verileriniz; rezervasyonlarınızın yönetilmesi, size özel teklifler sunulması ve müşteri hizmetleri kalitesinin artırılması amacıyla işlenmektedir.</p><h2>3. Bilgi Paylaşımı</h2><p>Kişisel verileriniz, yasal zorunluluklar dışında üçüncü taraflarla paylaşılmaz. Ödeme işlemleri güvenli ödeme altyapımız üzerinden gerçekleştirilir.</p><h2>4. Veri Güvenliği</h2><p>Kişisel verileriniz, endüstri standardı güvenlik önlemleri (SSL, şifreleme) ile korunmaktadır.</p><h2>5. Çerez Politikası</h2><p>Web sitemiz, kullanıcı deneyimini iyileştirmek amacıyla çerezler kullanmaktadır. Çerez ayarlarınızı tarayıcınızdan yönetebilirsiniz.</p><h2>6. Haklarınız</h2><p>KVKK kapsamında; verilerinize erişme, düzeltme, silme ve işleme itiraz etme haklarına sahipsiniz. Talepleriniz için bizimle iletişime geçebilirsiniz.</p>"
     },
     "mesafeli-satis": {
         "title": "Mesafeli Satış Sözleşmesi",
+        "subtitle": "Online rezervasyon ve satış koşullarına ilişkin sözleşme metni",
+        "is_active": True,
         "content": "<p class=\"last-updated\">Son Güncelleme: Temmuz 2026</p><h2>1. Taraflar</h2><p>İşbu Mesafeli Satış Sözleşmesi, Güliz VIP Transfer hizmetleri kapsamında web sitesi üzerinden yapılan rezervasyonlar için geçerlidir.</p><h2>2. Hizmet Tanımı</h2><p>VIP havalimanı transferi ve şoförlü günlük VIP araç kiralama hizmetleri, belirtilen tarih, saat ve güzergahta profesyonel şoför eşliğinde lüks araç ile sağlanır.</p><h2>3. Fiyatlandırma</h2><p>Fiyatlandırma, güncel km başı birim fiyat üzerinden hesaplanır. Tüm fiyatlar Türk Lirası (TL) olarak belirtilmiştir ve KDV dahildir.</p><h2>4. Ödeme Koşulları</h2><p>Ödeme, kredi kartı veya banka havalesi ile yapılabilir. Kredi kartı ödemelerinde geçerli kart ağlarının komisyon oranları uygulanır.</p><h2>5. Cayma Hakkı</h2><p>6502 sayılı Tüketicinin Korunması Hakkında Kanun kapsamında, VIP transfer hizmetleri belirli bir tarihte ifası gereken hizmetlerdir. Cayma hakkı kullanımı İade Şartları sayfasında detaylandırılmıştır.</p><h2>6. Sözleşmenin İfası</h2><p>Rezervasyon onaylandıktan sonra hizmet, belirtilen tarih ve saatte başlar. Gecikme ve iptallerde mücbir sebepler dikkate alınır.</p>"
     },
     "teslimat": {
         "title": "Teslimat ve İade Şartları",
+        "subtitle": "VIP transfer hizmetimizin teslimat ve iade koşulları hakkında detaylı bilgi",
+        "is_active": True,
         "content": "<p class=\"last-updated\">Son Güncelleme: Temmuz 2026</p><h2>Teslimat Şartları</h2><p>VIP transfer hizmetimiz, rezervasyon sırasında belirtilen buluşma noktasında, belirtilen tarih ve saatte başlar. Şoförümüz, uçuş takibi sayesinde gecikmelerden haberdar olur ve sizi karşılama alanında bekler.</p><h2>Hizmet Süreci</h2><ul><li>Buluşma noktasında şoför karşılaması</li><li>Bagaj yardımı ve araç yerleştirme</li><li>Konforlu ve güvenli VIP transfer</li><li>Varış noktasına zamanında ulaşım</li></ul><h2>İptal ve İade Koşulları</h2><ul><li><strong>24 saat ve üzeri:</strong> Tam iade</li><li><strong>24 saatten az:</strong> %50 iade</li><li><strong>Hizmet tarihinde:</strong> İade yapılmaz</li></ul><h2>Değişiklikler</h2><p>Rezervasyon tarih, saat veya güzergah değişiklikleri, hizmetten en az 12 saat önce bildirilmelidir. Son dakika değişiklikleri operasyon ekibinin onayına tabidir.</p><h2>Mücbir Sebepler</h2><p>Doğal afet, kötü hava koşulları veya yol kapanması gibi mücbir sebeplerde tam iade veya alternatif tarih seçeneği sunulur.</p>"
     },
     "iade-sartlari": {
         "title": "İade Şartları",
+        "subtitle": "VIP transfer hizmetimizin iade ve para iadesi koşulları",
+        "is_active": True,
         "content": "<p class=\"last-updated\">Son Güncelleme: Temmuz 2026</p><h2>İade Politikası</h2><p>Güliz VIP Transfer olarak, müşteri memnuniyetini ön planda tutuyoruz. İşbu iade politikası, web sitemiz üzerinden yapılan rezervasyonlara ilişkin iade ve para iadesi koşullarını düzenlemektedir.</p><h2>1. Cayma Hakkı</h2><p>6502 sayılı Tüketicinin Korunması Hakkında Kanun kapsamında, VIP transfer hizmetleri belirli bir tarihte ifası gereken hizmetler olarak değerlendirildiğinden, cayma hakkı aşağıdaki şartlara tabidir:</p><ul><li><strong>24 saat ve üzeri kala iptal:</strong> Herhangi bir kesinti yapılmaksızın tam iade sağlanır.</li><li><strong>24 saatten az kala iptal:</strong> Ödenen tutarın %50'si iade edilir.</li><li><strong>Hizmet tarihinde iptal veya gelinmemesi:</strong> İade yapılmaz.</li></ul><h2>2. İade Süreci</h2><p>İade talebinizi aşağıdaki kanallardan bize iletebilirsiniz:</p><ul><li><strong>E-posta:</strong> info@gulizvip.com.tr</li><li><strong>Telefon:</strong> +90 242 606 25 48</li><li><strong>WhatsApp:</strong> +90 242 606 25 48</li></ul><p>İade talebiniz operasyon ekibimiz tarafından değerlendirilir ve en geç 3 iş günü içinde tarafınıza dönüş yapılır.</p><h2>3. İade Yöntemleri</h2><p>Onaylanan iadeler, kullanılan ödeme yöntemine göre aşağıdaki şekilde gerçekleştirilir:</p><ul><li><strong>Kredi Kartı:</strong> iyzico altyapısı üzerinden 3-7 iş günü içinde kartınıza iade edilir.</li><li><strong>Havale / EFT:</strong> Banka hesabınıza 3-5 iş günü içinde yatırılır.</li></ul><h2>4. Değişiklik ve Düzeltmeler</h2><p>Rezervasyon tarih, saat veya güzergah değişiklikleri, hizmet tarihinden en az 12 saat önce bildirilmesi koşuluyla ücretsiz olarak yapılabilir. Son dakika değişiklikleri operasyon ekibimizin onayına tabidir ve ek ücret gerektirebilir.</p><h2>5. Mücbir Sebep</h2><p>Doğal afet, kötü hava koşulları, yol kapanması, grev veya benzeri mücbir sebepler nedeniyle hizmetin ifa edilememesi durumunda, müşteriye tam iade veya alternatif tarihte hizmet seçeneği sunulur.</p><h2>6. İletişim</h2><p>İade ve değişiklik talepleriniz için bizimle iletişime geçebilirsiniz:</p><p>Telefon: +90 242 606 25 48<br>E-posta: info@gulizvip.com.tr<br>Adres: Gazipaşa / Antalya</p>"
     }
 }
@@ -158,7 +168,13 @@ def load_page_content():
                     known_slugs = {"hakkimizda", "gizlilik", "mesafeli-satis", "teslimat", "iade-sartlari"}
                     for slug in known_slugs:
                         if slug in data and data[slug].get("title") and data[slug].get("content"):
-                            PAGE_CONTENT[slug] = {"title": data[slug]["title"], "content": data[slug]["content"]}
+                            entry = {
+                                "title": data[slug]["title"],
+                                "subtitle": data[slug].get("subtitle", ""),
+                                "is_active": data[slug].get("is_active", True),
+                                "content": data[slug]["content"]
+                            }
+                            PAGE_CONTENT[slug] = entry
                     print(f"[✓] load_page_content() başarılı — {len(data)} sayfa yüklendi")
     except Exception as e:
         print(f"[!] Sayfa içerik dosyası yüklenemedi: {e}")
@@ -827,6 +843,44 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._send_error(str(e), 500)
             return
+        if path == "/api/pages":
+            # Public: tüm sayfaların listesi
+            try:
+                db_pages = db.get_all_pages()
+                if db_pages:
+                    self._send_json({"success": True, "pages": db_pages})
+                    return
+            except Exception:
+                pass
+            pages = []
+            for slug, data in PAGE_CONTENT.items():
+                pages.append({
+                    "slug": slug,
+                    "title": data.get("title", ""),
+                    "subtitle": data.get("subtitle", ""),
+                    "is_active": data.get("is_active", True),
+                })
+            self._send_json({"success": True, "pages": pages})
+            return
+        if path == "/api/footer-pages":
+            # Public: sadece aktif sayfalar (footer için)
+            try:
+                db_pages = db.get_all_pages()
+                if db_pages:
+                    active = [p for p in db_pages if p.get("is_active", True)]
+                    self._send_json({"success": True, "pages": active})
+                    return
+            except Exception:
+                pass
+            active = []
+            for slug, data in PAGE_CONTENT.items():
+                if data.get("is_active", True):
+                    active.append({
+                        "slug": slug,
+                        "title": data.get("title", ""),
+                    })
+            self._send_json({"success": True, "pages": active})
+            return
         if path.startswith("/api/page/"):
             slug = path[len("/api/page/"):]
             slug = SLUG_ALIASES.get(slug, slug)
@@ -837,7 +891,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             try:
                 db_page = db.get_page_content(slug)
                 if db_page and db_page.get("title") and db_page.get("content"):
-                    self._send_json({"success": True, "page": {"title": db_page["title"], "content": db_page["content"]}})
+                    self._send_json({"success": True, "page": {
+                        "title": db_page["title"],
+                        "subtitle": db_page.get("subtitle", ""),
+                        "is_active": db_page.get("is_active", True),
+                        "content": db_page["content"],
+                        "updatedAt": db_page.get("updatedAt", "")
+                    }})
                     return
             except Exception as e:
                 print(f"[!] API sayfa okuma ({slug}) DB hatası: {e}")
@@ -847,7 +907,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     with open(PAGE_CONTENT_FILE, "r", encoding="utf-8") as f:
                         json_data = json.load(f)
                         if slug in json_data and json_data[slug].get("title") and json_data[slug].get("content"):
-                            self._send_json({"success": True, "page": {"title": json_data[slug]["title"], "content": json_data[slug]["content"]}})
+                            page_entry = json_data[slug]
+                            self._send_json({"success": True, "page": {
+                                "title": page_entry["title"],
+                                "subtitle": page_entry.get("subtitle", ""),
+                                "is_active": page_entry.get("is_active", True),
+                                "content": page_entry["content"],
+                                "updatedAt": page_entry.get("updatedAt", "")
+                            }})
                             return
             except Exception as e:
                 print(f"[!] API sayfa okuma ({slug}) JSON fallback hatası: {e}")
@@ -1502,6 +1569,54 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._send_error(str(e), 500)
             return
+        if path == "/api/admin/pages":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            # Admin: tüm sayfalar (DB + fallback)
+            try:
+                db_pages = db.get_all_pages()
+                if db_pages:
+                    self._send_json({"success": True, "pages": db_pages})
+                    return
+            except Exception:
+                pass
+            pages = []
+            for slug, data in PAGE_CONTENT.items():
+                pages.append({
+                    "slug": slug,
+                    "title": data.get("title", ""),
+                    "subtitle": data.get("subtitle", ""),
+                    "is_active": data.get("is_active", True),
+                })
+            self._send_json({"success": True, "pages": pages})
+            return
+        if path.startswith("/api/admin/page/") and path.endswith("/active"):
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            slug = path[len("/api/admin/page/"):-len("/active")]
+            slug = SLUG_ALIASES.get(slug, slug)
+            if slug not in PAGE_CONTENT:
+                self._send_error("Sayfa bulunamadı.", 404)
+                return
+            try:
+                body = json.loads(self._read_body())
+                is_active = body.get("is_active", True)
+                PAGE_CONTENT[slug]["is_active"] = is_active
+                try:
+                    db.set_page_active(slug, is_active)
+                except Exception as e:
+                    print(f"[!] Admin sayfa aktiflik ({slug}) DB hatası: {e}")
+                save_page_content_to_json()
+                self._send_json({"success": True, "slug": slug, "is_active": is_active})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
+            return
         if path.startswith("/api/admin/page/"):
             user = self._authenticate()
             if not user:
@@ -1516,14 +1631,21 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 body = json.loads(self._read_body())
                 title = body.get("title", "")
                 content = body.get("content", "")
+                subtitle = body.get("subtitle", "")
+                is_active = body.get("is_active", PAGE_CONTENT[slug].get("is_active", True))
                 if not title or not content:
                     self._send_error("Başlık ve içerik gerekli.", 400)
                     return
-                
-                PAGE_CONTENT[slug] = {"title": title, "content": content}
+
+                PAGE_CONTENT[slug] = {
+                    "title": title,
+                    "subtitle": subtitle,
+                    "is_active": is_active,
+                    "content": content
+                }
                 # DB'ye de kaydet
                 try:
-                    db.save_page_content(slug, title, content)
+                    db.save_page_content(slug, title, content, subtitle)
                 except Exception as e:
                     print(f"[!] Admin sayfa kaydetme ({slug}) DB hatası: {e}")
                 # JSON fallback'e de yaz (her durumda)

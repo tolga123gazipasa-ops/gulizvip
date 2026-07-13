@@ -61,7 +61,9 @@ CREATE TABLE IF NOT EXISTS config (
 CREATE TABLE IF NOT EXISTS page_content (
     slug VARCHAR(100) PRIMARY KEY,
     title VARCHAR(200) NOT NULL DEFAULT '',
+    subtitle VARCHAR(300) DEFAULT '',
     content TEXT DEFAULT '',
+    is_active BOOLEAN DEFAULT TRUE,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -432,14 +434,16 @@ def get_page_content(slug):
             return None
         with conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute("SELECT slug, title, content, updated_at FROM page_content WHERE slug = %s", (slug,))
+                cur.execute("SELECT slug, title, subtitle, content, is_active, updated_at FROM page_content WHERE slug = %s", (slug,))
                 row = cur.fetchone()
         conn.close()
         if row:
             return {
                 "slug": row["slug"],
                 "title": row["title"],
+                "subtitle": row.get("subtitle", "") or "",
                 "content": row["content"],
+                "is_active": row.get("is_active", True) if row.get("is_active") is not None else True,
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             }
         return None
@@ -448,8 +452,8 @@ def get_page_content(slug):
         return None
 
 
-def save_page_content(slug, title, content):
-    """page_content tablosuna slug/title/content yaz (upsert)."""
+def save_page_content(slug, title, content, subtitle=""):
+    """page_content tablosuna slug/title/subtitle/content yaz (upsert)."""
     if not HAS_PSYCOPG2:
         return False
     try:
@@ -459,15 +463,61 @@ def save_page_content(slug, title, content):
         with conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO page_content (slug, title, content, updated_at)
-                    VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                    INSERT INTO page_content (slug, title, subtitle, content, updated_at)
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
                     ON CONFLICT (slug)
-                    DO UPDATE SET title = %s, content = %s, updated_at = CURRENT_TIMESTAMP
-                """, (slug, title, content, title, content))
+                    DO UPDATE SET title = %s, subtitle = %s, content = %s, updated_at = CURRENT_TIMESTAMP
+                """, (slug, title, subtitle, content, title, subtitle, content))
         conn.close()
         return True
     except Exception as e:
         print(f"[!] Page content yazma hatası ({slug}): {e}")
+        return False
+
+
+def get_all_pages():
+    """page_content tablosundaki tüm sayfaları listele. list of dict veya boş liste döndür."""
+    if not HAS_PSYCOPG2:
+        return []
+    try:
+        conn = get_conn()
+        if not conn:
+            return []
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT slug, title, subtitle, is_active, updated_at FROM page_content ORDER BY slug")
+                rows = cur.fetchall()
+        conn.close()
+        result = []
+        for row in rows:
+            result.append({
+                "slug": row["slug"],
+                "title": row["title"],
+                "subtitle": row.get("subtitle", "") or "",
+                "is_active": row.get("is_active", True) if row.get("is_active") is not None else True,
+                "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
+            })
+        return result
+    except Exception as e:
+        print(f"[!] Page content listeleme hatası: {e}")
+        return []
+
+
+def set_page_active(slug, is_active):
+    """page_content'te bir sayfanın is_active durumunu güncelle."""
+    if not HAS_PSYCOPG2:
+        return False
+    try:
+        conn = get_conn()
+        if not conn:
+            return False
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE page_content SET is_active = %s, updated_at = CURRENT_TIMESTAMP WHERE slug = %s", (is_active, slug))
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"[!] Page content aktiflik güncelleme hatası ({slug}): {e}")
         return False
 
 

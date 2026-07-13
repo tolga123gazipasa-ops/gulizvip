@@ -1256,6 +1256,8 @@
                         <li><a href="/sayfa/mesafeli-satis">Mesafeli Satış Sözleşmesi</a></li>
                         <li><a href="/sayfa/teslimat">Teslimat ve İade Şartları</a></li>
                         <li><a href="/sayfa/iade-sartlari">İade Şartları</a></li>
+                        <li id="footer-dynamic-pages-placeholder" style="display:none;"></li>
+                        <ul id="footer-pages-list" style="margin-top:6px;"></ul>
                     </ul>
                 </div>
                 <div class="footer-links">
@@ -2684,4 +2686,31 @@
                 identify: identify
             };
         })();
+
+        // ─── DİNAMİK FOOTER: Aktif sayfaları API'den çek ─────────────────────
+        function loadFooterPages() {
+            var list = document.getElementById('footer-pages-list');
+            if (!list) return;
+            fetch('/api/footer-pages')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success || !data.pages || data.pages.length === 0) {
+                        list.style.display = 'none';
+                        return;
+                    }
+                    list.innerHTML = '';
+                    data.pages.forEach(function(p) {
+                        var li = document.createElement('li');
+                        var a = document.createElement('a');
+                        a.href = '/sayfa/' + p.slug;
+                        a.textContent = p.title;
+                        li.appendChild(a);
+                        list.appendChild(li);
+                    });
+                })
+                .catch(function() {
+                    list.style.display = 'none';
+                });
+        }
+        loadFooterPages();
     </script>

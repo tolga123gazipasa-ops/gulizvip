@@ -132,8 +132,16 @@
                     var data = JSON.parse(xhr.responseText);
                     var pageData = data && data.page;
                     if (pageData && pageData.content && pageData.content.trim().length > 0) {
+                        // Pasif sayfa kontrolü
+                        if (pageData.is_active === false) {
+                            pageTitle.textContent = 'Sayfa Bulunamadı';
+                            pageSubtitle.textContent = 'Aradığınız sayfa mevcut değil.';
+                            pageContent.innerHTML = '<p><a href="/">Ana Sayfa\'ya dönmek için tıklayın.</a></p>';
+                            document.title = 'Sayfa Bulunamadı - Güliz VIP Transfer';
+                            return;
+                        }
                         pageTitle.textContent = pageData.title || pageConfig[slug]?.title || slug;
-                        pageSubtitle.textContent = pageConfig[slug]?.subtitle || '';
+                        pageSubtitle.textContent = pageData.subtitle || pageConfig[slug]?.subtitle || '';
                         var contentHtml = pageData.content;
                         // updatedAt varsa last-updated ekle
                         if (pageData.updatedAt) {
