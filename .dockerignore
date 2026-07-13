@@ -1,0 +1,12 @@
+.git
+.gitignore
+*.pyc
+__pycache__
+node_modules
+.git
+README.md
+RAILWAY_DEPLOY.md
+test_start.py
+fix_admin_bank.py
+merge_server.py
+server_full.py

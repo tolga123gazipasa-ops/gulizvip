@@ -1,11 +1,10 @@
 {
   "build": {
-    "builder": "nixpacks",
-    "buildCommand": "apt-get update && apt-get install -y python3 python3-pip && pip3 install -r requirements.txt --break-system-packages"
+    "builder": "docker",
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "python3 server.py",
-    "healthcheckPath": "/api/flights",
+    "healthcheckPath": "/_health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "always"
   }
