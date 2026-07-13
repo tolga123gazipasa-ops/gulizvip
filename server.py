@@ -1629,4 +1629,21 @@ if __name__ == "__main__":
         server.serve_forever()
     except OSError as e:
         print(f"[-] SUNUCU HATASI (OSError): {e}")
-        tracebac
+        traceback.print_exc(file=sys.stdout)
+        sys.stdout.flush()
+        # Port meşgul olabilir, 2sn bekle ve tekrar dene
+        try:
+            import time
+            time.sleep(2)
+            server = http.server.HTTPServer((host, PORT), GulizHandler)
+            print(f"[!] 2. DENEMEDE SUNUCU {host}:{PORT} ÜZERİNDE BAŞLATILDI")
+            sys.stdout.flush()
+            server.serve_forever()
+        except Exception as e2:
+            print(f"[-] 2. DENEME DE BAŞARISIZ: {e2}")
+            traceback.print_exc(file=sys.stdout)
+            sys.stdout.flush()
+    except Exception as e:
+        print(f"[-] SUNUCU HATASI: {e}")
+        traceback.print_exc(file=sys.stdout)
+        sys.stdout.flush()
