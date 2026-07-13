@@ -1,0 +1,40 @@
+{
+  "route_prices": [
+    {
+      "from": "GZP",
+      "to": "Mahmutlar",
+      "price": 2500
+    },
+    {
+      "from": "GZP",
+      "to": "Alanya Merkez",
+      "price": 3000
+    },
+    {
+      "from": "GZP",
+      "to": "Kizilot",
+      "price": 3500
+    },
+    {
+      "from": "AYT",
+      "to": "Avsallar",
+      "price": 4500
+    },
+    {
+      "from": "AYT",
+      "to": "Konakli",
+      "price": 5000
+    },
+    {
+      "from": "GZP",
+      "to": "Alanya",
+      "price": 5500
+    }
+  ],
+  "tahsis_prices": {
+    "4hours": 6500,
+    "8hours": 12500,
+    "12hours": 16000,
+    "24hours": 22000
+  }
+}

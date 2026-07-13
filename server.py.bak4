@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sys; sys.stderr.write("[!] server.py loading...\n"); sys.stderr.flush()
 """
 Güliz VIP Backend Server
 Python stdlib — HMAC auth, flight API, static serving, scheduler
@@ -18,18 +17,9 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timedelta
 
-# PostgreSQL modülü — opsiyonel, yüklenemezse tüm fonksiyonlar None döndürür
-try:
-    import db
-except Exception:
-    class _DBStub:
-        def __getattr__(self, name):
-            return lambda *a, **kw: None
-    db = _DBStub()
+import db  # PostgreSQL modülü
 import uuid
 import socket
-import traceback
-import sys
 
 # ============================================================
 # HİZMET BÖLGESİ — Gazipaşa, Alanya, Antalya
@@ -75,11 +65,6 @@ GOOGLE_MAPS_API_KEY = "AIzaSyD-IGkbR6iyxvdeQ_Cfekjks3KOWMD7RKw"
 UNIT_PRICE = 25.0
 
 # ─── Page Content Fallback (PostgreSQL yoksa kullanılır) ─────────────────
-# Slug alias mapping — "mesafelisatis" (no hyphen) → "mesafeli-satis" (with hyphen)
-SLUG_ALIASES = {
-    "mesafelisatis": "mesafeli-satis",
-}
-
 PAGE_CONTENT = {
     "hakkimizda": {
         "title": "Hakkımızda",
@@ -306,7 +291,7 @@ def _fetch_opensky_flights(airport_icao, is_arrival):
     if elapsed < OPENSKY_MIN_INTERVAL:
         time.sleep(OPENSKY_MIN_INTERVAL - elapsed)
     endpoint = "arrival" if is_arrival else "departure"
-    url = f"{OPENSKY_BASE}/api/flights/{endpoint}?airport={airport_icao}&begin={begin_ts}&end={end_ts}"
+    url = f"{OPENSKY_BASE}/flights/{endpoint}?airport={airport_icao}&begin={begin_ts}&end={end_ts}"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "GulizVIP/1.0"})
         with urllib.request.urlopen(req, timeout=15) as resp:
@@ -636,14 +621,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         path, params = self._parse_path()
-        # ─── Railway Healthcheck ──────────────────────────────────────────
-        if path == "/_health":
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain")
-            self.send_header("Content-Length", "2")
-            self.end_headers()
-            self.wfile.write(b"OK")
-            return
         if path == "/api/flights":
             self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}, "updated_at": max(flight_cache["gzp"]["updated_at"] or "", flight_cache["ayt"]["updated_at"] or "")})
             return
@@ -920,7 +897,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             return
         if path.startswith("/api/page/"):
             slug = path[len("/api/page/"):]
-            slug = SLUG_ALIASES.get(slug, slug)
             if slug not in PAGE_CONTENT:
                 self._send_error("Sayfa bulunamadı.", 404)
                 return
@@ -1406,316 +1382,4 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             try:
                 body = json.loads(self._read_body())
                 new_prices = body.get("prices", {})
-                if not isinstance(new_prices, dict):
-                    self._send_error("Geçersiz format.", 400)
-                    return
-                global TAHSIS_PRICES
-                TAHSIS_PRICES = new_prices
-                save_prices()
-                self._send_json({"success": True, "prices": TAHSIS_PRICES})
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
-        if path == "/api/admin/bank-accounts":
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
-                return
-            try:
-                body = json.loads(self._read_body())
-                accounts = body.get("accounts", {})
-                if not isinstance(accounts, dict):
-                    self._send_error("Geçersiz format.", 400)
-                    return
-                global BANK_ACCOUNTS
-                BANK_ACCOUNTS = accounts
-                self._send_json({"success": True, "accounts": BANK_ACCOUNTS})
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
-        if path == "/api/admin/slider-images":
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
-                return
-            try:
-                body = json.loads(self._read_body())
-                action = body.get("action", "")
-                global SLIDER_IMAGES
-                if action == "add":
-                    image = body.get("image", {})
-                    if not image.get("src"):
-                        self._send_error("Görsel URL'si gerekli.", 400)
-                        return
-                    SLIDER_IMAGES.append({"src": image["src"], "alt": image.get("alt", "Slider Görseli")})
-                    self._send_json({"success": True, "images": SLIDER_IMAGES})
-                elif action == "delete":
-                    index = body.get("index")
-                    if index is None or not isinstance(index, int) or index < 0 or index >= len(SLIDER_IMAGES):
-                        self._send_error("Geçersiz index.", 400)
-                        return
-                    SLIDER_IMAGES.pop(index)
-                    self._send_json({"success": True, "images": SLIDER_IMAGES})
-                elif action == "reorder":
-                    from_index = body.get("fromIndex")
-                    to_index = body.get("toIndex")
-                    if from_index is None or to_index is None:
-                        self._send_error("fromIndex ve toIndex gerekli.", 400)
-                        return
-                    if 0 <= from_index < len(SLIDER_IMAGES) and 0 <= to_index < len(SLIDER_IMAGES):
-                        item = SLIDER_IMAGES.pop(from_index)
-                        SLIDER_IMAGES.insert(to_index, item)
-                        self._send_json({"success": True, "images": SLIDER_IMAGES})
-                    else:
-                        self._send_error("Geçersiz index aralığı.", 400)
-                elif action == "replace":
-                    index = body.get("index")
-                    image = body.get("image", {})
-                    if index is None or not isinstance(index, int) or index < 0 or index >= len(SLIDER_IMAGES):
-                        self._send_error("Geçersiz index.", 400)
-                        return
-                    if not image.get("src"):
-                        self._send_error("Görsel URL'si gerekli.", 400)
-                        return
-                    SLIDER_IMAGES[index] = {"src": image["src"], "alt": image.get("alt", "Slider Görseli")}
-                    self._send_json({"success": True, "images": SLIDER_IMAGES})
-                else:
-                    self._send_error("Geçersiz aksiyon.", 400)
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
-        if path == "/api/admin/reservations":
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
-                return
-            try:
-                body = json.loads(self._read_body())
-                action = body.get("action", "")
-                if action == "update":
-                    res_id = body.get("id")
-                    if res_id is None:
-                        self._send_error("Rezervasyon ID gerekli.", 400)
-                        return
-                    global RESERVATIONS
-                    for r in RESERVATIONS:
-                        if r.get("id") == res_id:
-                            for key in ("status", "customer_name", "customer_phone", "customer_email",
-                                        "pickup", "destination", "flight_number", "date", "time",
-                                        "passengers", "notes", "price", "payment_method", "payment_status"):
-                                if key in body:
-                                    r[key] = body[key]
-                            save_reservations()
-                            # DB'ye de kaydet
-                            try:
-                                db.save_reservation_to_db(r)
-                            except Exception:
-                                pass
-                            self._send_json({"success": True, "reservation": r})
-                            return
-                    self._send_error("Rezervasyon bulunamadı.", 404)
-                elif action == "delete":
-                    res_id = body.get("id")
-                    if res_id is None:
-                        self._send_error("Rezervasyon ID gerekli.", 400)
-                        return
-                    RESERVATIONS = [r for r in RESERVATIONS if r.get("id") != res_id]
-                    save_reservations()
-                    self._send_json({"success": True, "message": "Rezervasyon silindi."})
-                else:
-                    self._send_error("Geçersiz aksiyon.", 400)
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
-        if path == "/api/admin/telegram/config":
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
-                return
-            try:
-                body = json.loads(self._read_body())
-                global TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
-                if "botToken" in body:
-                    TELEGRAM_BOT_TOKEN = body["botToken"]
-                if "chatId" in body:
-                    TELEGRAM_CHAT_ID = str(body["chatId"])
-                self._send_json({"success": True, "botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "",
-                                 "chatId": TELEGRAM_CHAT_ID})
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
-        if path == "/api/admin/credentials":
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
-                return
-            try:
-                body = json.loads(self._read_body())
-                new_user = body.get("username", "")
-                new_pass = body.get("password", "")
-                if not new_user or not new_pass:
-                    self._send_error("Kullanıcı adı ve şifre gerekli.", 400)
-                    return
-                if len(new_pass) < 6:
-                    self._send_error("Şifre en az 6 karakter olmalıdır.", 400)
-                    return
-                global ADMIN_USER, ADMIN_PASS
-                ADMIN_USER = new_user
-                ADMIN_PASS = new_pass
-                # DB'ye kaydet
-                try:
-                    db.set_admin_credentials(new_user, new_pass)
-                except Exception:
-                    pass
-                self._send_json({"success": True, "message": "Giriş bilgileri güncellendi."})
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
-        if path.startswith("/api/admin/page/"):
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
-                return
-            slug = path[len("/api/admin/page/"):]
-            slug = SLUG_ALIASES.get(slug, slug)
-            if not slug or slug not in PAGE_CONTENT:
-                self._send_error("Sayfa bulunamadı.", 404)
-                return
-            try:
-                body = json.loads(self._read_body())
-                title = body.get("title", "")
-                content = body.get("content", "")
-                if not title or not content:
-                    self._send_error("Başlık ve içerik gerekli.", 400)
-                    return
-                
-                PAGE_CONTENT[slug] = {"title": title, "content": content}
-                # DB'ye de kaydet
-                try:
-                    db.save_page_content(slug, title, content)
-                except Exception:
-                    pass
-                self._send_json({"success": True, "page": PAGE_CONTENT[slug]})
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
-        if path == "/api/admin/destinations":
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
-                return
-            try:
-                body = json.loads(self._read_body())
-                action = body.get("action", "")
-                if action == "add":
-                    result = db.save_destination(body)
-                    if result:
-                        self._send_json({"success": True, "destination": result})
-                    else:
-                        self._send_error("Destinasyon eklenemedi.", 500)
-                elif action == "update":
-                    dest_id = body.get("id")
-                    if not dest_id:
-                        self._send_error("Destinasyon ID gerekli.", 400)
-                        return
-                    result = db.save_destination(body)
-                    if result:
-                        self._send_json({"success": True, "destination": result})
-                    else:
-                        self._send_error("Destinasyon güncellenemedi.", 500)
-                elif action == "delete":
-                    dest_id = body.get("id")
-                    if not dest_id:
-                        self._send_error("Destinasyon ID gerekli.", 400)
-                        return
-                    result = db.delete_destination(dest_id)
-                    if result:
-                        self._send_json({"success": True, "message": "Destinasyon silindi."})
-                    else:
-                        self._send_error("Destinasyon silinemedi.", 500)
-                else:
-                    self._send_error("Geçersiz aksiyon.", 400)
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
-        self._send_error("Bulunamadı", 404)
-
-
-if __name__ == "__main__":
-    # ─── Başlangıç görevleri: hata olursa çökme, sadece logla ────────
-    try:
-        load_prices()
-        print("[✓] load_prices() başarılı")
-    except Exception as e:
-        print(f"[!] load_prices() hatası (önemsiz, devam): {e}")
-
-    try:
-        load_reservations()
-        print("[✓] load_reservations() başarılı")
-    except Exception as e:
-        print(f"[!] load_reservations() hatası (önemsiz, devam): {e}")
-
-    try:
-        threading.Thread(target=refresh_flights, daemon=True).start()
-        print("[✓] refresh_flights() thread başlatıldı")
-    except Exception as e:
-        print(f"[!] refresh_flights() hatası (önemsiz, devam): {e}")
-
-    try:
-        threading.Thread(target=scheduler_loop, daemon=True).start()
-        print("[✓] scheduler_loop başlatıldı")
-    except Exception as e:
-        print(f"[!] scheduler_loop hatası (önemsiz, devam): {e}")
-
-    try:
-        threading.Thread(target=visitor_cleanup_loop, daemon=True).start()
-        print("[✓] visitor_cleanup_loop başlatıldı")
-    except Exception as e:
-        print(f"[!] visitor_cleanup_loop hatası (önemsiz, devam): {e}")
-
-    # Railway ve Cloud platformlar için ZORUNLU ayarlar:
-    # 1. Port dinamik olmalı
-    # 2. Host kesinlikle 0.0.0.0 olmalı (127.0.0.1 veya localhost OLMAZ)
-    PORT = int(os.environ.get("PORT", 8081))
-    host = "0.0.0.0"
-
-    try:
-        server = http.server.HTTPServer((host, PORT), GulizHandler)
-        print(f"[!] SUNUCU BAŞARILI BİR ŞEKİLDE {host}:{PORT} ÜZERİNDE BAŞLATILDI")  # Bu log çok kritik!
-        sys.stdout.flush()
-        server.serve_forever()
-    except OSError as e:
-        print(f"[-] SUNUCU HATASI (OSError): {e}")
-        traceback.print_exc(file=sys.stdout)
-        sys.stdout.flush()
-        # Port meşgul olabilir, 2sn bekle ve tekrar dene
-        try:
-            import time
-            time.sleep(2)
-            server = http.server.HTTPServer((host, PORT), GulizHandler)
-            print(f"[!] 2. DENEMEDE SUNUCU {host}:{PORT} ÜZERİNDE BAŞLATILDI")
-            sys.stdout.flush()
-            server.serve_forever()
-        except Exception as e2:
-            print(f"[-] 2. DENEME DE BAŞARISIZ: {e2}")
-            traceback.print_exc(file=sys.stdout)
-            sys.stdout.flush()
-    except Exception as e:
-        print(f"[-] SUNUCU HATASI: {e}")
-        traceback.p
+                if not isinstance(new_prices, dict)

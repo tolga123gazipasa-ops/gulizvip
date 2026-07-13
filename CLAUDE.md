@@ -19,10 +19,11 @@
 - CORS tüm endpoint'lerde açık
 
 ### Konfigürasyon
-- `ADMIN_USER=admin`, `ADMIN_PASS=gulizvip2026`
+- `ADMIN_USER=admin@guliztransfer.com`, `ADMIN_PASS=Guliz2025!`
 - `SECRET_KEY=guliz-vip-hmac-secret-2026`, `TOKEN_TTL=86400` (24s)
 - `HOST=0.0.0.0`, `PORT=8081`
 - `GOOGLE_MAPS_API_KEY=AIzaSyD-IGkbR6iyxvdeQ_Cfekjks3KOWMD7RKw` (Places + Distance Matrix + Geocoding)
+- **Resend Email:** `RESEND_API_KEY` env var üzerinden, `resend` paketi ile. From: `info@gulizvip.com.tr`
 - Telegram: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` env var veya admin paneli
 
 ### API Endpoints
@@ -56,6 +57,16 @@
 | `/api/admin/telegram/test` | POST | Bearer | Test mesajı gönderme |
 | Statik dosyalar | GET | Hayır | index.html, admin.html vs. |
 
+### Email (Resend)
+- **Paket:** `resend>=4.0` (`requirements.txt`)
+- **API Key:** `RESEND_API_KEY` çevre değişkeni — `os.environ.get("RESEND_API_KEY")`
+- **Gönderici:** `Güliz VIP Transfer <info@gulizvip.com.tr>`
+- **Şablon:** `email_template.html` (çalışma dizininde)
+- **7 dinamik yer tutucu:** `{musteri_isim}`, `{alis_noktasi}`, `{varis_noktasi}`, `{tarih}`, `{saat}`, `{yolcu_sayisi}`, `{tahmini_tutar}`
+- **Tetikleme:** Rezervasyon başarıyla kaydedildikten sonra `send_confirmation_email(reservation)` çağrılır
+- **From adresi:** `info@gulizvip.com.tr` (sabit) — DNS/Cloudflare MX kayıtları hazır
+- **`resend` paketi opsiyonel:** `try/except ImportError` ile korunur, yoksa sessizce atlanır
+
 ## Frontend
 
 ### index.html
@@ -84,7 +95,7 @@
 
 ### admin.html
 - Operasyon paneli — HMAC-SHA256 token ile login
-- Login: admin/gulizvip2026 (öntanımlı)
+- Login: admin@guliztransfer.com / Guliz2025! (öntanımlı)
 - Dashboard, rezervasyonlar, fiyat ayarları, uçuşlar, slider, canlı destek, ayarlar sekmeleri
 - **Slider yönetimi:** Görsel ekleme (URL veya dosya yükleme), silme, sıralama; `/api/admin/slider-images` API'si ile
 - GZP ve AYT canlı uçuş tabloları (`gzp-admin-tbody`, `ayt-admin-tbody`)
@@ -97,7 +108,8 @@
 - Callsign → havayolu adı eşleştirmesi: THY/TK → Turkish Airlines, PGT/PC → Pegasus, SXS/XQ → SunExpress, CAI/XC → Corendon
 - ICAO → havalimanı adı dönüşümü: 40+ yaygın havalimanı kodu (Türkiye + Avrupa)
 - PostgreSQL (`db.py`) mevcut ancak zorunlu değil — `DATABASE_URL` yoksa `reservations.json` fallback
-- psycopg2-binary harici kütüphane olarak kullanılır, geri kalanı Python stdlib
+  - Schema: `customer_name`, `customer_phone`, **`customer_email`**, `pickup`, `destination`, `flight_number`, `date`, `time`, `passengers`, `duration`, `notes`, `price`, `payment_method`, `payment_status`, `status`
+- psycopg2-binary ve resend harici kütüphaneler olarak kullanılır, geri kalanı Python stdlib
 - Sadece Python stdlib kullanılır (harici kütüphane yok)
 - Çalışma dizini: `C:\Users\MSI\OneDrive\Desktop\gulizvip\`
 - VM'de bash path: `/sessions/tender-wizardly-edison/mnt/gulizvip/`

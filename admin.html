@@ -6,6 +6,8 @@
     <title>Güliz Transfer | Operasyon Paneli</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 
     <!-- Google Maps API - lazy load -->
     <script>
@@ -43,6 +45,7 @@
             }
             mapsCallbacks = [];
             setTimeout(initPlacesAutocomplete, 500);
+            setTimeout(initRoutePlacesAutocomplete, 600);
         }
 
         function onMapsReadyOrQueue(cb) {
@@ -64,6 +67,7 @@
             --success: #10B981;
             --warning: #F59E0B;
             --danger: #EF4444;
+            --text-gray: #94A3B8;
             --transition: all 0.3s ease;
         }
 
@@ -84,6 +88,12 @@
         .login-btn { width: 100%; background: var(--primary-red); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: var(--transition); }
         .login-btn:hover { background: #C91530; }
         .login-error { color: var(--danger); font-size: 13px; margin-top: 12px; display: none; }
+        .remember-row { margin: -8px 0 4px; }
+        .remember-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500 !important; color: var(--text-gray) !important; cursor: pointer; flex-direction: row !important; }
+        .remember-label input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary-navy); }
+        .cred-status { display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 600; }
+        .cred-status.success { background: #D1FAE5; color: #059669; }
+        .cred-status.error { background: #FEE2E2; color: var(--danger); }
 
         /* --- SOL MENÜ (SIDEBAR) --- */
         .sidebar { width: 260px; background-color: var(--admin-sidebar); color: var(--pure-white); display: flex; flex-direction: column; flex-shrink: 0; }
@@ -147,7 +157,11 @@
         .btn-view:hover { background: #0F172A; }
         .btn-approve { background: var(--success); }
         .btn-approve:hover { background: #059669; }
+        .btn-complete { background: #6366F1; }
+        .btn-complete:hover { background: #4F46E5; }
         .btn-delete { background: var(--danger); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #B91C1C; }
 
         /* FORMLAR */
         .form-row { display: flex; gap: 20px; margin-bottom: 20px; }
@@ -245,6 +259,141 @@
             .btn-primary, .btn-secondary { padding: 10px 14px; font-size: 12px; min-height: 44px; }
         }
 
+        /* ─── CANLI RADAR ─────────────────────────── */
+        .radar-stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+        .radar-stat-card { background:var(--card-bg); border-radius:10px; padding:16px; border:1px solid var(--border); }
+        .radar-stat-card .stat-value { font-size:28px; font-weight:700; color:var(--primary); }
+        .radar-stat-card .stat-label { font-size:12px; color:var(--text-gray); margin-top:4px; }
+        .radar-stat-card .stat-value.online { color:#22c55e; }
+        .radar-stat-card .stat-value.offline { color:#6b7280; }
+        .radar-filter-bar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+        .radar-search-input { flex:1; min-width:160px; padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--card-bg); color:var(--text); }
+        .radar-search-input::placeholder { color:var(--text-gray); }
+        .radar-online-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+        .radar-online-dot.active { background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,0.5); }
+        .radar-online-dot.offline { background:#9ca3af; }
+        .radar-current-page { font-size:12px; color:var(--text); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .radar-current-page i { margin-right:4px; color:var(--primary); }
+        .radar-duration { font-size:12px; color:var(--text-gray); }
+        .radar-last-event { font-size:12px; display:inline-block; padding:2px 8px; border-radius:4px; background:rgba(37,99,235,0.1); color:var(--primary); }
+        .radar-device-info { font-size:12px; color:var(--text); }
+        .radar-device-info i { margin-right:4px; color:var(--text-gray); width:14px; text-align:center; }
+        .radar-ip { font-family:monospace; font-size:12px; color:var(--text); }
+        @keyframes radar-pulse { 0%{opacity:1} 50%{opacity:0.5} 100%{opacity:1} }
+        .radar-refreshing #radar-table-container { animation:radar-pulse 1s ease-in-out; }
+        @media (max-width:768px) {
+            .radar-stats-grid { grid-template-columns:repeat(2,1fr); }
+            .radar-filter-bar { flex-direction:column; }
+            .radar-search-input { width:100%; }
+        }
+
+        /* ─── Dashboard Kompakt Radar Widget ─── */
+        .dashboard-radar-compact {
+            background: var(--pure-white);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .dashboard-radar-compact .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .dashboard-radar-compact .section-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--admin-text);
+            display: flex;
+            align-items: center;
+        }
+        .dashboard-radar-chips {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .radar-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            background: #F1F5F9;
+            color: var(--admin-text);
+        }
+        .radar-chip .chip-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .radar-chip .chip-dot.online { background: var(--success); box-shadow: 0 0 6px rgba(16,185,129,0.4); }
+        .radar-chip .chip-dot.total { background: var(--primary); }
+        .radar-chip .chip-dot.chat { background: var(--warning); }
+        .radar-chip.online-chip { background: rgba(16,185,129,0.1); color: #059669; }
+        .radar-chip.total-chip { background: rgba(27,43,76,0.08); }
+        .radar-chip.chat-chip { background: rgba(245,158,11,0.1); color: #B45309; }
+        .dashboard-radar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .dashboard-radar-grid::-webkit-scrollbar { width: 4px; }
+        .dashboard-radar-grid::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 2px; }
+        .dashboard-radar-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: #F8FAFC;
+            border-radius: 10px;
+            border: 1px solid #E2E8F0;
+            transition: all 0.2s;
+        }
+        .dashboard-radar-card:hover { border-color: var(--primary); background: #F1F5F9; }
+        .dashboard-radar-card .drc-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .dashboard-radar-card .drc-avatar.has-chat { background: var(--warning); }
+        .dashboard-radar-card .drc-info { flex: 1; min-width: 0; }
+        .dashboard-radar-card .drc-info .drc-name { font-size: 13px; font-weight: 600; color: var(--admin-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dashboard-radar-card .drc-info .drc-page { font-size: 11px; color: var(--text-gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dashboard-radar-card .drc-info .drc-page i { margin-right: 3px; }
+        .dashboard-radar-card .drc-meta { font-size: 11px; color: var(--text-gray); white-space: nowrap; text-align: right; }
+        .dashboard-radar-card .drc-meta .drc-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-left: 6px;
+            background: #CBD5E1;
+        }
+        .dashboard-radar-card .drc-meta .drc-dot.online { background: var(--success); }
+        .dashboard-radar-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+        .dashboard-radar-empty i { font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.4; }
     </style>
 </head>
 <body>
@@ -255,11 +404,17 @@
             <p>Operasyon Merkezi'ne hoş geldiniz. Lütfen giriş yapın.</p>
             <div class="form-group">
                 <label>Kullanıcı Adı</label>
-                <input type="text" id="loginUser" placeholder="Kullanıcı adınızı girin" value="admin">
+                <input type="text" id="loginUser" placeholder="Kullanıcı adınızı girin">
             </div>
             <div class="form-group">
                 <label>Şifre</label>
-                <input type="password" id="loginPass" placeholder="Şifrenizi girin" value="gulizvip2026">
+                <input type="password" id="loginPass" placeholder="Şifrenizi girin">
+            </div>
+            <div class="form-group remember-row">
+                <label class="remember-label">
+                    <input type="checkbox" id="rememberMe" checked>
+                    <span>Beni Hatırla</span>
+                </label>
             </div>
             <button class="login-btn" onclick="handleLogin()"><i class="fa-solid fa-right-to-bracket"></i> Giriş Yap</button>
             <p class="login-error" id="loginError">Kullanıcı adı veya şifre hatalı!</p>
@@ -279,9 +434,12 @@
             <a class="menu-item" onclick="switchTab('view-pricing', this)"><i class="fa-solid fa-money-bill-wave"></i> Fiyat & Bölge Ayarları</a>
             <a class="menu-item" onclick="switchTab('view-bank-accounts', this)"><i class="fa-solid fa-building-columns"></i> Banka Hesapları</a>
             <a class="menu-item" onclick="switchTab('view-fleet', this)"><i class="fa-solid fa-image"></i> Filo & Görseller</a>
+            <a class="menu-item" onclick="switchTab('view-destinations', this)"><i class="fa-solid fa-location-dot"></i> Destinasyon Yönetimi</a>
             <a class="menu-item" onclick="switchTab('view-flights', this)"><i class="fa-solid fa-plane"></i> Canlı Uçuşlar (GZP)</a>
             <a class="menu-item" onclick="switchTab('view-flights-ayt', this)"><i class="fa-solid fa-plane"></i> Canlı Uçuşlar (AYT)</a>
             <a class="menu-item" onclick="switchTab('view-chat', this)"><i class="fa-solid fa-comment-dots"></i> Canlı Destek</a>
+            <a class="menu-item" onclick="switchTab('view-radar', this)"><i class="fa-solid fa-tower-broadcast"></i> Canlı Radar</a>
+            <a class="menu-item" onclick="switchTab('view-page-management', this)"><i class="fa-solid fa-file-lines"></i> Sayfa Yönetimi</a>
             <a class="menu-item" onclick="switchTab('view-settings', this)"><i class="fa-solid fa-gear"></i> Sistem Ayarları</a>
         </nav>
         <div class="sidebar-footer">
@@ -307,21 +465,34 @@
             <div id="view-dashboard" class="panel-view active-view">
                 <div class="stats-grid">
                     <div class="stat-card red">
-                        <div class="stat-info"><h4>Bekleyen Talepler</h4><div class="number">3</div></div>
+                        <div class="stat-info"><h4>Bekleyen Talepler</h4><div class="number" id="stat-pending">0</div></div>
                         <div class="stat-icon"><i class="fa-solid fa-bell" style="color: var(--primary-red);"></i></div>
                     </div>
                     <div class="stat-card green">
-                        <div class="stat-info"><h4>Bugünkü Transferler</h4><div class="number">8</div></div>
+                        <div class="stat-info"><h4>Bugünkü Transferler</h4><div class="number" id="stat-today">0</div></div>
                         <div class="stat-icon"><i class="fa-solid fa-route" style="color: var(--success);"></i></div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-info"><h4>Aktif Araçlar</h4><div class="number">4</div></div>
-                        <div class="stat-icon"><i class="fa-solid fa-car" style="color: var(--primary-navy);"></i></div>
+                        <div class="stat-info"><h4>Okunmamış Mesaj</h4><div class="number" id="stat-unreadChat">0</div></div>
+                        <div class="stat-icon"><i class="fa-solid fa-comment" style="color: var(--primary-navy);"></i></div>
                     </div>
                     <div class="stat-card yellow">
-                        <div class="stat-info"><h4>Aylık Ciro (Tahmini)</h4><div class="number" style="font-size: 22px;">₺ 145.000</div></div>
+                        <div class="stat-info"><h4>Aylık Ciro</h4><div class="number" id="stat-monthly-revenue" style="font-size:22px;">₺0</div></div>
                         <div class="stat-icon"><i class="fa-solid fa-chart-line" style="color: var(--warning);"></i></div>
                     </div>
+                </div>
+
+                <!-- ─── Dashboard Kompakt Radar ─── -->
+                <div class="dashboard-radar-compact" id="dashboard-radar-compact" style="display:none;">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-radar" style="color:var(--primary);margin-right:8px;"></i>Anlık Ziyaretçi Radar</h3>
+                        <div class="dashboard-radar-chips" id="dashboard-radar-chips">
+                            <span class="radar-chip online-chip"><span class="chip-dot online"></span><span id="dash-radar-online">0</span> Online</span>
+                            <span class="radar-chip total-chip"><span class="chip-dot total"></span><span id="dash-radar-total">0</span> Bugün</span>
+                            <span class="radar-chip chat-chip"><span class="chip-dot chat"></span><span id="dash-radar-chat">0</span> Canlı Sohbet</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-radar-grid" id="dashboard-radar-grid"></div>
                 </div>
 
                 <div class="panel-section">
@@ -331,25 +502,9 @@
                     </div>
                     <table class="data-table">
                         <thead>
-                            <tr><th>Tarih / Saat</th><th>Müşteri Bilgisi</th><th>Güzergah / Uçuş</th><th>Hizmet Tipi</th><th>Durum</th><th>İşlemler</th></tr>
+                            <tr><th>Tarih / Saat</th><th>Müşteri Bilgisi</th><th>Güzergah / Uçuş</th><th>Hizmet Tipi</th><th>Tutar</th><th>Durum</th><th>İşlemler</th></tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>Bugün<br><span style="color: var(--text-gray);">14:30</span></td>
-                                <td>Ahmet Yılmaz<br><span style="color: var(--text-gray);"><i class="fa-solid fa-phone"></i> +90 532...</span></td>
-                                <td>GZP Havalimanı &rarr; Mahmutlar<br><span style="color: var(--text-gray);"><i class="fa-solid fa-plane"></i> TK2405</span></td>
-                                <td>Havalimanı Transfer<br><span style="color: var(--primary-red);">₺ 2.500</span></td>
-                                <td><span class="badge badge-pending">Onay Bekliyor</span></td>
-                                <td class="action-btns"><button class="btn-approve"><i class="fa-solid fa-check"></i> Onayla</button><button class="btn-view"><i class="fa-solid fa-eye"></i> Detay</button></td>
-                            </tr>
-                            <tr>
-                                <td>Yarın<br><span style="color: var(--text-gray);">09:00</span></td>
-                                <td>Elena Ivanova<br><span style="color: var(--text-gray);"><i class="fa-brands fa-whatsapp"></i> +7 916...</span></td>
-                                <td>Alanya Merkez &rarr; Şehir Turu<br><span style="color: var(--text-gray);"><i class="fa-solid fa-hourglass-half"></i> 8 Saatlik Tahsis</span></td>
-                                <td>VIP Tahsis<br><span style="color: var(--primary-red);">₺ 6.000</span></td>
-                                <td><span class="badge badge-approved">Onaylandı</span></td>
-                                <td class="action-btns"><button class="btn-view"><i class="fa-solid fa-eye"></i> Detay</button></td>
-                            </tr>
+                        <tbody id="dashboard-tbody">
                         </tbody>
                     </table>
                 </div>
@@ -367,11 +522,20 @@
                     </div>
                     <table class="data-table">
                         <thead>
-                            <tr><th>ID</th><th>Tarih</th><th>Müşteri</th><th>Güzergah</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr>
+                            <tr><th>ID</th><th>Tarih</th><th>Müşteri</th><th>Güzergah</th><th>Tutar</th><th>Ödeme</th><th>Durum</th><th>İşlem</th></tr>
                         </thead>
                         <tbody id="reservations-tbody">
                         </tbody>
                     </table>
+                    <div class="pagination" id="reservation-pagination" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;gap:10px;">
+                        <div>
+                            <span id="pagination-info" style="color:var(--text-gray);font-size:13px;">Sayfa 1 / 1</span>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn-secondary" id="pagination-prev" onclick="changePage('prev')" style="padding:6px 14px;font-size:13px;" disabled><i class="fa-solid fa-chevron-left"></i> Önceki</button>
+                            <button class="btn-secondary" id="pagination-next" onclick="changePage('next')" style="padding:6px 14px;font-size:13px;" disabled>Sonraki <i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Yeni Rezervasyon Formu (Harita Entegreli) -->
@@ -462,23 +626,20 @@
 
                 <div class="form-row">
                     <div class="panel-section" style="flex: 1;">
-                        <div class="section-header"><h3>Havalimanı Rota Fiyatları</h3><button class="btn-primary"><i class="fa-solid fa-plus"></i> Yeni Rota</button></div>
+                        <div class="section-header"><h3>Havalimanı Rota Fiyatları</h3><button class="btn-primary" onclick="adminAddRouteRow()"><i class="fa-solid fa-plus"></i> Yeni Rota</button></div>
                         <table class="data-table">
                             <thead><tr><th>Alış</th><th>Varış</th><th>Fiyat (₺)</th><th>İşlem</th></tr></thead>
-                            <tbody>
-                                <tr><td>Gazipaşa (GZP)</td><td>Mahmutlar</td><td><input type="number" value="2500" style="width: 80px; padding: 5px;"></td><td><button class="btn-approve">Kaydet</button></td></tr>
-                                <tr><td>Gazipaşa (GZP)</td><td>Alanya Merkez</td><td><input type="number" value="3000" style="width: 80px; padding: 5px;"></td><td><button class="btn-approve">Kaydet</button></td></tr>
-                                <tr><td>Antalya (AYT)</td><td>Avsallar</td><td><input type="number" value="4500" style="width: 80px; padding: 5px;"></td><td><button class="btn-approve">Kaydet</button></td></tr>
+                            <tbody id="route-prices-tbody">
                             </tbody>
                         </table>
                     </div>
                     <div class="panel-section" style="flex: 1;">
                         <div class="section-header"><h3>Şoförlü Tahsis Fiyatları</h3></div>
-                        <div class="form-group"><label>4 Saatlik Tahsis (₺)</label><input type="number" value="3500"></div>
-                        <div class="form-group"><label>8 Saatlik Tahsis (₺)</label><input type="number" value="6000"></div>
-                        <div class="form-group"><label>12 Saatlik Tahsis (₺)</label><input type="number" value="8000"></div>
-                        <div class="form-group"><label>Tam Gün (24 Saat) (₺)</label><input type="number" value="12000"></div>
-                        <button class="btn-primary" style="margin-top: 15px; width: 100%;">Tahsis Fiyatlarını Güncelle</button>
+                        <div class="form-group"><label>4 Saatlik Tahsis (₺)</label><input type="number" id="tahsis-4hours" value="4000"></div>
+                        <div class="form-group"><label>8 Saatlik Tahsis (₺)</label><input type="number" id="tahsis-8hours" value="7000"></div>
+                        <div class="form-group"><label>12 Saatlik Tahsis (₺)</label><input type="number" id="tahsis-12hours" value="9000"></div>
+                        <div class="form-group"><label>Tam Gün (24 Saat) (₺)</label><input type="number" id="tahsis-24hours" value="13000"></div>
+                        <button class="btn-primary" style="margin-top: 15px; width: 100%;" onclick="adminSaveTahsisPrices()">Tahsis Fiyatlarını Güncelle</button>
                     </div>
                 </div>
             </div>
@@ -535,6 +696,75 @@
                 </div>
             </div>
 
+            <div id="view-destinations" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-location-dot"></i> Turistik Bölgeler</h3>
+                        <button class="btn-primary" onclick="showDestinationForm(null)"><i class="fa-solid fa-plus"></i> Yeni Bölge Ekle</button>
+                    </div>
+                    <p style="font-size:13px;color:var(--text-gray);margin:0 0 16px;">
+                        Ana sayfada "Popüler Turistik Bölgeler" bölümünde gösterilen destinasyonları yönetin.
+                        Görsel olarak <strong>Resim URL</strong> kullanılır — dosya yükleme desteklenmez.
+                    </p>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>ID</th><th>Görsel</th><th>Bölge Adı</th><th>Açıklama</th><th>Sıra</th><th>Durum</th><th>İşlem</th></tr>
+                        </thead>
+                        <tbody id="destinations-admin-tbody">
+                            <tr><td colspan="7" style="text-align:center;color:var(--text-gray);">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Yeni / Düzenleme Formu -->
+                <div id="destination-form" class="panel-section" style="display:none;">
+                    <div class="section-header">
+                        <h3 id="destination-form-title"><i class="fa-solid fa-pen"></i> Yeni Bölge Ekle</h3>
+                        <button class="btn-secondary" onclick="hideDestinationForm()">İptal</button>
+                    </div>
+                    <input type="hidden" id="dest-edit-id" value="">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bölge Adı <span style="color:var(--primary-red);">*</span></label>
+                            <input type="text" id="dest-name" placeholder="Örn: Kleopatra Plajı" maxlength="200">
+                        </div>
+                        <div class="form-group">
+                            <label>Sıralama</label>
+                            <input type="number" id="dest-sort-order" value="0" min="0" max="999">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Açıklama</label>
+                        <textarea id="dest-description" rows="3" placeholder="Kısa açıklama metni..." style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Resim URL <span style="color:var(--primary-red);">*</span></label>
+                        <input type="text" id="dest-image-url" placeholder="https://images.unsplash.com/photo-... veya benzer bir görsel linki">
+                        <p style="font-size:12px;color:var(--text-gray);margin-top:4px;">
+                            <i class="fa-solid fa-circle-info"></i> Railway sunucusunda dosya yükleme kalıcı olmadığı için görsel URL'si girilmelidir.
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <label>Slug (URL dostu ad)</label>
+                        <input type="text" id="dest-slug" placeholder="ornek-bolge-adi" maxlength="200">
+                        <p style="font-size:12px;color:var(--text-gray);margin-top:4px;">
+                            <i class="fa-solid fa-circle-info"></i> Boş bırakılırsa otomatik oluşturulur.
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="dest-is-active" checked>
+                            Aktif (ana sayfada göster)
+                        </label>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:16px;">
+                        <button class="btn-primary" onclick="saveDestination()"><i class="fa-solid fa-floppy-disk"></i> Kaydet</button>
+                        <button class="btn-secondary" onclick="hideDestinationForm()">Vazgeç</button>
+                    </div>
+                    <div id="destination-form-status" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13px;font-weight:600;"></div>
+                </div>
+            </div>
+
             <div id="view-flights" class="panel-view">
                 <div class="panel-section">
                     <div class="section-header">
@@ -587,6 +817,84 @@
                 </div>
             </div>
 
+            <div id="view-radar" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3>Canlı Radar — Anlık Ziyaretçi Takibi</h3>
+                        <button class="btn-primary" onclick="refreshRadar()" style="padding:8px 16px;font-size:13px;"><i class="fa-solid fa-rotate"></i> Yenile</button>
+                    </div>
+                    <div class="radar-stats-grid">
+                        <div class="radar-stat-card"><div class="stat-value" id="radar-online-count">0</div><div class="stat-label">Anlık Ziyaretçi (Online)</div></div>
+                        <div class="radar-stat-card"><div class="stat-value" id="radar-total-today">0</div><div class="stat-label">Bugünkü Ziyaretçi</div></div>
+                        <div class="radar-stat-card"><div class="stat-value online" id="radar-online-only">0</div><div class="stat-label">Online</div></div>
+                        <div class="radar-stat-card"><div class="stat-value offline" id="radar-offline-count">0</div><div class="stat-label">Offline</div></div>
+                    </div>
+                    <div class="radar-filter-bar">
+                        <input type="text" class="radar-search-input" id="radar-search-input" placeholder="IP, konum, cihaz veya sayfa ile filtrele..." oninput="renderRadarTable()">
+                        <select id="radar-status-filter" onchange="renderRadarTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--card-bg);color:var(--text);">
+                            <option value="all">Tümü</option>
+                            <option value="online">Sadece Online</option>
+                            <option value="offline">Sadece Offline</option>
+                        </select>
+                    </div>
+                    <div id="radar-table-container" style="overflow-x:auto;">
+                        <table class="data-table" id="radar-table">
+                            <thead>
+                                <tr>
+                                    <th>İsim</th>
+                                    <th>IP Adresi</th>
+                                    <th>Konum</th>
+                                    <th>Cihaz & Tarayıcı</th>
+                                    <th>Şu Anki Sayfa</th>
+                                    <th>Sitede Geçirilen Süre</th>
+                                    <th>Son Aksiyon</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="radar-tbody">
+                                <tr><td colspan="8" style="text-align:center;color:var(--text-gray);">Radar verisi bekleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-page-management" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-file-lines"></i> Sayfa Yönetimi</h3>
+                    </div>
+                    <p style="font-size:13px;color:var(--text-gray);margin:0 0 16px;">
+                        Aşağıdaki sayfaların içeriklerini düzenleyin. Değişiklikler otomatik olarak web sitesinde görünecektir.
+                    </p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+                        <button class="btn-primary" onclick="loadPageContent('hakkimizda')" style="padding:8px 18px;font-size:13px;" id="page-btn-hakkimizda">Hakkımızda</button>
+                        <button class="btn-primary" onclick="loadPageContent('gizlilik')" style="padding:8px 18px;font-size:13px;" id="page-btn-gizlilik">Gizlilik Sözleşmesi</button>
+                        <button class="btn-primary" onclick="loadPageContent('mesafeli-satis')" style="padding:8px 18px;font-size:13px;" id="page-btn-mesafeli-satis">Mesafeli Satış</button>
+                        <button class="btn-primary" onclick="loadPageContent('teslimat')" style="padding:8px 18px;font-size:13px;" id="page-btn-teslimat">Teslimat ve İade</button>
+                        <button class="btn-primary" onclick="loadPageContent('iade-sartlari')" style="padding:8px 18px;font-size:13px;" id="page-btn-iade-sartlari">İade Şartları</button>
+                    </div>
+                    <div id="page-editor-area" style="display:none;">
+                        <div class="form-group">
+                            <label>Sayfa Başlığı</label>
+                            <input type="text" id="page-editor-title" placeholder="Sayfa başlığı..." maxlength="200" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:15px;">
+                        </div>
+                        <div class="form-group">
+                            <label>Sayfa İçeriği</label>
+                            <div id="page-editor-quill" style="height:400px;background:#fff;border-radius:8px;"></div>
+                        </div>
+                        <div style="display:flex;gap:10px;margin-top:16px;">
+                            <button class="btn-primary" onclick="savePageContent()"><i class="fa-solid fa-floppy-disk"></i> Sayfayı Kaydet</button>
+                            <span id="page-editor-status" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;"></span>
+                        </div>
+                    </div>
+                    <div id="page-editor-empty" style="padding:40px;text-align:center;color:var(--text-gray);">
+                        <i class="fa-solid fa-hand-pointer" style="font-size:32px;margin-bottom:12px;display:block;"></i>
+                        <p>Yukarıdan düzenlemek istediğiniz sayfayı seçin.</p>
+                    </div>
+                </div>
+            </div>
+
             <div id="view-settings" class="panel-view">
                 <div class="panel-section">
                     <div class="section-header"><h3>İletişim ve API Ayarları</h3></div>
@@ -619,6 +927,31 @@
                     </div>
                 </div>
 
+                <div class="panel-section" style="margin-top:24px;">
+                    <div class="section-header"><h3>Yönetici Giriş Bilgileri</h3></div>
+                    <p style="font-size:13px;color:var(--text-gray);margin:0 0 16px;">Admin paneline giriş yaparken kullanacağınız kullanıcı adı ve şifreyi buradan değiştirebilirsiniz.</p>
+                    <div id="cred-status" class="cred-status"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Mevcut Kullanıcı Adı</label>
+                            <input type="text" id="current-username-display" disabled style="background:#e2e8f0;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Mevcut Şifre (Doğrulama İçin)</label>
+                            <input type="password" id="cred-current-password" placeholder="Mevcut şifrenizi girin">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Yeni Kullanıcı Adı</label>
+                            <input type="text" id="cred-new-username" placeholder="Yeni kullanıcı adı (e-posta)">
+                        </div>
+                        <div class="form-group"><label>Yeni Şifre</label>
+                            <input type="password" id="cred-new-password" placeholder="Yeni şifre">
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="saveAdminCredentials()"><i class="fa-solid fa-floppy-disk"></i> Bilgileri Güncelle</button>
+                </div>
+
             </div>
 
         </div>
@@ -645,34 +978,96 @@
     </script>
 
 <script>
+    var radarPollingInterval = null;
+    var radarVisitorInfo = {};
+
+    function switchTab(tabId, element) {
+        // Tüm sekmeleri gizle
+        const views = document.querySelectorAll('.panel-view');
+        views.forEach(view => view.classList.remove('active-view'));
+
+        // Seçilen sekmeyi göster
+        document.getElementById(tabId).classList.add('active-view');
+
+        // Sol menüdeki active class'ını değiştir
+        const menuItems = document.querySelectorAll('.menu-item');
+        menuItems.forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
+
+        // Başlığı güncelle
+        const titleText = element.innerText.trim();
+        document.getElementById('header-title-text').innerText = titleText;
+
+        // Radar polling: radar sekmesi açıkken başlat, diğer sekmelerde durdur
+        if (tabId === 'view-radar') {
+            startRadarPolling();
+        } else if (tabId !== 'view-radar') {
+            stopRadarPolling();
+        }
+
+        // Dashboard radar polling
+        if (tabId === 'view-dashboard') {
+            startDashboardRadar();
+        } else {
+            stopDashboardRadar();
+        }
+    }
+</script>
+
+<script>
     // ─── LOGIN / AUTH ──────────────────────────────────────────
     async function handleLogin() {
-        const username = document.getElementById('loginUser').value;
-        const password = document.getElementById('loginPass').value;
+        const username = document.getElementById('loginUser').value.trim();
+        const password = document.getElementById('loginPass').value.trim();
         const errorEl = document.getElementById('loginError');
         errorEl.style.display = 'none';
 
+        // Boş alan kontrolü
+        if (!username || !password) {
+            errorEl.innerText = 'Kullanıcı adı ve şifre boş olamaz!';
+            errorEl.style.display = 'block';
+            return;
+        }
+
         try {
+            const rememberMe = document.getElementById('rememberMe').checked;
             const res = await fetch('/api/admin/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username, password})
+                body: JSON.stringify({username, password, rememberMe})
             });
             const data = await res.json();
             if (data.success) {
-                localStorage.setItem('guliz_token', data.token);
+                if (rememberMe) {
+                    localStorage.setItem('guliz_token', data.token);
+                } else {
+                    sessionStorage.setItem('guliz_token', data.token);
+                }
                 document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('appContainer').style.display = 'flex';
+                loadDashboard();
+                loadReservations();
                 loadAdminFlights();
                 loadAytFlights();
                 loadSliderImages();
                 loadBankAccounts();
                 loadTelegramConfig();
+                adminLoadPrices();
+                loadDestinations();
+                setInterval(loadDashboard, 30000);
+                startDashboardRadar();
                 setInterval(loadAdminFlights, 120000);
                 setInterval(loadAytFlights, 120000);
+                setInterval(loadReservations, 30000);
                 startChatPolling();
+                startRadarPolling();
             } else {
                 errorEl.style.display = 'block';
+                if (res.status === 401) {
+                    errorEl.innerText = 'Kullanıcı adı veya şifre hatalı!';
+                } else {
+                    errorEl.innerText = data.error || 'Giriş başarısız!';
+                }
             }
         } catch(e) {
             errorEl.style.display = 'block';
@@ -697,14 +1092,21 @@
 
     function handleLogout() {
         localStorage.removeItem('guliz_token');
+        sessionStorage.removeItem('guliz_token');
         document.getElementById('loginOverlay').classList.remove('hidden');
         document.getElementById('appContainer').style.display = 'none';
         stopChatPolling();
+        stopRadarPolling();
+    }
+
+    // ─── UTILITY ──────────────────────────────────────────
+    function getToken() {
+        return localStorage.getItem('guliz_token') || sessionStorage.getItem('guliz_token');
     }
 
     // ─── GZP UÇUŞLARI ──────────────────────────────────────────
     async function loadAdminFlights() {
-        const token = localStorage.getItem('guliz_token');
+        const token = getToken();
         if (!token) return;
         try {
             const res = await fetch('/api/admin/flights', {
@@ -723,7 +1125,7 @@
 
     // ─── AYT UÇUŞLARI ──────────────────────────────────────────
     async function loadAytFlights() {
-        const token = localStorage.getItem('guliz_token');
+        const token = getToken();
         if (!token) return;
         try {
             const res = await fetch('/api/admin/flights', {
@@ -766,7 +1168,7 @@
 
     // ─── DOMContentLoaded ───────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function() {
-        const token = localStorage.getItem('guliz_token');
+        const token = getToken() || sessionStorage.getItem('guliz_token');
         if (token) {
             fetch('/api/admin/check', {
                 headers: {'Authorization': 'Bearer ' + token}
@@ -776,20 +1178,26 @@
                 if (d.success) {
                     document.getElementById('loginOverlay').classList.add('hidden');
                     document.getElementById('appContainer').style.display = 'flex';
+                    loadDashboard();
                     loadAdminFlights();
                     loadAytFlights();
                     loadSliderImages();
                     loadReservations();
+                    loadBankAccounts();
                     loadTelegramConfig();
+                    adminLoadPrices();
+                    setInterval(loadDashboard, 30000);
                     setInterval(loadAdminFlights, 120000);
                     setInterval(loadAytFlights, 120000);
                     setInterval(loadReservations, 30000);
                 } else {
                     localStorage.removeItem('guliz_token');
+                    sessionStorage.removeItem('guliz_token');
                 }
             })
             .catch(function() {
                 localStorage.removeItem('guliz_token');
+                sessionStorage.removeItem('guliz_token');
             });
         }
         document.getElementById('loginPass').addEventListener('keypress', function(e) {
@@ -876,6 +1284,39 @@
                 }
             });
         }
+    }
+
+    function initRoutePlacesAutocomplete() {
+        if(typeof google === 'undefined' || !google.maps || !google.maps.places) return;
+        var bounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(36.0, 31.0),
+            new google.maps.LatLng(37.2, 32.8)
+        );
+        var opts = { bounds: bounds, strictBounds: false, fields: ['formatted_address', 'geometry', 'name', 'place_id'] };
+        document.querySelectorAll('.rp-from').forEach(function(input) {
+            if(input._autoInit) return;
+            input._autoInit = true;
+            var auto = new google.maps.places.Autocomplete(input, opts);
+            auto.addListener('place_changed', function() {
+                var place = auto.getPlace();
+                if(place && place.geometry) {
+                    input.dataset.lat = place.geometry.location.lat();
+                    input.dataset.lng = place.geometry.location.lng();
+                }
+            });
+        });
+        document.querySelectorAll('.rp-to').forEach(function(input) {
+            if(input._autoInit) return;
+            input._autoInit = true;
+            var auto = new google.maps.places.Autocomplete(input, opts);
+            auto.addListener('place_changed', function() {
+                var place = auto.getPlace();
+                if(place && place.geometry) {
+                    input.dataset.lat = place.geometry.location.lat();
+                    input.dataset.lng = place.geometry.location.lng();
+                }
+            });
+        });
     }
 
     function adminGeocodePickup(val) {
@@ -1152,7 +1593,7 @@
         }
         localStorage.setItem('guliz_unit_price', val.toString());
         // Backend'e de kaydet (public API'den index.html de faydalansın)
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if(token) {
             fetch('/api/admin/unit-price', {
                 method: 'PUT',
@@ -1173,6 +1614,177 @@
             if(input) input.value = saved;
         }
     });
+
+    // ─── ROTA & TAHSIS FİYAT YÖNETİMİ ──────────────────────────
+    async function adminLoadPrices() {
+        try {
+            var res = await fetch('/api/route-prices');
+            var data = await res.json();
+            if(data.success && data.prices) {
+                renderRoutePrices(data.prices);
+            }
+        } catch(e) {}
+
+        try {
+            var res2 = await fetch('/api/tahsis-prices');
+            var data2 = await res2.json();
+            if(data2.success && data2.prices) {
+                document.getElementById('tahsis-4hours').value = data2.prices['4hours'] || 3500;
+                document.getElementById('tahsis-8hours').value = data2.prices['8hours'] || 6000;
+                document.getElementById('tahsis-12hours').value = data2.prices['12hours'] || 8000;
+                document.getElementById('tahsis-24hours').value = data2.prices['24hours'] || 12000;
+            }
+        } catch(e) {}
+    }
+
+    function renderRoutePrices(prices) {
+        var tbody = document.getElementById('route-prices-tbody');
+        if(!tbody) return;
+        var html = '';
+        for(var i = 0; i < prices.length; i++) {
+            var p = prices[i];
+            html += '<tr>' +
+                '<td><input type="text" class="rp-from" value="' + escapeHtml(p.from) + '" style="width:180px;padding:10px;"></td>' +
+                '<td><input type="text" class="rp-to" value="' + escapeHtml(p.to) + '" style="width:180px;padding:10px;"></td>' +
+                '<td><input type="number" class="rp-price" value="' + p.price + '" style="width:120px;padding:10px;"></td>' +
+                '<td><button class="btn-approve" onclick="adminSaveRoutePrices()">Kaydet</button> <button class="btn-approve" onclick="adminGoogleCalc(this)" style="background:#2563EB;">Google</button> <button class="btn-danger" onclick="adminDeleteRouteRow(this)" style="background:#DC2626;color:white;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;">Sil</button></td>' +
+                '</tr>';
+        }
+        tbody.innerHTML = html;
+        if(mapsInitialized) setTimeout(initRoutePlacesAutocomplete, 100);
+    }
+
+    async function adminSaveRoutePrices() {
+        var tbody = document.getElementById('route-prices-tbody');
+        if(!tbody) return;
+        var rows = tbody.querySelectorAll('tr');
+        var prices = [];
+        for(var i = 0; i < rows.length; i++) {
+            var fromInput = rows[i].querySelector('.rp-from');
+            var toInput = rows[i].querySelector('.rp-to');
+            var priceInput = rows[i].querySelector('.rp-price');
+            if(fromInput && toInput && priceInput) {
+                prices.push({
+                    from: fromInput.value.trim(),
+                    to: toInput.value.trim(),
+                    price: parseInt(priceInput.value) || 0
+                });
+            }
+        }
+
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        try {
+            var res = await fetch('/api/admin/route-prices', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+                body: JSON.stringify({prices: prices})
+            });
+            var data = await res.json();
+            if(data.success) {
+                alert('Rota fiyatları kaydedildi!');
+                adminLoadPrices();
+            } else {
+                alert('Hata: ' + (data.error || 'Kaydetme başarısız'));
+            }
+        } catch(e) {
+            alert('Sunucu hatası');
+        }
+    }
+
+    function adminAddRouteRow() {
+        var tbody = document.getElementById('route-prices-tbody');
+        if(!tbody) return;
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td><input type="text" class="rp-from" placeholder="Alış" style="width:180px;padding:10px;"></td>' +
+            '<td><input type="text" class="rp-to" placeholder="Varış" style="width:180px;padding:10px;"></td>' +
+            '<td><input type="number" class="rp-price" placeholder="Fiyat" style="width:120px;padding:10px;"></td>' +
+            '<td><button class="btn-approve" onclick="adminSaveRoutePrices()">Kaydet</button> <button class="btn-approve" onclick="adminGoogleCalc(this)" style="background:#2563EB;">Google</button> <button class="btn-danger" onclick="adminDeleteRouteRow(this)" style="background:#DC2626;color:white;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;">Sil</button></td>';
+        tbody.appendChild(tr);
+        // Bind Google Places Autocomplete to new inputs
+        if(mapsInitialized) setTimeout(initRoutePlacesAutocomplete, 100);
+    }
+
+    function adminDeleteRouteRow(btn) {
+        if(!confirm('Bu rotayı silmek istediğinize emin misiniz?')) return;
+        var tr = btn.closest('tr');
+        if(tr) tr.remove();
+        adminSaveRoutePrices();
+    }
+
+    async function adminSaveTahsisPrices() {
+        var prices = {
+            '4hours': parseInt(document.getElementById('tahsis-4hours').value) || 0,
+            '8hours': parseInt(document.getElementById('tahsis-8hours').value) || 0,
+            '12hours': parseInt(document.getElementById('tahsis-12hours').value) || 0,
+            '24hours': parseInt(document.getElementById('tahsis-24hours').value) || 0
+        };
+
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        try {
+            var res = await fetch('/api/admin/tahsis-prices', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+                body: JSON.stringify({prices: prices})
+            });
+            var data = await res.json();
+            if(data.success) {
+                alert('Tahsis fiyatları kaydedildi!');
+                adminLoadPrices(); // reload to reflect saved values
+            } else {
+                alert('Hata: ' + (data.error || 'Kaydetme başarısız'));
+            }
+        } catch(e) {
+            alert('Sunucu hatası');
+        }
+    }
+
+    // Google Maps ile rota mesafesi hesapla ve fiyat öner
+    async function adminGoogleCalc(btn) {
+        var tr = btn.closest('tr');
+        if(!tr) return;
+        var fromInput = tr.querySelector('.rp-from');
+        var toInput = tr.querySelector('.rp-to');
+        var priceInput = tr.querySelector('.rp-price');
+        if(!fromInput || !toInput || !priceInput) return;
+        var from = fromInput.value.trim();
+        var to = toInput.value.trim();
+        if(!from || !to) { alert('Alış ve varış noktalarını girin.'); return; }
+
+        // Google Maps'ten mesafe sorgula
+        try {
+            var res = await fetch('/api/maps/distance?origins=' + encodeURIComponent(from) + '&destinations=' + encodeURIComponent(to));
+            var data = await res.json();
+            if(!data.success || !data.data) { alert('Mesafe hesaplanamadı: Google yanıt vermedi.'); return; }
+            var element = data.data.rows && data.data.rows[0] && data.data.rows[0].elements && data.data.rows[0].elements[0];
+            if(!element || !element.distance) { alert('Mesafe bulunamadı.'); return; }
+            var meters = element.distance.value;
+            var km = Math.round(meters / 1000);
+            var duration = element.duration ? element.duration.text : '—';
+
+            // Birim fiyatı al
+            var upRes = await fetch('/api/unit-price');
+            var upData = await upRes.json();
+            var unitPrice = (upData.success && upData.unitPrice > 0) ? upData.unitPrice : 25;
+
+            var suggestedPrice = Math.max(500, Math.round(km * unitPrice));
+            priceInput.value = suggestedPrice;
+
+            // Kullanıcıya bilgi göster
+            var label = priceInput.parentElement;
+            var info = document.createElement('div');
+            info.style.cssText = 'font-size:11px;color:#2563EB;margin-top:2px;';
+            info.textContent = km + ' km × ' + unitPrice + '₺ = ' + suggestedPrice.toLocaleString('tr-TR') + '₺ (' + duration + ')';
+            var old = label.querySelector('.google-info');
+            if(old) old.remove();
+            label.appendChild(info);
+        } catch(e) {
+            alert('Sunucu hatası: ' + e.message);
+        }
+    }
 
     // ─── ADMIN UI FONKSİYONLARI ────────────────────────────────
     function toggleNewReservationForm() {
@@ -1211,7 +1823,7 @@
     function showReservationDetail(id) {
         fetch('/api/admin/reservations', {
             method: 'GET',
-            headers: {'Authorization': 'Bearer ' + localStorage.getItem('guliz_token')}
+            headers: {'Authorization': 'Bearer ' + getToken()}
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -1224,19 +1836,37 @@
 
             var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
             var typeMap = { transfer: 'Havalimanı Transfer', tahsis: 'Şoförlü VIP Tahsis' };
+            var payMap = { kredi_karti: 'Kredi Kartı', havale: 'Havale/EFT' };
+            var payStatusMap = { pending: 'Ödeme Bekliyor', confirmed: 'Ödeme Onaylandı' };
             var statusClass = { pending: 'badge-pending', approved: 'badge-approved', completed: '', cancelled: '' };
             var durumHtml = '<span class="badge ' + (statusClass[r.status] || '') + '" style="' + (r.status === 'completed' ? 'background:#E2E8F0;color:#475569;' : r.status === 'cancelled' ? 'background:#FEE2E2;color:#DC2626;' : '') + '">' + (statusMap[r.status] || r.status) + '</span>';
+
+            var payBadgeClass = r.paymentStatus === 'confirmed' ? 'badge-approved' : 'badge-pending';
+            var payExtraStyle = r.paymentStatus === 'confirmed' ? '' : 'background:#FEF3C7;color:#D97706;';
+            var payHtml = (payMap[r.paymentMethod] || '—') + '<br><span class="badge ' + payBadgeClass + '" style="font-size:11px;padding:2px 8px;margin-top:4px;display:inline-block;' + payExtraStyle + '">' + (payStatusMap[r.paymentStatus] || r.paymentStatus || '—') + '</span>';
 
             var gzrh = r.type === 'tahsis' ? r.pickup + ' (' + r.duration + ' Saat)' : r.pickup + ' → ' + r.destination;
 
             var actionsHtml = '';
+            // Approve & confirm payment for kredi_karti
             if(r.status === 'pending') {
-                actionsHtml = '<button class="btn-approve" onclick="adminUpdateReservation(' + r.id + ',\'approved\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-check"></i> Onayla</button> ' +
-                    '<button class="btn-danger" onclick="adminUpdateReservation(' + r.id + ',\'cancelled\')" style="padding:8px 20px;font-size:14px;background:#DC2626;color:white;border:none;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-times"></i> İptal Et</button>';
+                var canApprove = (r.paymentMethod !== 'kredi_karti') || (r.paymentStatus === 'confirmed');
+                actionsHtml = '<button class="btn-approve" onclick="adminUpdateReservation(' + r.id + ',\'approved\')" style="padding:8px 20px;font-size:14px;' + (canApprove ? '' : 'opacity:0.5;pointer-events:none;') + '" title="' + (canApprove ? 'Onayla' : 'Ödeme onaylanmadı') + '"><i class="fa-solid fa-check"></i> Onayla</button> ' +
+                    '<button class="btn-danger" onclick="adminUpdateReservation(' + r.id + ',\'cancelled\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-times"></i> İptal Et</button>';
+                // Show confirm payment button for kredi_karti
+                if(r.paymentMethod === 'kredi_karti' && r.paymentStatus !== 'confirmed') {
+                    actionsHtml += ' <button class="btn-confirm-payment" onclick="adminConfirmPayment(' + r.id + ')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-credit-card"></i> Ödemeyi Onayla</button>';
+                }
             } else if(r.status === 'approved') {
                 actionsHtml = '<button class="btn-approve" onclick="adminUpdateReservation(' + r.id + ',\'completed\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-check-double"></i> Tamamla</button> ' +
-                    '<button class="btn-danger" onclick="adminUpdateReservation(' + r.id + ',\'cancelled\')" style="padding:8px 20px;font-size:14px;background:#DC2626;color:white;border:none;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-times"></i> İptal Et</button>';
+                    '<button class="btn-danger" onclick="adminUpdateReservation(' + r.id + ',\'cancelled\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-times"></i> İptal Et</button>';
+                // Show confirm payment button even in approved state if not yet confirmed
+                if(r.paymentMethod === 'kredi_karti' && r.paymentStatus !== 'confirmed') {
+                    actionsHtml += ' <button class="btn-confirm-payment" onclick="adminConfirmPayment(' + r.id + ')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-credit-card"></i> Ödemeyi Onayla</button>';
+                }
             }
+
+            var editBtnHtml = '<button class="btn-edit" onclick="adminEditReservation(' + r.id + ')" style="padding:8px 16px;font-size:13px;"><i class="fa-solid fa-pen"></i> Düzenle</button>';
 
             var detailHtml =
                 '<div id="reservation-detail-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;justify-content:center;align-items:center;" onclick="if(event.target===this)closeReservationDetail()">' +
@@ -1250,6 +1880,7 @@
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Hizmet</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + (typeMap[r.type] || r.type) + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Müşteri</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.customerName || '') + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Telefon</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.customerPhone || '') + '</div></div>' +
+                '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Ödeme</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + payHtml + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Güzergah</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(gzrh) + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Tarih / Saat</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.date || '') + ' ' + escapeHtml(r.time || '') + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Tutar</div><div style="font-size:15px;font-weight:700;margin-top:4px;">₺' + (r.price ? Number(r.price).toLocaleString('tr-TR') : '—') + '</div></div>' +
@@ -1259,6 +1890,7 @@
                 (r.notes ? '<div style="grid-column:1/-1;background:#FFF9E6;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Notlar</div><div style="font-size:14px;margin-top:4px;">' + escapeHtml(r.notes) + '</div></div>' : '') +
                 '</div>' +
                 '<div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">' + actionsHtml + '</div>' +
+                '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">' + editBtnHtml + '</div>' +
                 '<div style="margin-top:12px;"><button onclick="adminDeleteReservation(' + r.id + ')" style="padding:8px 16px;font-size:13px;background:transparent;color:#DC2626;border:1px solid #FCA5A5;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-trash"></i> Rezervasyonu Sil</button></div>' +
                 '</div></div>';
 
@@ -1269,16 +1901,140 @@
         .catch(function() { alert('Rezervasyon bilgisi alınamadı.'); });
     }
 
+    function adminConfirmPayment(id) {
+        if(!confirm('Ödemenin onaylandığını teyit ediyor musunuz? Bu işlem rezervasyonu da onaylayacaktır.')) return;
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+        fetch('/api/admin/reservations', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify({ action: 'confirm-payment', id: id })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                loadReservations();
+                showReservationDetail(id);
+            } else {
+                alert('Hata: ' + (data.error || 'Ödeme onaylanamadı'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    function adminEditReservation(id) {
+        var el = document.getElementById('reservation-detail-modal');
+        if(el) el.remove();
+
+        fetch('/api/admin/reservations', {
+            method: 'GET',
+            headers: {'Authorization': 'Bearer ' + getToken()}
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(!data.success) return;
+            var r = null;
+            for(var i = 0; i < data.reservations.length; i++) {
+                if(data.reservations[i].id === id) { r = data.reservations[i]; break; }
+            }
+            if(!r) { alert('Rezervasyon bulunamadı'); return; }
+
+            var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
+            var typeMap = { transfer: 'Havalimanı Transfer', tahsis: 'Şoförlü VIP Tahsis' };
+
+            var durumHtml = '<span class="badge ' + (r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-approved' : '') + '" style="' + (r.status === 'completed' ? 'background:#E2E8F0;color:#475569;' : r.status === 'cancelled' ? 'background:#FEE2E2;color:#DC2626;' : '') + '">' + (statusMap[r.status] || r.status) + '</span>';
+
+            var editHtml =
+                '<div id="reservation-detail-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;justify-content:center;align-items:center;" onclick="if(event.target===this)closeReservationDetail()">' +
+                '<div style="background:#fff;border-radius:16px;padding:32px;width:90%;max-width:600px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
+                '<h3 style="color:#1B2B4C;margin:0;">Rezervasyon #' + r.id + ' Düzenle</h3>' +
+                '<button onclick="closeReservationDetail()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">&times;</button>' +
+                '</div>' +
+                '<div style="margin-bottom:16px;"><span class="badge ' + (r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-approved' : '') + '">' + (statusMap[r.status] || r.status) + '</span> <span style="color:var(--text-gray);font-size:13px;">' + (typeMap[r.type] || r.type) + '</span></div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+                '<div style="grid-column:1/-1;"><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Müşteri Adı</label><input id="edit-name" value="' + escapeHtml(r.customerName || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Telefon</label><input id="edit-phone" value="' + escapeHtml(r.customerPhone || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Alış</label><input id="edit-pickup" value="' + escapeHtml(r.pickup || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                (r.type === 'transfer' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Varış</label><input id="edit-destination" value="' + escapeHtml(r.destination || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' : '') +
+                (r.type === 'transfer' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Uçuş No</label><input id="edit-flight" value="' + escapeHtml(r.flightNumber || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' : '') +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tarih</label><input id="edit-date" type="date" value="' + escapeHtml(r.date || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Saat</label><input id="edit-time" type="time" value="' + escapeHtml(r.time || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Yolcu</label><input id="edit-passengers" type="number" value="' + (r.passengers || 1) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                (r.type === 'tahsis' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Süre (saat)</label><input id="edit-duration" type="number" value="' + (r.duration || 4) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' : '') +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tutar (₺)</label><input id="edit-price" type="number" value="' + (r.price || 0) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                '<div style="grid-column:1/-1;"><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Notlar</label><textarea id="edit-notes" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;min-height:60px;resize:vertical;">' + escapeHtml(r.notes || '') + '</textarea></div>' +
+                '</div>' +
+                '<div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">' +
+                '<button class="btn-approve" onclick="adminSaveEdit(' + r.id + ')" style="padding:10px 24px;font-size:14px;"><i class="fa-solid fa-save"></i> Kaydet</button> ' +
+                '<button class="btn-secondary" onclick="showReservationDetail(' + r.id + ')" style="padding:10px 24px;font-size:14px;"><i class="fa-solid fa-arrow-left"></i> Geri</button>' +
+                '</div>' +
+                '</div></div>';
+
+            var existing = document.getElementById('reservation-detail-modal');
+            if(existing) existing.remove();
+            document.body.insertAdjacentHTML('beforeend', editHtml);
+        })
+        .catch(function() { alert('Rezervasyon bilgisi alınamadı.'); });
+    }
+
+    function adminSaveEdit(id) {
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        var payload = {
+            action: 'edit',
+            id: id,
+            customerName: document.getElementById('edit-name').value.trim(),
+            customerPhone: document.getElementById('edit-phone').value.trim(),
+            pickup: document.getElementById('edit-pickup').value.trim(),
+            date: document.getElementById('edit-date').value,
+            time: document.getElementById('edit-time').value,
+            passengers: parseInt(document.getElementById('edit-passengers').value) || 1,
+            price: parseFloat(document.getElementById('edit-price').value) || 0,
+            notes: document.getElementById('edit-notes').value.trim()
+        };
+
+        var destEl = document.getElementById('edit-destination');
+        if(destEl) payload.destination = destEl.value.trim();
+
+        var flightEl = document.getElementById('edit-flight');
+        if(flightEl) payload.flightNumber = flightEl.value.trim();
+
+        var durEl = document.getElementById('edit-duration');
+        if(durEl) payload.duration = parseInt(durEl.value) || 4;
+
+        fetch('/api/admin/reservations', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                loadReservations();
+                showReservationDetail(id);
+            } else {
+                alert('Hata: ' + (data.error || 'Güncelleme başarısız'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
     function closeReservationDetail() {
         var el = document.getElementById('reservation-detail-modal');
         if(el) el.remove();
+    }
+
+    function adminUpdateStatus(id, status) {
+        return adminUpdateReservation(id, status);
     }
 
     function adminUpdateReservation(id, status) {
         var labels = { approved: 'onaylamak', completed: 'tamamlamak', cancelled: 'iptal etmek' };
         if(!confirm('Bu rezervasyonu ' + (labels[status] || status) + ' istediğinize emin misiniz?')) return;
 
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if(!token) { alert('Oturum süreniz dolmuş.'); return; }
 
         fetch('/api/admin/reservations', {
@@ -1301,7 +2057,7 @@
     function adminDeleteReservation(id) {
         if(!confirm('Bu rezervasyonu kalıcı olarak silmek istediğinize emin misiniz?')) return;
 
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if(!token) { alert('Oturum süreniz dolmuş.'); return; }
 
         fetch('/api/admin/reservations', {
@@ -1321,11 +2077,81 @@
         .catch(function() { alert('Sunucu hatası'); });
     }
 
-    function loadReservations() {
-        var token = localStorage.getItem('guliz_token');
+    // ─── Dashboard Radar Widget ────────────────────────────
+    var dashboardRadarPolling = null;
+
+    function startDashboardRadar() {
+        if (dashboardRadarPolling) clearInterval(dashboardRadarPolling);
+        loadDashboardRadar();
+        dashboardRadarPolling = setInterval(loadDashboardRadar, 7000);
+    }
+
+    function stopDashboardRadar() {
+        if (dashboardRadarPolling) { clearInterval(dashboardRadarPolling); dashboardRadarPolling = null; }
+    }
+
+    async function loadDashboardRadar() {
+        var token = getToken();
+        if (!token) { stopDashboardRadar(); return; }
+        try {
+            var res = await fetch('/api/admin/radar', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.status === 401) { stopDashboardRadar(); return; }
+            var data = await res.json();
+            if (!data.success) return;
+            var visitors = data.visitors || [];
+
+            // Chip güncelle
+            var onlineCount = visitors.filter(function(v) { return v.online; }).length;
+            document.getElementById('dash-radar-online').textContent = onlineCount;
+            document.getElementById('dash-radar-total').textContent = visitors.length;
+            var chatCount = visitors.filter(function(v) { return v.chatName || v.name; }).length;
+            document.getElementById('dash-radar-chat').textContent = chatCount;
+
+            // Kartları render et
+            var grid = document.getElementById('dashboard-radar-grid');
+            if (!grid) return;
+            if (visitors.length === 0) {
+                grid.innerHTML = '<div class="dashboard-radar-empty"><i class="fa-solid fa-eye-slash"></i>Şu anda sitede ziyaretçi yok.</div>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < Math.min(visitors.length, 12); i++) {
+                var v = visitors[i];
+                var displayName = v.name || v.chatName || 'Ziyaretçi';
+                var initial = (displayName && displayName !== 'Ziyaretçi') ? displayName.charAt(0).toUpperCase() : '?';
+                var pageIcon = 'fa-globe';
+                var pageLabel = v.currentPage || '—';
+                if (pageLabel.indexOf('transfer') > -1 || pageLabel.indexOf('rezervasyon') > -1) pageIcon = 'fa-ticket';
+                else if (pageLabel.indexOf('iletisim') > -1) pageIcon = 'fa-phone';
+                else if (pageLabel.indexOf('anasayfa') > -1 || pageLabel === '/' || pageLabel === '') pageIcon = 'fa-home';
+                var avatarClass = (v.chatName || v.name) ? 'drc-avatar has-chat' : 'drc-avatar';
+                var dotClass = v.online ? 'drc-dot online' : 'drc-dot';
+                var elapsedStr = v.elapsedFormatted || '';
+
+                html += '<div class="dashboard-radar-card">' +
+                    '<div class="' + avatarClass + '">' + initial + '</div>' +
+                    '<div class="drc-info">' +
+                        '<div class="drc-name">' + escapeHtml(displayName) + '</div>' +
+                        '<div class="drc-page"><i class="fa-solid ' + pageIcon + '"></i>' + escapeHtml(pageLabel.substring(0, 30)) + '</div>' +
+                    '</div>' +
+                    '<div class="drc-meta">' + elapsedStr + '<span class="' + dotClass + '"></span></div>' +
+                '</div>';
+            }
+            grid.innerHTML = html;
+        } catch(e) {}
+    }
+
+    var currentPage = 1;
+    var totalPages = 1;
+
+    function loadReservations(page) {
+        var token = getToken();
         if(!token) return;
 
-        fetch('/api/admin/reservations', {
+        if(page !== undefined) currentPage = page;
+        var url = '/api/admin/reservations?page=' + currentPage + '&limit=50';
+
+        fetch(url, {
             method: 'GET',
             headers: {'Authorization': 'Bearer ' + token}
         })
@@ -1333,9 +2159,81 @@
         .then(function(data) {
             if(data.success) {
                 renderReservations(data.reservations);
+                totalPages = data.totalPages || 1;
+                updatePaginationUI();
             }
         })
         .catch(function() {});
+    }
+
+    function changePage(dir) {
+        var newPage = dir === 'next' ? currentPage + 1 : currentPage - 1;
+        if(newPage < 1 || newPage > totalPages) return;
+        loadReservations(newPage);
+    }
+
+    function updatePaginationUI() {
+        var info = document.getElementById('pagination-info');
+        var prev = document.getElementById('pagination-prev');
+        var next = document.getElementById('pagination-next');
+        if(info) info.textContent = 'Sayfa ' + currentPage + ' / ' + totalPages;
+        if(prev) prev.disabled = currentPage <= 1;
+        if(next) next.disabled = currentPage >= totalPages;
+    }
+
+    // ─── DASHBOARD ──────────────────────────────────────────
+    async function loadDashboard() {
+        var token = getToken();
+        if(!token) return;
+        try {
+            var res = await fetch('/api/admin/dashboard-stats', {
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            var data = await res.json();
+            if(data.success) {
+                document.getElementById('stat-pending').textContent = data.pendingReservations || 0;
+                document.getElementById('stat-today').textContent = data.todayTransfers || 0;
+                document.getElementById('stat-unreadChat').textContent = data.unreadChat || 0;
+                document.getElementById('stat-monthly-revenue').textContent = '₺' + (data.monthlyRevenue || 0).toLocaleString('tr-TR');
+
+                var tbody = document.getElementById('dashboard-tbody');
+                if(tbody && data.recentReservations) {
+                    var html = '';
+                    var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
+                    for(var i = 0; i < data.recentReservations.length; i++) {
+                        var r = data.recentReservations[i];
+                        var statusLabel = statusMap[r.status] || r.status;
+                        var statusClass = r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-approved' : '';
+                        var extraStyle = r.status === 'completed' ? 'style="background:#E2E8F0;color:#475569;"' : r.status === 'cancelled' ? 'style="background:#FEE2E2;color:#DC2626;"' : '';
+                        var gzrh = r.type === 'tahsis' ? (r.pickup || '') + ' (' + (r.duration || '—') + ' Saat)' : (r.pickup || '') + ' → ' + (r.destination || '');
+                        var dateStr = r.date || '';
+                        if(dateStr) {
+                            try {
+                                var parts = dateStr.split('-');
+                                if(parts.length === 3) {
+                                    var months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+                                    dateStr = parseInt(parts[2]) + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0];
+                                }
+                            } catch(e) {}
+                        }
+                        var timeStr = r.time ? '<br><span style="color:var(--text-gray);font-size:12px;">' + r.time.slice(0,5) + '</span>' : '';
+                        html += '<tr>' +
+                            '<td>' + dateStr + timeStr + '</td>' +
+                            '<td>' + escapeHtml(r.customerName || '') + '<br><span style="color:var(--text-gray);font-size:12px;"><i class="fa-solid fa-phone"></i> ' + escapeHtml(r.customerPhone || '') + '</span></td>' +
+                            '<td>' + escapeHtml(gzrh) + (r.flightNumber ? '<br><span style="color:var(--text-gray);font-size:12px;"><i class="fa-solid fa-plane"></i> ' + escapeHtml(r.flightNumber) + '</span>' : '') + '</td>' +
+                            '<td>' + (r.type === 'tahsis' ? 'VIP Tahsis' : 'Havalimanı Transfer') + '<br><span style="color:var(--primary-red);font-weight:600;">₺' + (r.price ? Number(r.price).toLocaleString('tr-TR') : '—') + '</span></td>' +
+                            '<td><span class="badge ' + statusClass + '" ' + extraStyle + '>' + statusLabel + '</span></td>' +
+                            '<td class="action-btns"><button class="btn-view" onclick="showReservationDetail(' + r.id + ')"><i class="fa-solid fa-eye"></i> Detay</button></td>' +
+                            '</tr>';
+                    }
+                    tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:40px;color:#94A3B8;">Henüz rezervasyon yok.</td></tr>';
+                }
+
+                // Dashboard radar widget
+                loadDashboardRadar();
+                document.getElementById('dashboard-radar-compact').style.display = '';
+            }
+        } catch(e) {}
     }
 
     function renderReservations(reservations) {
@@ -1354,18 +2252,25 @@
         }
 
         if(!filtered || filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#94A3B8;">' + (searchVal ? 'Aramanızla eşleşen rezervasyon bulunamadı.' : 'Henüz rezervasyon yok.') + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#94A3B8;">' + (searchVal ? 'Aramanızla eşleşen rezervasyon bulunamadı.' : 'Henüz rezervasyon yok.') + '</td></tr>';
             return;
         }
 
         var html = '';
         var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
+        var payMap = { kredi_karti: 'Kredi Kartı', havale: 'Havale/EFT' };
+        var payStatusMap = { pending: 'Bekliyor', confirmed: 'Onaylandı' };
 
         for(var i = 0; i < filtered.length; i++) {
             var r = filtered[i];
             var statusLabel = statusMap[r.status] || r.status;
             var statusClass = r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-approved' : '';
             var extraStyle = r.status === 'completed' ? 'style="background:#E2E8F0;color:#475569;"' : r.status === 'cancelled' ? 'style="background:#FEE2E2;color:#DC2626;"' : '';
+
+            var paymentMethodLabel = payMap[r.paymentMethod] || r.paymentMethod || '—';
+            var paymentStatusLabel = payStatusMap[r.paymentStatus] || r.paymentStatus || '—';
+            var paymentBadgeClass = r.paymentStatus === 'confirmed' ? 'badge-approved' : 'badge-pending';
+            var paymentHtml = paymentMethodLabel + '<br><span class="badge ' + paymentBadgeClass + '" style="font-size:11px;padding:2px 8px;margin-top:4px;display:inline-block;">' + paymentStatusLabel + '</span>';
 
             var gzrh = r.type === 'tahsis' ? (r.pickup || '') + ' (' + (r.duration || '—') + ' Saat)' : (r.pickup || '') + ' → ' + (r.destination || '');
 
@@ -1386,8 +2291,14 @@
                 '<td>' + escapeHtml(r.customerName || '') + '</td>' +
                 '<td>' + escapeHtml(gzrh) + '</td>' +
                 '<td>₺' + (r.price ? Number(r.price).toLocaleString('tr-TR') : '—') + '</td>' +
+                '<td>' + paymentHtml + '</td>' +
                 '<td><span class="badge ' + statusClass + '" ' + extraStyle + '>' + statusLabel + '</span></td>' +
-                '<td><button class="btn-view" onclick="showReservationDetail(' + r.id + ')">Detay</button></td>' +
+                '<td class="action-btns">' +
+                    '<button class="btn-view" onclick="showReservationDetail(' + r.id + ')" title="Detay"><i class="fa-solid fa-eye"></i></button>' +
+                    (r.status === 'pending' ? '<button class="btn-approve" onclick="adminUpdateStatus(' + r.id + ',\'approved\')" title="Onayla"><i class="fa-solid fa-check"></i></button>' : '') +
+                    (r.status === 'approved' ? '<button class="btn-complete" onclick="adminUpdateStatus(' + r.id + ',\'completed\')" title="Tamamlandı"><i class="fa-solid fa-flag-checkered"></i></button>' : '') +
+                    (r.status !== 'cancelled' ? '<button class="btn-danger" onclick="adminUpdateStatus(' + r.id + ',\'cancelled\')" title="İptal"><i class="fa-solid fa-times"></i></button>' : '') +
+                '</td>' +
                 '</tr>';
         }
 
@@ -1428,7 +2339,7 @@
             price: 0
         };
 
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if(!token) { alert('Oturum süreniz dolmuş.'); return; }
 
         fetch('/api/reservations', {
@@ -1461,7 +2372,7 @@
             .catch(function(err) { console.error('Banka hesapları yüklenirken hata:', err); });
     }
 
-    function renderBankAccounts(accounts) {
+        function renderBankAccounts(accounts) {
         var container = document.getElementById('bank-accounts-form');
         var html = '';
         var order = ['halkbank', 'vakifbank'];
@@ -1469,16 +2380,12 @@
             'halkbank': 'Halkbank',
             'vakifbank': 'VakıfBank'
         };
-        var bankIcons = {
-            'halkbank': 'fa-solid fa-building-columns',
-            'vakifbank': 'fa-solid fa-building-columns'
-        };
         for(var i = 0; i < order.length; i++) {
             var key = order[i];
-            var acct = accounts[key] || {name: '', iban: ''};
+            var acct = accounts[key] || {name: '', iban: '', logo: ''};
             html += '<div class="panel-section" style="margin-bottom:16px;">' +
-                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
-                '<i class="' + (bankIcons[key] || 'fa-solid fa-building-columns') + '" style="font-size:20px;color:var(--primary-red);"></i>' +
+                '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+                '<img src="' + key + '.png" style="width:40px;height:40px;object-fit:contain;border-radius:6px;border:1px solid var(--border);padding:4px;background:#fff;" onerror="this.style.display=\'none\'">' +
                 '<h4 style="margin:0;font-size:16px;font-weight:700;">' + (bankLabels[key] || key) + '</h4></div>' +
                 '<div class="form-row">' +
                 '<div class="form-group" style="flex:1;"><label>Banka Adı</label>' +
@@ -1489,6 +2396,8 @@
         }
         container.innerHTML = html;
     }
+
+    function previewBankLogo(key) { }
 
     function escapeHtml(str) {
         if(!str) return '';
@@ -1514,7 +2423,7 @@
             alert('VakıfBank bilgilerini eksiksiz girin.');
             return;
         }
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         fetch('/api/admin/bank-accounts', {
             method: 'PUT',
             headers: {
@@ -1598,7 +2507,7 @@
         var alt = document.getElementById('slider-alt-input').value.trim() || 'Slider Görseli';
         if(!url) { alert('Lütfen bir görsel URL\'si girin.'); return; }
 
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if(!token) { alert('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.'); return; }
 
         fetch('/api/admin/slider-images', {
@@ -1622,7 +2531,7 @@
         var file = input.files && input.files[0];
         if(!file) return;
 
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if(!token) { alert('Oturum süreniz dolmuş.'); return; }
 
         var formData = new FormData();
@@ -1649,7 +2558,7 @@
     function deleteSliderImage(index) {
         if(!confirm('Bu görseli silmek istediğinize emin misiniz?')) return;
 
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if(!token) { alert('Oturum süreniz dolmuş.'); return; }
 
         fetch('/api/admin/slider-images', {
@@ -1669,7 +2578,7 @@
     }
 
     function moveSliderImage(index, direction) {
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if(!token) { alert('Oturum süreniz dolmuş.'); return; }
         var fromIndex = index;
         var toIndex = index + direction;
@@ -1698,7 +2607,7 @@
     };
 
     function getAuthHeaders() {
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         return token ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } : {};
     }
 
@@ -1783,9 +2692,29 @@
             }
             html += '<div class="chat-user' + activeClass + '" onclick="selectSession(\'' + sid.replace(/'/g, "\\'") + '\')">'
                 + '<h4>' + label + unreadBadge + timeStr + '</h4>'
-                + '<p>' + escapeHtml(preview) + '</p></div>';
+                + '<p>' + escapeHtml(preview) + '</p>'
+                + getVisitorTrackingHtml(sid) + '</div>';
         });
         sidebar.innerHTML = html;
+    }
+
+    function getVisitorTrackingHtml(sid) {
+        var v = radarVisitorInfo[sid];
+        if (!v) return '';
+        var parts = [];
+        if (v.ip) parts.push('<span title="IP Adresi">' + escapeHtml(v.ip) + '</span>');
+        if (v.city) parts.push('<span title="Konum">' + escapeHtml(v.city) + '</span>');
+        if (v.device) {
+            var dev = v.device;
+            if (v.browser) dev += ' &middot; ' + v.browser;
+            parts.push('<span title="Cihaz">' + escapeHtml(dev) + '</span>');
+        }
+        if (v.currentPage) parts.push('<span title="Sayfa">' + escapeHtml(v.currentPage) + '</span>');
+        if (v.durationFormatted) parts.push('<span title="Sitede geçen süre">' + v.durationFormatted + '</span>');
+        if (parts.length === 0) return '';
+        return '<div style="font-size:10px;color:var(--text-gray);margin-top:4px;line-height:1.5;padding:0 12px 4px;border-bottom:1px solid var(--border-color);">'
+            + parts.join(' &middot; ')
+            + '</div>';
     }
 
     function escapeHtml(str) {
@@ -1825,9 +2754,11 @@
             var name = msg.adminName || msg.name || '';
             var className = isAdmin ? 'msg admin' : 'msg client';
             var nameHtml = name ? '<div style="font-size:10px;font-weight:600;margin-bottom:3px;opacity:0.7;">' + escapeHtml(name) + '</div>' : '';
+            var deleteBtn = isAdmin ? '' : '<button onclick="deleteChatMessage(' + msg.id + ', \'' + sessionId.replace(/'/g, "\\'") + '\')" title="Mesajı sil" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:11px;opacity:0.5;margin-top:4px;display:block;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">🗑️ Sil</button>';
             html += '<div class="' + className + '">'
                 + nameHtml + '<div>' + text + '</div>'
-                + '<div style="font-size:9px;opacity:0.6;margin-top:4px;text-align:' + (isAdmin ? 'right' : 'left') + ';">' + time + '</div></div>';
+                + '<div style="font-size:9px;opacity:0.6;margin-top:4px;text-align:' + (isAdmin ? 'right' : 'left') + ';">' + time + '</div>'
+                + deleteBtn + '</div>';
         });
         container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
@@ -1860,10 +2791,27 @@
 
     function refreshChat() { pollChatMessages(); }
 
+    function deleteChatMessage(msgId, sessionId) {
+        if (!confirm('Bu mesajı silmek istediğinize emin misiniz?')) return;
+        fetch('/api/admin/chat/delete', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ messageId: msgId, sessionId: sessionId })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.success && chatState.sessions[sessionId]) {
+                chatState.sessions[sessionId].messages = chatState.sessions[sessionId].messages.filter(function(m) { return m.id !== msgId; });
+                renderChatMessages(sessionId);
+                renderChatSidebar();
+            } else {
+                alert('Mesaj silinemedi.');
+            }
+        }).catch(function() { alert('Mesaj silinemedi.'); });
+    }
+
     function updateChatBadge() {
         var totalUnread = 0;
         for (var sid in chatState.sessions) totalUnread += chatState.sessions[sid].unread;
-        var menuItem = document.querySelectorAll('.menu-item')[7];
+        var menuItem = document.querySelectorAll('.menu-item')[8];
         if (!menuItem) return;
         var existingBadge = menuItem.querySelector('.badge-count');
         if (totalUnread > 0) {
@@ -1883,7 +2831,7 @@
 
     // ─── TELEGRAM AYARLARI ─────────────────────────────────────────
     function loadTelegramConfig() {
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if (!token) return;
         fetch('/api/admin/telegram/config', {
             headers: { 'Authorization': 'Bearer ' + token }
@@ -1896,10 +2844,22 @@
             }
         })
         .catch(function() {});
+        // Mevcut kullanıcı adını yükle
+        var uDisplay = document.getElementById('current-username-display');
+        if (uDisplay) {
+            fetch('/api/admin/check', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.username) uDisplay.value = d.username;
+            })
+            .catch(function() {});
+        }
     }
 
     function saveTelegramConfig() {
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if (!token) { alert('Oturum süreniz dolmuş.'); return; }
         var botToken = document.getElementById('telegram-bot-token').value.trim();
         var chatId = document.getElementById('telegram-chat-id').value.trim();
@@ -1931,7 +2891,7 @@
     }
 
     function testTelegramConfig() {
-        var token = localStorage.getItem('guliz_token');
+        var token = getToken();
         if (!token) { alert('Oturum süreniz dolmuş.'); return; }
         var statusEl = document.getElementById('telegram-status');
         statusEl.style.display = 'block';
@@ -1968,9 +2928,580 @@
             statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> ' + message;
         }
         setTimeout(function() { statusEl.style.display = 'none'; }, 6000);
-    }</script>
+    }
 
-    <!-- ─── SLIDER URL EKLEME MODAL ──────────────────────────── -->
+    // ─── YÖNETİCİ GİRİŞ BİLGİLERİ ──────────────────────────────
+    function saveAdminCredentials() {
+        var token = getToken();
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        var currentPassword = document.getElementById('cred-current-password').value;
+        var newUsername = document.getElementById('cred-new-username').value.trim();
+        var newPassword = document.getElementById('cred-new-password').value;
+
+        var statusEl = document.getElementById('cred-status');
+
+        if (!currentPassword) {
+            statusEl.className = 'cred-status error';
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> Mevcut şifrenizi girin.';
+            return;
+        }
+        if (!newUsername || !newPassword) {
+            statusEl.className = 'cred-status error';
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> Yeni kullanıcı adı ve şifreyi girin.';
+            return;
+        }
+        if (newPassword.length < 6) {
+            statusEl.className = 'cred-status error';
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> Şifre en az 6 karakter olmalıdır.';
+            return;
+        }
+
+        statusEl.className = 'cred-status';
+        statusEl.style.display = 'block';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Güncelleniyor...';
+        statusEl.style.background = '#f0f4ff';
+        statusEl.style.color = '#1e40af';
+
+        fetch('/api/admin/credentials', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+                username: newUsername,
+                password: newPassword,
+                currentPassword: currentPassword
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                statusEl.className = 'cred-status success';
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = '<i class="fa-solid fa-check-circle"></i> ' + data.message;
+                document.getElementById('cred-current-password').value = '';
+                document.getElementById('cred-new-username').value = '';
+                document.getElementById('cred-new-password').value = '';
+                document.getElementById('current-username-display').value = newUsername;
+            } else {
+                statusEl.className = 'cred-status error';
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> ' + (data.error || 'Güncelleme başarısız!');
+            }
+        })
+        .catch(function() {
+            statusEl.className = 'cred-status error';
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> Sunucu hatası!';
+        });
+
+        setTimeout(function() {
+            statusEl.style.display = 'none';
+        }, 8000);
+    }
+
+    // ─── DESTINATIONS (Turistik Bölge Yönetimi) ─────────────────
+
+    async function loadDestinations() {
+        const token = getToken();
+        if (!token) return;
+        try {
+            const res = await fetch('/api/admin/destinations', {
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            const data = await res.json();
+            if (data.success) {
+                renderDestinations(data.destinations);
+            }
+        } catch(e) {
+            console.error('Destinations yüklenemedi:', e);
+        }
+    }
+
+    function renderDestinations(destinations) {
+        var tbody = document.getElementById('destinations-admin-tbody');
+        if (!tbody) return;
+        if (!destinations || destinations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-gray);">Henüz destinasyon eklenmemiş.</td></tr>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < destinations.length; i++) {
+            var d = destinations[i];
+            var imgHtml = d.imageUrl
+                ? '<img src="' + escapeHtml(d.imageUrl) + '" alt="' + escapeHtml(d.name) + '" style="width:60px;height:40px;object-fit:cover;border-radius:6px;">'
+                : '<span style="color:var(--text-gray);font-size:11px;">Görsel yok</span>';
+            var statusHtml = d.isActive
+                ? '<span style="color:#155724;background:#d4edda;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Aktif</span>'
+                : '<span style="color:#721c24;background:#f8d7da;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Pasif</span>';
+            html += '<tr>'
+                + '<td>' + d.id + '</td>'
+                + '<td>' + imgHtml + '</td>'
+                + '<td><strong>' + escapeHtml(d.name) + '</strong></td>'
+                + '<td style="max-width:250px;white-space:normal;font-size:13px;color:var(--text-gray);">' + escapeHtml((d.description || '').substring(0, 80)) + '</td>'
+                + '<td>' + d.sortOrder + '</td>'
+                + '<td>' + statusHtml + '</td>'
+                + '<td>'
+                + '<button class="btn-secondary" onclick="showDestinationForm(' + d.id + ')" style="padding:4px 10px;font-size:12px;margin-right:4px;"><i class="fa-solid fa-pen"></i></button>'
+                + '<button class="btn-secondary" onclick="deleteDestination(' + d.id + ')" style="padding:4px 10px;font-size:12px;color:var(--primary-red);"><i class="fa-solid fa-trash"></i></button>'
+                + '</td></tr>';
+        }
+        tbody.innerHTML = html;
+    }
+
+    function showDestinationForm(destId) {
+        var form = document.getElementById('destination-form');
+        var titleEl = document.getElementById('destination-form-title');
+        form.style.display = 'block';
+
+        if (destId === null || destId === undefined) {
+            // Yeni ekleme
+            titleEl.innerHTML = '<i class="fa-solid fa-plus"></i> Yeni Bölge Ekle';
+            document.getElementById('dest-edit-id').value = '';
+            document.getElementById('dest-name').value = '';
+            document.getElementById('dest-description').value = '';
+            document.getElementById('dest-image-url').value = '';
+            document.getElementById('dest-slug').value = '';
+            document.getElementById('dest-sort-order').value = '0';
+            document.getElementById('dest-is-active').checked = true;
+            document.getElementById('destination-form-status').style.display = 'none';
+            return;
+        }
+
+        // Düzenleme — veriyi API'den çek
+        titleEl.innerHTML = '<i class="fa-solid fa-pen"></i> Bölge Düzenle';
+        var token = getToken();
+        if (!token) return;
+        fetch('/api/admin/destinations', {
+            headers: {'Authorization': 'Bearer ' + token}
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.success) return;
+            var dest = null;
+            for (var i = 0; i < data.destinations.length; i++) {
+                if (data.destinations[i].id === destId) {
+                    dest = data.destinations[i];
+                    break;
+                }
+            }
+            if (!dest) return;
+            document.getElementById('dest-edit-id').value = dest.id;
+            document.getElementById('dest-name').value = dest.name;
+            document.getElementById('dest-description').value = dest.description || '';
+            document.getElementById('dest-image-url').value = dest.imageUrl || '';
+            document.getElementById('dest-slug').value = dest.slug || '';
+            document.getElementById('dest-sort-order').value = dest.sortOrder || 0;
+            document.getElementById('dest-is-active').checked = dest.isActive;
+            document.getElementById('destination-form-status').style.display = 'none';
+        })
+        .catch(function() {});
+    }
+
+    function hideDestinationForm() {
+        document.getElementById('destination-form').style.display = 'none';
+        document.getElementById('destination-form-status').style.display = 'none';
+    }
+
+    function saveDestination() {
+        var token = getToken();
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        var name = document.getElementById('dest-name').value.trim();
+        var imageUrl = document.getElementById('dest-image-url').value.trim();
+        var editId = document.getElementById('dest-edit-id').value;
+
+        if (!name) {
+            showDestFormStatus('Lütfen bölge adını girin.', 'error');
+            return;
+        }
+        if (!imageUrl) {
+            showDestFormStatus('Lütfen bir resim URL\'si girin.', 'error');
+            return;
+        }
+
+        var slug = document.getElementById('dest-slug').value.trim();
+        if (!slug) {
+            slug = name.toLowerCase()
+                .replace(/[ş]/g, 's').replace(/[ğ]/g, 'g').replace(/[ı]/g, 'i')
+                .replace(/[ç]/g, 'c').replace(/[ö]/g, 'o').replace(/[ü]/g, 'u')
+                .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            document.getElementById('dest-slug').value = slug;
+        }
+
+        var payload = {
+            name: name,
+            description: document.getElementById('dest-description').value.trim(),
+            imageUrl: imageUrl,
+            slug: slug,
+            sortOrder: parseInt(document.getElementById('dest-sort-order').value) || 0,
+            isActive: document.getElementById('dest-is-active').checked
+        };
+
+        if (editId) {
+            payload.action = 'update';
+            payload.id = parseInt(editId);
+        } else {
+            payload.action = 'add';
+        }
+
+        showDestFormStatus('Kaydediliyor...', 'info');
+
+        fetch('/api/admin/destinations', {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showDestFormStatus('Başarıyla kaydedildi!', 'success');
+                hideDestinationForm();
+                loadDestinations();
+            } else {
+                showDestFormStatus('Hata: ' + (data.error || 'Kaydedilemedi'), 'error');
+            }
+        })
+        .catch(function() {
+            showDestFormStatus('Sunucu hatası!', 'error');
+        });
+    }
+
+    function deleteDestination(destId) {
+        if (!confirm('Bu destinasyonu silmek istediğinize emin misiniz?')) return;
+        var token = getToken();
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        fetch('/api/admin/destinations', {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ action: 'delete', id: destId })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                loadDestinations();
+            } else {
+                alert('Silinemedi: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        })
+        .catch(function() {
+            alert('Sunucu hatası!');
+        });
+    }
+
+    function showDestFormStatus(message, type) {
+        var statusEl = document.getElementById('destination-form-status');
+        statusEl.style.display = 'block';
+        if (type === 'success') {
+            statusEl.style.background = '#d4edda';
+            statusEl.style.color = '#155724';
+            statusEl.innerHTML = '<i class="fa-solid fa-check-circle"></i> ' + message;
+        } else if (type === 'error') {
+            statusEl.style.background = '#f8d7da';
+            statusEl.style.color = '#721c24';
+            statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> ' + message;
+        } else {
+            statusEl.style.background = '#f0f4ff';
+            statusEl.style.color = '#1B2B4C';
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + message;
+        }
+    }
+
+    // ─── PAGE MANAGEMENT (Sayfa Yönetimi) ────────────────────────
+
+    var pageQuill = null;
+    var currentPageSlug = '';
+
+    function initPageQuill() {
+        if (!pageQuill) {
+            pageQuill = new Quill('#page-editor-quill', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['link', 'clean'],
+                        [{ 'align': [] }]
+                    ]
+                },
+                placeholder: 'Sayfa içeriğini buraya yazın...'
+            });
+        }
+    }
+
+    async function loadPageContent(slug) {
+        var emptyEl = document.getElementById('page-editor-empty');
+        var editorArea = document.getElementById('page-editor-area');
+        var statusEl = document.getElementById('page-editor-status');
+
+        emptyEl.style.display = 'none';
+        editorArea.style.display = 'block';
+        statusEl.style.display = 'none';
+        currentPageSlug = slug;
+
+        // Aktif buton stilini güncelle
+        var slugs = ['hakkimizda', 'gizlilik', 'mesafeli-satis', 'teslimat', 'iade-sartlari'];
+        slugs.forEach(function(s) {
+            var btn = document.getElementById('page-btn-' + s);
+            if (btn) {
+                btn.style.background = (s === slug) ? '#E31837' : '';
+                btn.style.opacity = (s === slug) ? '1' : '0.7';
+            }
+        });
+
+        // Quill'i başlat (ilk defa)
+        initPageQuill();
+
+        // İçeriği yükle
+        try {
+            var res = await fetch('/api/page/' + slug);
+            var data = await res.json();
+            if (data.success && data.page) {
+                document.getElementById('page-editor-title').value = data.page.title || '';
+                pageQuill.root.innerHTML = data.page.content || '';
+            } else {
+                document.getElementById('page-editor-title').value = '';
+                pageQuill.root.innerHTML = '';
+            }
+        } catch(e) {
+            document.getElementById('page-editor-title').value = '';
+            pageQuill.root.innerHTML = '';
+        }
+    }
+
+    async function savePageContent() {
+        var token = getToken();
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+        if (!currentPageSlug) { alert('Önce bir sayfa seçin.'); return; }
+
+        var title = document.getElementById('page-editor-title').value.trim();
+        var content = pageQuill ? pageQuill.root.innerHTML : '';
+
+        var statusEl = document.getElementById('page-editor-status');
+        statusEl.style.display = 'inline-block';
+        statusEl.style.background = '#f0f4ff';
+        statusEl.style.color = '#1B2B4C';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+
+        try {
+            var res = await fetch('/api/admin/page/' + currentPageSlug, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title: title, content: content })
+            });
+            var data = await res.json();
+            if (data.success) {
+                statusEl.style.background = '#d4edda';
+                statusEl.style.color = '#155724';
+                statusEl.innerHTML = '<i class="fa-solid fa-check-circle"></i> Sayfa başarıyla kaydedildi!';
+                setTimeout(function() { statusEl.style.display = 'none'; }, 4000);
+            } else {
+                statusEl.style.background = '#f8d7da';
+                statusEl.style.color = '#721c24';
+                statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> Hata: ' + (data.error || 'Kaydedilemedi');
+            }
+        } catch(e) {
+            statusEl.style.background = '#f8d7da';
+            statusEl.style.color = '#721c24';
+            statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> Sunucu hatası!';
+        }
+    }
+</script>
+
+<script>
+// ─── CANLI RADAR ──────────────────────────────────────────
+function startRadarPolling() {
+    if (radarPollingInterval) clearInterval(radarPollingInterval);
+    loadRadarData();
+    radarPollingInterval = setInterval(loadRadarData, 3000);
+}
+
+function stopRadarPolling() {
+    if (radarPollingInterval) { clearInterval(radarPollingInterval); radarPollingInterval = null; }
+}
+
+function refreshRadar() { loadRadarData(); }
+
+async function loadRadarData() {
+    var token = getToken();
+    if (!token) { stopRadarPolling(); return; }
+    try {
+        var res = await fetch('/api/admin/radar', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (res.status === 401) { stopRadarPolling(); return; }
+        var data = await res.json();
+        if (!data.success) return;
+        // Populate radarVisitorInfo for chat sidebar cross-reference
+        var info = {};
+        (data.visitors || []).forEach(function(v) {
+            info[v.sessionId] = {
+                name: v.name,
+                ip: v.ip,
+                city: v.city,
+                country: v.country,
+                device: v.device,
+                os: v.os,
+                browser: v.browser,
+                currentPage: v.currentPage,
+                duration: v.elapsed,
+                durationFormatted: v.elapsedFormatted,
+                online: v.online,
+                entryTime: v.entryTime
+            };
+        });
+        radarVisitorInfo = info;
+        renderRadarTable(data.visitors || []);
+        updateRadarStats(data.visitors || []);
+    } catch(e) {}
+}
+
+function updateRadarStats(visitors) {
+    var total = visitors.length;
+    var online = visitors.filter(function(v) { return v.online; }).length;
+    var offline = total - online;
+
+    var onlineEl = document.getElementById('radar-online-count');
+    var totalEl = document.getElementById('radar-total-today');
+    var onlineOnlyEl = document.getElementById('radar-online-only');
+    var offlineEl = document.getElementById('radar-offline-count');
+
+    if (onlineEl) onlineEl.textContent = online;
+    if (totalEl) totalEl.textContent = total;
+    if (onlineOnlyEl) onlineOnlyEl.textContent = online;
+    if (offlineEl) offlineEl.textContent = offline;
+}
+
+function formatDuration(seconds) {
+    if (!seconds || seconds < 0) return '0sn';
+    var m = Math.floor(seconds / 60);
+    var s = Math.floor(seconds % 60);
+    if (m >= 60) {
+        var h = Math.floor(m / 60);
+        m = m % 60;
+        return h + 's ' + m + 'dk ' + s + 'sn';
+    }
+    if (m > 0) return m + 'dk ' + s + 'sn';
+    return s + 'sn';
+}
+
+function renderRadarTable(visitors) {
+    var tbody = document.getElementById('radar-tbody');
+    if (!tbody) return;
+
+    var searchVal = (document.getElementById('radar-search-input') ? document.getElementById('radar-search-input').value : '').toLowerCase().trim();
+    var statusFilter = document.getElementById('radar-status-filter') ? document.getElementById('radar-status-filter').value : 'all';
+
+    var filtered = visitors.filter(function(v) {
+        if (statusFilter === 'online' && !v.online) return false;
+        if (statusFilter === 'offline' && v.online) return false;
+        if (searchVal) {
+            var name = (v.name || '').toLowerCase();
+            var ip = (v.ip || '').toLowerCase();
+            var location = (v.city || '') + ' ' + (v.country || '');
+            var device = (v.device || '') + ' ' + (v.browser || '');
+            var page = (v.currentPage || '').toLowerCase();
+            if (name.indexOf(searchVal) === -1 && ip.indexOf(searchVal) === -1 && location.toLowerCase().indexOf(searchVal) === -1 &&
+                device.toLowerCase().indexOf(searchVal) === -1 && page.indexOf(searchVal) === -1) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-gray);">Ziyaretçi bulunamadı.</td></tr>';
+        return;
+    }
+
+    var html = '';
+    filtered.forEach(function(v) {
+        var statusClass = v.online ? 'active' : 'offline';
+        var statusText = v.online ? 'Online' : 'Offline';
+        var location = [v.city, v.region, v.country].filter(Boolean).join(', ') || 'Bilinmiyor';
+        var deviceInfo = [v.device, v.os, v.browser].filter(Boolean).join(' · ') || 'Bilinmiyor';
+        var page = v.currentPage || 'Ana Sayfa';
+        var duration = formatDuration(v.duration || 0);
+        var lastEvent = v.lastEvent || '-';
+        var nameDisplay = v.name || '<span style="color:#94A3B8;">—</span>';
+
+        html += '<tr>'
+            + '<td style="cursor:pointer;color:var(--primary);font-weight:600;" onclick="openVisitorChat(\'' + (v.sessionId || '').replace(/'/g, "\\'") + '\')" title="Sohbeti aç">' + nameDisplay + '</td>'
+            + '<td class="radar-ip">' + escapeHtml(v.ip || '?') + '</td>'
+            + '<td>' + escapeHtml(location) + '</td>'
+            + '<td class="radar-device-info">' + escapeHtml(deviceInfo) + '</td>'
+            + '<td class="radar-current-page">' + escapeHtml(page) + '</td>'
+            + '<td class="radar-duration">' + duration + '</td>'
+            + '<td class="radar-last-event">' + escapeHtml(lastEvent) + '</td>'
+            + '<td><span class="radar-online-dot ' + statusClass + '"></span> ' + statusText + '</td>'
+            + '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+// ─── RADAR → CHAT ENTEGRASYONU ─────────────────────
+async function openVisitorChat(sessionId) {
+    if (!sessionId) return;
+    var token = getToken();
+    if (!token) return;
+    try {
+        var res = await fetch('/api/admin/chat/history?sessionId=' + encodeURIComponent(sessionId), {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        var data = await res.json();
+        if (!data.success) return;
+
+        // Create or update session in chatState
+        var session = data.session || {};
+        if (!chatState.sessions[sessionId]) {
+            chatState.sessions[sessionId] = {
+                name: session.name || 'Ziyaretçi',
+                phone: session.phone || '',
+                messages: [],
+                lastMessage: '',
+                unread: 0
+            };
+        }
+        chatState.sessions[sessionId].messages = data.messages || [];
+        if (data.messages && data.messages.length > 0) {
+            var last = data.messages[data.messages.length - 1];
+            chatState.sessions[sessionId].lastMessage = last.message;
+            chatState.sessions[sessionId].name = last.name || chatState.sessions[sessionId].name;
+        }
+
+        // Update lastMessageId to avoid re-fetching old messages
+        data.messages.forEach(function(m) {
+            if (m.id > chatState.lastMessageId) chatState.lastMessageId = m.id;
+        });
+
+        // Select session and switch to chat tab
+        selectSession(sessionId);
+
+        // Switch to Canlı Destek tab (index 8)
+        var menuItems = document.querySelectorAll('.menu-item');
+        if (menuItems[8]) {
+            switchTab('view-chat', menuItems[8]);
+        }
+    } catch(e) {}
+}
+</script>
+
+<!-- ─── SLIDER URL EKLEME MODAL ──────────────────────────── -->
     <div id="slider-modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;justify-content:center;align-items:center;">
         <div style="background:#fff;border-radius:16px;padding:32px;width:90%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">

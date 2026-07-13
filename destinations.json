@@ -1,0 +1,70 @@
+{
+  "destinations": [
+    {
+      "id": 2,
+      "name": "Antalya",
+      "description": "Türkiye'nin turizm başkenti Antalya, tarihi Kaleiçi, Düden Şelalesi ve lüks tatil köyleriyle her yıl milyonlarca ziyaretçiyi ağırlıyor. Güliz VIP ile Antalya transferiniz ayrıcalıklı ve güvenli.",
+      "imageUrl": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80",
+      "slug": "antalya",
+      "sortOrder": 2,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+    },
+    {
+      "id": 3,
+      "name": "Side",
+      "description": "Antik kalıntıları ve uzun kumsallarıyla ünlü Side, tarih ve denizin iç içe geçtiği büyüleyici bir tatil beldesidir. Konforlu VIP transferiniz için Güliz VIP yanınızda.",
+      "imageUrl": "https://images.unsplash.com/photo-1590129892140-01e15fe07ce1?w=800&q=80",
+      "slug": "side",
+      "sortOrder": 3,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+    },
+    {
+      "id": 4,
+      "name": "Gazipaşa",
+      "description": "Sakin ve huzurlu bir tatil arayanların keşfettiği Gazipaşa, bakir koyları ve doğal güzellikleriyle Akdeniz'in saklı cennetidir. Güliz VIP merkez ofisiyle her zaman yanınızda.",
+      "imageUrl": "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800&q=80",
+      "slug": "gazipasa",
+      "sortOrder": 4,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+    },
+    {
+      "id": 5,
+      "name": "Manavgat",
+      "description": "Manavgat Şelalesi ve çevresindeki doğal güzelliklerle ünlü bu şirin ilçe, doğa tutkunları için eşsiz bir destinasyondur. Güliz VIP konforuyla Manavgat'a yolculuk.",
+      "imageUrl": "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=800&q=80",
+      "slug": "manavgat",
+      "sortOrder": 5,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+    },
+    {
+      "id": 6,
+      "name": "Kemer",
+      "description": "Olimpos Beydağları Milli Parkı sınırlarındaki Kemer, yemyeşil doğası ve berrak deniziyle Akdeniz'in en gözde tatil merkezlerinden biridir.",
+      "imageUrl": "https://images.unsplash.com/photo-1569517282132-25d22f4573e6?w=800&q=80",
+      "slug": "kemer",
+      "sortOrder": 6,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+    },
+    {
+      "id": 7,
+      "name": "Test Dest",
+      "description": "test",
+      "imageUrl": "",
+      "slug": "test",
+      "sortOrder": 1,
+      "isActive": true,
+      "createdAt": "2026-07-11T05:31:10.752321",
+      "updatedAt": "2026-07-11T05:31:10.752321"
+    }
+  ]
+}
