@@ -78,6 +78,7 @@ UNIT_PRICE = 25.0
 # Slug alias mapping — "mesafelisatis" (no hyphen) → "mesafeli-satis" (with hyphen)
 SLUG_ALIASES = {
     "mesafelisatis": "mesafeli-satis",
+    "iade": "iade-sartlari",
 }
 
 PAGE_CONTENT = {
@@ -140,6 +141,37 @@ RESERVATION_ID = 1000
 PRICES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prices.json")
 ROUTE_PRICES = []
 TAHSIS_PRICES = {}
+
+# ─── Page Content File (PostgreSQL yoksa fallback) ─────────────────────────────────
+PAGE_CONTENT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "page_content.json")
+
+
+def load_page_content():
+    """page_content.json dosyasından sayfa içeriklerini yükle, PAGE_CONTENT dict'ine aktar."""
+    global PAGE_CONTENT
+    try:
+        if os.path.exists(PAGE_CONTENT_FILE):
+            with open(PAGE_CONTENT_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and len(data) > 0:
+                    # Sadece bilinen slug'ları al, bilinmeyenleri atla
+                    known_slugs = {"hakkimizda", "gizlilik", "mesafeli-satis", "teslimat", "iade-sartlari"}
+                    for slug in known_slugs:
+                        if slug in data and data[slug].get("title") and data[slug].get("content"):
+                            PAGE_CONTENT[slug] = {"title": data[slug]["title"], "content": data[slug]["content"]}
+                    print(f"[✓] load_page_content() başarılı — {len(data)} sayfa yüklendi")
+    except Exception as e:
+        print(f"[!] Sayfa içerik dosyası yüklenemedi: {e}")
+
+
+def save_page_content_to_json():
+    """PAGE_CONTENT dict'ini page_content.json dosyasına yaz (PostgreSQL fallback)."""
+    try:
+        with open(PAGE_CONTENT_FILE, "w", encoding="utf-8") as f:
+            json.dump(PAGE_CONTENT, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[!] Sayfa içeriği JSON'a kaydedilemedi: {e}")
+
 
 def load_prices():
     global ROUTE_PRICES, TAHSIS_PRICES
@@ -807,8 +839,18 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if db_page and db_page.get("title") and db_page.get("content"):
                     self._send_json({"success": True, "page": {"title": db_page["title"], "content": db_page["content"]}})
                     return
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[!] API sayfa okuma ({slug}) DB hatası: {e}")
+            # JSON dosyasından okumayı dene (PostgreSQL yoksa veya boş döndüyse)
+            try:
+                if os.path.exists(PAGE_CONTENT_FILE):
+                    with open(PAGE_CONTENT_FILE, "r", encoding="utf-8") as f:
+                        json_data = json.load(f)
+                        if slug in json_data and json_data[slug].get("title") and json_data[slug].get("content"):
+                            self._send_json({"success": True, "page": {"title": json_data[slug]["title"], "content": json_data[slug]["content"]}})
+                            return
+            except Exception as e:
+                print(f"[!] API sayfa okuma ({slug}) JSON fallback hatası: {e}")
             self._send_json({"success": True, "page": PAGE_CONTENT[slug]})
             return
         if path.startswith("/sayfa/"):
@@ -1482,8 +1524,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 # DB'ye de kaydet
                 try:
                     db.save_page_content(slug, title, content)
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"[!] Admin sayfa kaydetme ({slug}) DB hatası: {e}")
+                # JSON fallback'e de yaz (her durumda)
+                save_page_content_to_json()
                 self._send_json({"success": True, "page": PAGE_CONTENT[slug]})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
@@ -1549,6 +1593,12 @@ if __name__ == "__main__":
         print(f"[!] load_reservations() hatası (önemsiz, devam): {e}")
 
     try:
+        load_page_content()
+        print("[✓] load_page_content() başarılı")
+    except Exception as e:
+        print(f"[!] load_page_content() hatası (önemsiz, devam): {e}")
+
+    try:
         threading.Thread(target=refresh_flights, daemon=True).start()
         print("[✓] refresh_flights() thread başlatıldı")
     except Exception as e:
@@ -1579,21 +1629,4 @@ if __name__ == "__main__":
         server.serve_forever()
     except OSError as e:
         print(f"[-] SUNUCU HATASI (OSError): {e}")
-        traceback.print_exc(file=sys.stdout)
-        sys.stdout.flush()
-        # Port meşgul olabilir, 2sn bekle ve tekrar dene
-        try:
-            import time
-            time.sleep(2)
-            server = http.server.HTTPServer((host, PORT), GulizHandler)
-            print(f"[!] 2. DENEMEDE SUNUCU {host}:{PORT} ÜZERİNDE BAŞLATILDI")
-            sys.stdout.flush()
-            server.serve_forever()
-        except Exception as e2:
-            print(f"[-] 2. DENEME DE BAŞARISIZ: {e2}")
-            traceback.print_exc(file=sys.stdout)
-            sys.stdout.flush()
-    except Exception as e:
-        print(f"[-] SUNUCU HATASI: {e}")
-        traceback.print_exc(file=sys.stdout)
-        sys.stdout.flush()
+        tracebac
