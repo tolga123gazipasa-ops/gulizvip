@@ -10,9 +10,8 @@
 - Çalıştırma: `python3 server.py` (WORKSPACE dizininde)
 - Statik dosyaları `/sessions/.../mnt/gulizvip/` altından serve eder
 - HMAC-SHA256 token tabanlı auth: `POST /api/admin/login`
-- Uçuş verileri **OpenSky Network API** + mock fallback (GZP/LTGZ, AYT/LTAI)
-- Scheduler: `threading.Timer` ile 5 dk'da bir `refresh_flights()`
-- Status simulation: saat karşılaştırması (dakika bazında), %15 rötar ihtimali
+- Uçuş verileri **canlı web scraping** ile havalimanlarının kendi resmi sitelerinden çekilir (mock veri tamamen kaldırıldı — bkz. "Uçuş Verisi (Canlı Scraping)")
+- Scheduler: arka plan thread'i, sunucu başlarken 1 kez + günde 2 kez (02:00, 13:00) `refresh_flights()`
 - PostgreSQL entegrasyonu (`db.py`) — psycopg2-binary ile, `DATABASE_URL` env var üzerinden
   - reservations + config tabloları
   - Yoksa `reservations.json` fallback
@@ -103,10 +102,17 @@
 - Token localStorage'da saklanır, `/api/admin/check` ile doğrulanır
 
 ## Önemli Notlar
-- Uçuş verileri **OpenSky Network API** ile gerçek zamanlı (GZP/LTGZ, AYT/LTAI) — başarısız olursa **mock data** fallback
-- OpenSky: anonim katmanda ~400 istek/gün, istekler arası 12sn minimum interval
-- Callsign → havayolu adı eşleştirmesi: THY/TK → Turkish Airlines, PGT/PC → Pegasus, SXS/XQ → SunExpress, CAI/XC → Corendon
-- ICAO → havalimanı adı dönüşümü: 40+ yaygın havalimanı kodu (Türkiye + Avrupa)
+### Uçuş Verisi (Canlı Scraping)
+- Mock veri ve OpenSky entegrasyonu tamamen kaldırıldı. Uçuş bilgileri doğrudan havalimanlarının kendi resmi sitelerinden çekilir:
+  - **GZP (Gazipaşa):** `gzpairport.com`'un dahili JSON API'si — `GET https://gzpairport.com/Home/getCurrentFlights?flightLeg=DEP|ARR`. Temiz JSON döner, HTML parse gerekmez.
+  - **AYT (Antalya):** `antalya-airport.aero` sunucu tarafında render edilmiş HTML tablo (Telerik ASP.NET) — `BeautifulSoup4` ile parse edilir. Tablo `div#ContentPlaceHolder_ForNested_ContentPlaceHolder_ForNested_div_list` içinde; hücreler `td.flightnum`, `td.from`, `td.airline`, `td.scheduled`, `td.estimated`, `td.status` class'larıyla ayrıştırılır.
+    - Gelen: `/yolcu-ve-ziyaretciler/ucus-bilgileri/tum-hatlar-gelis`
+    - Giden: `/yolcu-ve-ziyaretciler/ucus-bilgileri/dis-hat-gidis`
+- Scraping fonksiyonları: `scrape_gzp_flights(flight_leg)`, `scrape_ayt_flights(direction)` — `server.py`. Her ikisi de hata durumunda `None` döner, `refresh_flights()` bu durumda önbellekteki (`flight_cache`) son başarılı veriyi KORUR, sıfırlamaz.
+- Zamanlama: sunucu başlarken arka planda (HTTP sunucusunu bloklamadan) 1 kez, sonrasında günde 2 kez (02:00 / 13:00) — `scheduler_loop()`. Ziyaretçi trafiği scraping'i tetiklemez, her istek `flight_cache`'teki hazır veriyi okur.
+- İstekler arası 2-3sn rastgele bekleme + gerçek tarayıcı `User-Agent` header'ı (IP ban riskine karşı).
+- Endpoint'ler: `/api/flights` (mevcut, GZP+AYT birleşik), `/api/flights/live?airport=gzp|ayt` (yeni, tek havalimanı), `/api/admin/flights` (admin, aynı cache'i okur).
+- `beautifulsoup4` — `requirements.txt`'e eklendi, opsiyonel import (`try/except ImportError`), yüklü değilse sadece AYT scraping atlanır.
 - PostgreSQL (`db.py`) mevcut ancak zorunlu değil — `DATABASE_URL` yoksa `reservations.json` fallback
   - Schema: `customer_name`, `customer_phone`, **`customer_email`**, `pickup`, `destination`, `flight_number`, `date`, `time`, `passengers`, `duration`, `notes`, `price`, `payment_method`, `payment_status`, `status`
 - psycopg2-binary ve resend harici kütüphaneler olarak kullanılır, geri kalanı Python stdlib

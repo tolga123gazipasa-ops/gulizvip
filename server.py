@@ -47,6 +47,14 @@ try:
 except ImportError:
     _PIL_AVAILABLE = False
 
+# BeautifulSoup4 — AYT (Antalya Havalimanı) uçuş sayfası HTML parse için gerekli.
+# Yoksa AYT scraping sessizce atlanır, önbellekteki son başarılı veri korunur.
+try:
+    from bs4 import BeautifulSoup
+    _BS4_AVAILABLE = True
+except ImportError:
+    _BS4_AVAILABLE = False
+
 # ============================================================
 # HİZMET BÖLGESİ — Gazipaşa, Alanya, Antalya
 # ============================================================
@@ -573,63 +581,176 @@ try:
 except Exception as e:
     print(f"[!] UPLOAD_DIR oluşturulamadı: {e}")
 
-# ─── Flight Data (Simulated) ──────────────────────────────────────────────────
+# ─── Flight Data — Canlı Kazıma (Web Scraping) ────────────────────────────────
+# Mock veri tamamen kaldırıldı. Uçuş bilgileri doğrudan havalimanlarının kendi
+# resmi web sitelerinden çekilir (GZP: dahili JSON API, AYT: sunucu tarafında
+# render edilen HTML tablo). Bkz. scrape_gzp_flights() / scrape_ayt_flights().
 
-GZP_FLIGHTS_GELEN = [
-    {"saat": "07:30", "flight": "XC 3001", "from": "Moskova (VKO)", "airline": "Corendon", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "08:45", "flight": "TK 2592", "from": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "10:15", "flight": "PC 2034", "from": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "12:00", "flight": "XC 3003", "from": "Tel Aviv (TLV)", "airline": "Corendon", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "14:30", "flight": "TK 2594", "from": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "16:45", "flight": "PC 2036", "from": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "19:00", "flight": "XC 3005", "from": "Helsinki (HEL)", "airline": "Corendon", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "21:15", "flight": "TK 2596", "from": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "23:00", "flight": "PC 2038", "from": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-]
+SCRAPE_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
 
-GZP_FLIGHTS_GIDEN = [
-    {"saat": "08:00", "flight": "XC 3002", "to": "Moskova (VKO)", "airline": "Corendon", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "09:15", "flight": "TK 2593", "to": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "10:45", "flight": "PC 2035", "to": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "12:30", "flight": "XC 3004", "to": "Tel Aviv (TLV)", "airline": "Corendon", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "15:00", "flight": "TK 2595", "to": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "17:15", "flight": "PC 2037", "to": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "19:30", "flight": "XC 3006", "to": "Helsinki (HEL)", "airline": "Corendon", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "21:45", "flight": "TK 2597", "to": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "23:30", "flight": "PC 2039", "to": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-]
+GZP_API_URL = "https://gzpairport.com/Home/getCurrentFlights"
+AYT_ARRIVALS_URL = "https://www.antalya-airport.aero/yolcu-ve-ziyaretciler/ucus-bilgileri/tum-hatlar-gelis"
+AYT_DEPARTURES_URL = "https://www.antalya-airport.aero/yolcu-ve-ziyaretciler/ucus-bilgileri/dis-hat-gidis"
 
-AYT_FLIGHTS_GELEN = [
-    {"saat": "06:00", "flight": "TK 2408", "from": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "07:15", "flight": "PC 4001", "from": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "08:30", "flight": "XQ 9101", "from": "Berlin (BER)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "10:00", "flight": "TK 2410", "from": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "11:20", "flight": "PC 4003", "from": "Ankara (ESB)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "12:45", "flight": "XQ 9103", "from": "Amsterdam (AMS)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "14:00", "flight": "TK 2412", "from": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "15:30", "flight": "PC 4005", "from": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "17:00", "flight": "XQ 9105", "from": "Düsseldorf (DUS)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "18:30", "flight": "TK 2414", "from": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "20:00", "flight": "PC 4007", "from": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "22:00", "flight": "TK 2416", "from": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "23:30", "flight": "XQ 9107", "from": "Munih (MUC)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
-]
+# Bekleme süresi (saniye) — hedef sitelere art arda istek atarken IP ban riskini azaltır.
+SCRAPE_REQUEST_DELAY = (2, 3)
 
-AYT_FLIGHTS_GIDEN = [
-    {"saat": "07:00", "flight": "TK 2409", "to": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "08:00", "flight": "PC 4002", "to": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "09:15", "flight": "XQ 9102", "to": "Berlin (BER)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "10:30", "flight": "TK 2411", "to": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "12:00", "flight": "PC 4004", "to": "Ankara (ESB)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "13:30", "flight": "XQ 9104", "to": "Amsterdam (AMS)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "14:45", "flight": "TK 2413", "to": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "16:00", "flight": "PC 4006", "to": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "17:45", "flight": "XQ 9106", "to": "Düsseldorf (DUS)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "19:00", "flight": "TK 2415", "to": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "20:30", "flight": "PC 4008", "to": "İstanbul (SAW)", "airline": "Pegasus", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "22:30", "flight": "TK 2417", "to": "İstanbul (IST)", "airline": "Turkish Airlines", "status": "Bekleniyor", "code": "expected"},
-    {"saat": "23:59", "flight": "XQ 9108", "to": "Munih (MUC)", "airline": "SunExpress", "status": "Bekleniyor", "code": "expected"},
-]
+TURKISH_IATA_CODES = {
+    "IST", "SAW", "ESB", "ADB", "AYT", "GZP", "DLM", "ADA", "TZX",
+    "VAN", "GZT", "KYA", "EDO", "ASR", "TJK", "MLX", "ERZ", "SZF",
+}
+
+
+def _classify_by_iata(code):
+    return "ic" if (code or "").upper() in TURKISH_IATA_CODES else "dis"
+
+
+def _http_get(url, timeout=15):
+    req = urllib.request.Request(url, headers={
+        "User-Agent": SCRAPE_USER_AGENT,
+        "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
+    })
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
+
+def _derive_gzp_status(stad, etad, remark_tr, is_arrival):
+    """GZP JSON API'sindeki planlı/tahmini saat ve remark alanına göre insan-okunur
+    durum metni ve renk kodu (expected/landed/departed/delayed) üretir."""
+    if remark_tr:
+        code = "delayed"
+        rt = remark_tr.lower()
+        if "iptal" in rt:
+            code = "delayed"
+        return (remark_tr, code)
+    try:
+        fmt = "%d.%m.%Y %H:%M"
+        sched_dt = datetime.strptime(stad, fmt)
+        est_dt = datetime.strptime(etad, fmt) if etad else sched_dt
+    except Exception:
+        return ("Zamanında", "expected")
+    if est_dt != sched_dt:
+        return (f"Rötar ({est_dt.strftime('%H:%M')})", "delayed")
+    now = datetime.now()
+    if now >= est_dt:
+        return ("İndi", "landed") if is_arrival else ("Kalktı", "departed")
+    return ("Zamanında", "expected")
+
+
+def scrape_gzp_flights(flight_leg):
+    """GZP Havalimanı'nın kendi dahili JSON API'sinden canlı uçuş verisi çeker.
+    flight_leg: 'DEP' (giden) veya 'ARR' (gelen). Hata durumunda None döner —
+    çağıran taraf mevcut önbelleği KORUR, sıfırlamaz."""
+    try:
+        raw = _http_get(f"{GZP_API_URL}?flightLeg={flight_leg}")
+        data = json.loads(raw)
+        if not data.get("result"):
+            return None
+        flights = data.get("data", {}).get("flights", []) or []
+    except Exception as e:
+        print(f"[!] GZP scraping hatası ({flight_leg}): {e}")
+        return None
+
+    is_arrival = (flight_leg == "ARR")
+    out = []
+    for f in flights:
+        try:
+            stad = f.get("stad") or ""
+            etad = f.get("etad") or stad
+            time_str = stad.split(" ")[-1] if stad else ""
+            remark_tr = ((f.get("remark") or {}).get("remarkTr") or "").strip()
+            path = f.get("path", {}) or {}
+            loc = (path.get("origin") if is_arrival else path.get("destination")) or {}
+            if is_arrival:
+                loc_name = loc.get("originTr") or loc.get("originEn") or ""
+                loc_code = loc.get("originIata") or ""
+            else:
+                loc_name = loc.get("destinationTr") or loc.get("destinationEn") or ""
+                loc_code = loc.get("destinationIata") or ""
+            status_text, status_code = _derive_gzp_status(stad, etad, remark_tr, is_arrival)
+            entry = {
+                "saat": time_str,
+                "flight": f"{f.get('airlineIata', '')} {f.get('flightNumber', '')}".strip(),
+                "airline": (f.get("airlineName") or "").title(),
+                "status": status_text,
+                "code": status_code,
+                "type": _classify_by_iata(loc_code),
+            }
+            loc_display = f"{loc_name.title()} ({loc_code})" if loc_name else loc_code
+            entry["from" if is_arrival else "to"] = loc_display
+            out.append(entry)
+        except Exception:
+            continue
+    out.sort(key=lambda x: x.get("saat", ""))
+    return out
+
+
+def _ayt_status_code(status_text):
+    """AYT'nin Türkçe durum metnini (İndi, Gecikme:.., Beklenen, vb.) renk koduna çevirir."""
+    st = (status_text or "").lower()
+    if "iptal" in st:
+        return "delayed"
+    if "gecikme" in st:
+        return "delayed"
+    if "indi" in st or "bagaj" in st or "bantta" in st:
+        return "landed"
+    if "kalktı" in st or "kalkti" in st or "kapandı" in st or "kapandi" in st:
+        return "departed"
+    return "expected"
+
+
+def scrape_ayt_flights(direction):
+    """AYT (Antalya Havalimanı) uçuş sayfasından (sunucu tarafında render edilmiş
+    HTML tablo) canlı uçuş verisi çeker. direction: 'arrival' veya 'departure'.
+    Hata durumunda None döner — çağıran taraf mevcut önbelleği KORUR."""
+    if not _BS4_AVAILABLE:
+        print("[!] AYT scraping atlandı: beautifulsoup4 yüklü değil.")
+        return None
+    url = AYT_ARRIVALS_URL if direction == "arrival" else AYT_DEPARTURES_URL
+    try:
+        raw = _http_get(url)
+        soup = BeautifulSoup(raw, "html.parser")
+        container = soup.find(id="ContentPlaceHolder_ForNested_ContentPlaceHolder_ForNested_div_list")
+        table = container.find("table") if container else None
+        if not table:
+            return None
+        rows = table.find_all("tr")[1:]  # ilk satır (th) başlık, atla
+    except Exception as e:
+        print(f"[!] AYT scraping hatası ({direction}): {e}")
+        return None
+
+    is_arrival = (direction == "arrival")
+    out = []
+    for row in rows:
+        try:
+            flightnum_td = row.find("td", class_="flightnum")
+            city_td = row.find("td", class_="from")
+            airline_td = row.find("td", class_="airline")
+            sched_td = row.find("td", class_="scheduled")
+            status_td = row.find("td", class_="status")
+            if not flightnum_td or not city_td:
+                continue
+            flight_code = flightnum_td.get_text(strip=True)
+            city_name = city_td.get_text(strip=True)
+            time_text = sched_td.get_text(strip=True) if sched_td else ""
+            status_text = status_td.get_text(strip=True) if status_td else "Bilgi Yok"
+            entry = {
+                "saat": time_text,
+                "flight": flight_code,
+                "airline": (airline_td.get_text(strip=True) if airline_td else "").title(),
+                "status": status_text,
+                "code": _ayt_status_code(status_text),
+                "type": "dis",  # hedef sayfalar dış hat gelen/giden kapsıyor
+            }
+            entry["from" if is_arrival else "to"] = city_name
+            out.append(entry)
+        except Exception:
+            continue
+    return out
+
 
 # ─── In-Memory Cache ──────────────────────────────────────────────────────────
 
@@ -855,59 +976,74 @@ def visitor_cleanup_loop():
         time.sleep(15)
         _cleanup_offline_sessions()
 
-def _classify_flight_type(flight):
-    turkish_codes = ["(IST)", "(SAW)", "(ESB)", "(ADB)", "(AYT)", "(GZP)", "(DLM)"]
-    loc = flight.get("from", "") or flight.get("to", "")
-    return "ic" if any(code in loc for code in turkish_codes) else "dis"
-
 def refresh_flights():
+    """Her iki havalimanının gelen/giden uçuş verisini canlı olarak kaynağından
+    (kendi resmi web sitelerinden) çeker ve belleğe (flight_cache) yazar.
+
+    GÜVENLİ FALLBACK: Bir kaynağa ulaşılamazsa veya scraping hata verirse, o
+    havalimanı/yön için önbellekteki ÖNCEKİ (daha önce başarıyla çekilmiş) veri
+    KESİNLİKLE silinmez/sıfırlanmaz — sadece o bölüm güncellenmeden bırakılır."""
     now = datetime.now()
-    current_time = now.strftime("%H:%M")
-    airports = {"gzp": {"icao": "LTGZ"}, "ayt": {"icao": "LTAI"}}
-    for airport_key, ap in airports.items():
-        icao = ap["icao"]
-        mock_gelen = GZP_FLIGHTS_GELEN if airport_key == "gzp" else AYT_FLIGHTS_GELEN
-        mock_giden = GZP_FLIGHTS_GIDEN if airport_key == "gzp" else AYT_FLIGHTS_GIDEN
-        def get_status(flight_saat, is_arrival):
-            ft = flight_saat.split(":")
-            ct = current_time.split(":")
-            f_min = int(ft[0]) * 60 + int(ft[1])
-            c_min = int(ct[0]) * 60 + int(ct[1])
-            diff = c_min - f_min
-            if diff < -30:
-                return ("Bekleniyor", "expected")
-            elif -30 <= diff < 0:
-                return ("Zamanında", "expected")
-            elif 0 <= diff < 20:
-                return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
-            elif 20 <= diff < 60:
-                return ("İndi", "landed") if is_arrival else ("Biniş Başladı", "expected")
-            elif 60 <= diff < 120:
-                return ("İndi", "landed") if is_arrival else ("Kapı Kapandı", "departed")
-            else:
-                if random.random() < 0.15:
-                    delay = random.randint(10, 45)
-                    new_time = (datetime.strptime(flight_saat, "%H:%M") + timedelta(minutes=delay)).strftime("%H:%M")
-                    return (f"Rötarlı ({new_time})", "delayed")
-                return ("Zamanında", "expected") if is_arrival else ("Biniş Başladı", "expected")
-        def process_flights(flights, is_arrival):
-            result = []
-            for f in flights:
-                stat_text, stat_code = get_status(f["saat"], is_arrival)
-                entry = dict(f)
-                entry["status"] = stat_text
-                entry["code"] = stat_code
-                entry["type"] = _classify_flight_type(f)
-                result.append(entry)
-            result.sort(key=lambda x: (0 if x["type"] == "ic" else 1))
-            return result[:10]
-        flight_cache[airport_key] = {"gelen": process_flights(mock_gelen, True), "giden": process_flights(mock_giden, False), "updated_at": now.isoformat()}
-        print(f"[{current_time}] {airport_key.upper()}: Mock veri kullanıldı")
+    print(f"[{now.strftime('%H:%M:%S')}] Uçuş verisi güncelleme başlıyor (canlı kazıma)...")
+
+    jobs = [
+        ("gzp", "gelen", lambda: scrape_gzp_flights("ARR")),
+        ("gzp", "giden", lambda: scrape_gzp_flights("DEP")),
+        ("ayt", "gelen", lambda: scrape_ayt_flights("arrival")),
+        ("ayt", "giden", lambda: scrape_ayt_flights("departure")),
+    ]
+
+    for i, (airport_key, direction, scrape_fn) in enumerate(jobs):
+        try:
+            result = scrape_fn()
+        except Exception as e:
+            print(f"[!] {airport_key.upper()} {direction} scraping beklenmedik hata: {e}")
+            result = None
+
+        if result is not None:
+            flight_cache[airport_key][direction] = result
+            flight_cache[airport_key]["updated_at"] = now.isoformat()
+            print(f"[✓] {airport_key.upper()} {direction}: {len(result)} uçuş güncellendi (canlı).")
+        else:
+            print(f"[!] {airport_key.upper()} {direction}: çekilemedi, önbellekteki son veri korunuyor "
+                  f"({len(flight_cache[airport_key][direction])} kayıt).")
+
+        # IP ban riskine karşı istekler arasında bekleme (son istekten sonra beklemeye gerek yok)
+        if i < len(jobs) - 1:
+            time.sleep(random.uniform(*SCRAPE_REQUEST_DELAY))
+
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Uçuş verisi güncelleme tamamlandı.")
+
+
+# Günde 2 kez otomatik güncelleme saatleri (24 saat formatı, yerel sunucu saati)
+FLIGHT_REFRESH_HOURS = (2, 13)  # 02:00 ve 13:00
+
+
+def _seconds_until_next_refresh():
+    now = datetime.now()
+    candidates = []
+    for h in FLIGHT_REFRESH_HOURS:
+        target = now.replace(hour=h, minute=0, second=0, microsecond=0)
+        if target <= now:
+            target += timedelta(days=1)
+        candidates.append(target)
+    next_run = min(candidates)
+    return (next_run - now).total_seconds(), next_run
+
 
 def scheduler_loop():
+    """Arka plan thread'i: sunucu ilk açıldığında scraping'i BİR KEZ hemen tetikler
+    (ziyaretçiler beklemeden önbellek dolsun diye, ama HTTP sunucusunun kendisi bu
+    işlemi beklemeden hemen dinlemeye başlar — bkz. __main__). Bundan sonra sadece
+    günde 2 kez (02:00 / 13:00) tekrar çalışır. Kullanıcılar siteye girdikçe scraping
+    TEKRAR TETİKLENMEZ; her istek bellekteki hazır veriyi okur."""
+    refresh_flights()
     while True:
+        wait_seconds, next_run = _seconds_until_next_refresh()
+        print(f"[i] Bir sonraki otomatik uçuş güncellemesi: {next_run.strftime('%d.%m.%Y %H:%M')} "
+              f"({int(wait_seconds // 60)} dk sonra)")
+        time.sleep(max(wait_seconds, 1))
         refresh_flights()
-        time.sleep(FLIGHT_REFRESH_INTERVAL)
 
 # ─── HMAC Auth ────────────────────────────────────────────────────────────────
 
@@ -1122,6 +1258,22 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             if path == "/api/flights":
                 self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}, "updated_at": max(flight_cache["gzp"]["updated_at"] or "", flight_cache["ayt"]["updated_at"] or "")})
+                return
+            if path == "/api/flights/live":
+                # Bellekteki son geçerli (canlı kazınmış) veriyi servis eder — istek anında
+                # YENİDEN scraping YAPILMAZ, sadece flight_cache okunur.
+                airport = (params.get("airport", "") or "").lower()
+                if airport not in ("gzp", "ayt"):
+                    self._send_error("Geçersiz havalimanı. 'gzp' veya 'ayt' olmalı.", 400)
+                    return
+                cache = flight_cache[airport]
+                self._send_json({
+                    "success": True,
+                    "airport": airport,
+                    "gelen": cache["gelen"],
+                    "giden": cache["giden"],
+                    "updatedAt": cache["updated_at"],
+                })
                 return
             if path == "/api/maps/config":
                 self._send_json({"success": True, "apiKey": GOOGLE_MAPS_API_KEY})
@@ -2792,7 +2944,8 @@ if __name__ == "__main__":
         server = http.server.HTTPServer((HOST, PORT), GulizHandler)
         print(f"[v] Guliz VIP Backend running on http://{HOST}:{PORT}")
 
-        refresh_flights()
+        # Uçuş verisi ilk kez arka planda çekilir — sunucu bunu beklemeden hemen
+        # istekleri dinlemeye başlar (Railway health check'i geciktirmemek için).
         scheduler = threading.Thread(target=scheduler_loop, daemon=True)
         scheduler.start()
 
