@@ -861,6 +861,7 @@
                             <input type="date" id="calendar-date" onchange="loadCalendarView()" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;">
                             <button class="btn-secondary" onclick="shiftCalendarDate(1)"><i class="fa-solid fa-chevron-right"></i></button>
                             <button class="btn-secondary" onclick="toggleVehicleUnitsPanel()"><i class="fa-solid fa-van-shuttle"></i> Araçları Yönet</button>
+                            <button class="btn-secondary" id="cal-map-toggle-btn" onclick="toggleCalendarMap()"><i class="fa-solid fa-map-location-dot"></i> Harita Görünümü</button>
                         </div>
                     </div>
                     <p style="font-size:13px;color:var(--text-gray);margin:0 0 14px;">
@@ -871,6 +872,11 @@
                         <span><span class="cal-legend-dot" style="background:#10B981;"></span> Müsait</span>
                         <span><span class="cal-legend-dot" style="background:var(--primary-red);"></span> Transfer Var</span>
                         <span><span class="cal-legend-dot" style="background:#94A3B8;"></span> Manuel Kapalı</span>
+                    </div>
+
+                    <div id="calendar-map-panel" style="display:none;margin-bottom:18px;">
+                        <div id="calendar-route-map" style="width:100%;height:360px;border-radius:12px;border:1px solid var(--border-color);"></div>
+                        <div id="calendar-map-empty" style="display:none;text-align:center;padding:14px;color:var(--text-gray);font-size:13px;">Bu tarihte harita üzerinde gösterilecek konum bilgili rota yok.</div>
                     </div>
 
                     <div id="calendar-empty-state" style="display:none;text-align:center;padding:50px 20px;color:var(--text-gray);">
@@ -3817,6 +3823,7 @@
                 renderCalendarGrid();
             }
             renderUnassignedBar();
+            if (calendarMapVisible) renderCalendarRoutes();
         } catch(e) {
             console.error('Takvim yüklenemedi:', e);
         }
@@ -3837,6 +3844,122 @@
         }).join('');
         bar.innerHTML = html;
         bar.style.display = 'block';
+    }
+
+    // ─── Araç Takvimi: O Günkü Rotaların Harita Görünümü ─────────
+
+    var calendarMap = null;
+    var calendarMapVisible = false;
+    var calendarMapMarkers = [];
+    var calendarMapRenderers = [];
+    var CAL_ROUTE_COLORS = ['#E31837', '#1B2B4C', '#10B981', '#F59E0B', '#7C3AED', '#0EA5E9'];
+
+    function toggleCalendarMap() {
+        var panel = document.getElementById('calendar-map-panel');
+        calendarMapVisible = panel.style.display === 'none';
+        panel.style.display = calendarMapVisible ? 'block' : 'none';
+        var btn = document.getElementById('cal-map-toggle-btn');
+        if (btn) btn.classList.toggle('active', calendarMapVisible);
+        if (calendarMapVisible) {
+            onMapsReadyOrQueue(function() {
+                initCalendarMap();
+                renderCalendarRoutes();
+            });
+        }
+    }
+
+    function initCalendarMap() {
+        if (calendarMap) return;
+        var el = document.getElementById('calendar-route-map');
+        if (!el || typeof google === 'undefined' || !google.maps) return;
+        calendarMap = new google.maps.Map(el, {
+            zoom: 10,
+            center: { lat: 36.55, lng: 31.7 },
+            mapTypeId: 'roadmap',
+            fullscreenControl: false,
+            streetViewControl: false,
+            mapTypeControl: false,
+        });
+    }
+
+    function clearCalendarMapOverlays() {
+        calendarMapMarkers.forEach(function(m) { m.setMap(null); });
+        calendarMapMarkers = [];
+        calendarMapRenderers.forEach(function(r) { r.setMap(null); });
+        calendarMapRenderers = [];
+    }
+
+    function renderCalendarRoutes() {
+        if (!calendarMapVisible) return;
+        if (!calendarMap) { initCalendarMap(); }
+        if (!calendarMap) return;
+        clearCalendarMapOverlays();
+
+        var withCoords = CAL_RESERVATIONS.filter(function(r) {
+            return r.pickupLat != null && r.pickupLng != null;
+        });
+
+        var emptyEl = document.getElementById('calendar-map-empty');
+        if (withCoords.length === 0) {
+            emptyEl.style.display = 'block';
+            return;
+        }
+        emptyEl.style.display = 'none';
+
+        var bounds = new google.maps.LatLngBounds();
+        var directionsService = new google.maps.DirectionsService();
+
+        withCoords.forEach(function(r, idx) {
+            var color = CAL_ROUTE_COLORS[idx % CAL_ROUTE_COLORS.length];
+            var unit = CAL_VEHICLE_UNITS.find(function(u) { return u.id === r.vehicleUnitId; });
+            var unitLabel = unit ? unit.name : 'Atanmamış';
+            var pickupPos = { lat: r.pickupLat, lng: r.pickupLng };
+
+            var pickupMarker = new google.maps.Marker({
+                position: pickupPos,
+                map: calendarMap,
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+                label: { text: (idx + 1).toString(), color: '#fff', fontSize: '10px', fontWeight: 'bold' },
+                title: (r.customerName || '') + ' — ' + (r.time || '') + ' — ' + unitLabel
+            });
+            var infoWin = new google.maps.InfoWindow({
+                content: '<div style="font-size:12px;"><strong>' + escapeHtml(r.customerName || '') + '</strong><br>' +
+                    (r.time || '') + ' — ' + escapeHtml(unitLabel) + '<br>' +
+                    escapeHtml(r.pickup || '') + (r.destination ? ' → ' + escapeHtml(r.destination) : '') + '</div>'
+            });
+            pickupMarker.addListener('click', function() { infoWin.open(calendarMap, pickupMarker); });
+            calendarMapMarkers.push(pickupMarker);
+            bounds.extend(pickupPos);
+
+            if (r.dropoffLat != null && r.dropoffLng != null) {
+                var dropoffPos = { lat: r.dropoffLat, lng: r.dropoffLng };
+                var dropoffMarker = new google.maps.Marker({
+                    position: dropoffPos,
+                    map: calendarMap,
+                    icon: { path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 5, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+                    title: 'Varış — ' + (r.destination || '')
+                });
+                calendarMapMarkers.push(dropoffMarker);
+                bounds.extend(dropoffPos);
+
+                var renderer = new google.maps.DirectionsRenderer({
+                    map: calendarMap,
+                    suppressMarkers: true,
+                    preserveViewport: true,
+                    polylineOptions: { strokeColor: color, strokeWeight: 4, strokeOpacity: 0.75 }
+                });
+                calendarMapRenderers.push(renderer);
+                directionsService.route({
+                    origin: pickupPos,
+                    destination: dropoffPos,
+                    travelMode: 'DRIVING'
+                }, function(result, status) {
+                    if (status === 'OK') renderer.setDirections(result);
+                });
+            }
+        });
+
+        calendarMap.fitBounds(bounds);
     }
 
     function renderCalendarGrid() {

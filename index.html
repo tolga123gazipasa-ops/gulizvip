@@ -999,9 +999,10 @@
                     <div class="input-group"><label>Uçuş Numarası</label><div class="input-wrapper"><i class="fa-solid fa-plane"></i><input type="text" id="transfer-flight" placeholder="Örn: TK2405 (Opsiyonel)"></div></div>
                 </div>
                 <div class="form-grid">
-                    <div class="input-group"><label>Tarih</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="transfer-date" required></div></div>
-                    <div class="input-group"><label>Saat</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="transfer-time" required></div></div>
+                    <div class="input-group"><label>Tarih</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="transfer-date" required onchange="checkAvailability('transfer')"></div></div>
+                    <div class="input-group"><label>Saat</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="transfer-time" required onchange="checkAvailability('transfer')"></div></div>
                 </div>
+                <div id="transfer-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</div>
                 <div class="form-grid">
                     <div class="input-group"><label>Yolcu</label><div class="input-wrapper"><i class="fa-solid fa-users"></i><select id="transfer-passengers"><option>1 - 4 Kişi (VIP Vito)</option></select></div></div>
                     <div class="input-group"><label>Notlar (Opsiyonel)</label><div class="input-wrapper"><i class="fa-solid fa-note-sticky"></i><input type="text" id="transfer-notes" placeholder="Özel istek, ek bilgi..."></div></div>
@@ -1104,10 +1105,11 @@
                     </div>
                 </div>
                 <div class="form-grid form-grid-3">
-                    <div class="input-group"><label>Alış Tarihi</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="tahsis-date" required></div></div>
-                    <div class="input-group"><label>Alış Saati</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="tahsis-time" required></div></div>
+                    <div class="input-group"><label>Alış Tarihi</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="tahsis-date" required onchange="checkAvailability('tahsis')"></div></div>
+                    <div class="input-group"><label>Alış Saati</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="tahsis-time" required onchange="checkAvailability('tahsis')"></div></div>
                     <div class="input-group"><label>Araç Tipi</label><div class="input-wrapper"><i class="fa-solid fa-car"></i><select><option>VIP Mercedes Vito</option></select></div></div>
                 </div>
+                <div id="tahsis-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</div>
                 <div class="vip-summary"><div class="title">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div></div>
 
                 <div class="form-nav">
@@ -2795,6 +2797,33 @@
                     routeDirectionsRenderer = null;
                 }
             }
+        }
+
+        // FAZ 3: Müsaitlik göstergesi — filo takvimine göre o saatte hiç boş araç yoksa
+        // kullanıcıya uyarı gösterir (rezervasyonu engellemez, sadece bilgilendirir).
+        function checkAvailability(formType) {
+            var date, time, durationMinutes;
+            if(formType === 'transfer') {
+                date = document.getElementById('transfer-date').value;
+                time = document.getElementById('transfer-time').value;
+                durationMinutes = (lastDurationMinutes !== null) ? lastDurationMinutes : 60;
+            } else {
+                date = document.getElementById('tahsis-date').value;
+                time = document.getElementById('tahsis-time').value;
+                var vDuration = document.getElementById('vDuration');
+                var hours = parseInt(vDuration.value) || 4;
+                durationMinutes = hours * 60;
+            }
+            var warningEl = document.getElementById(formType + '-availability-warning');
+            if(!date || !time) { if(warningEl) warningEl.style.display = 'none'; return; }
+
+            fetch('/api/availability?date=' + encodeURIComponent(date) + '&time=' + encodeURIComponent(time) + '&duration=' + durationMinutes)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if(!warningEl) return;
+                    warningEl.style.display = (data.success && data.available === false) ? 'block' : 'none';
+                })
+                .catch(function() { if(warningEl) warningEl.style.display = 'none'; });
         }
 
         function priceFromDestFallback() {

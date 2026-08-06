@@ -412,6 +412,66 @@ def _add_minutes_to_time(time_str, minutes):
         return time_str
 
 
+def _time_to_minutes(time_str):
+    """'HH:MM' formatındaki saati gün içindeki dakika sayısına çevirir."""
+    try:
+        h, m = map(int, str(time_str).split(":")[:2])
+        return h * 60 + m
+    except Exception:
+        return 0
+
+
+def find_available_vehicle_unit(date_str, time_str, duration_minutes, buffer_minutes, exclude_reservation_id=None):
+    """Verilen tarih/saat/süre için çakışmayan ilk müsait (aktif) araç birimini döndürür.
+    Hem mevcut rezervasyonları (+tampon süresi) hem de manuel kapatılan (Block) zamanları kontrol eder.
+    Uygun araç yoksa None döner (rezervasyon atanmamış olarak kalır, admin panelinden manuel atanabilir)."""
+    try:
+        new_start = _time_to_minutes(time_str)
+        new_end = new_start + int(duration_minutes or 60) + int(buffer_minutes or 0)
+
+        units = sorted(
+            [u for u in VEHICLE_UNITS if u.get("isActive", True)],
+            key=lambda u: (u.get("sortOrder", 0), u.get("id", 0))
+        )
+
+        for u in units:
+            unit_id = u.get("id")
+            conflict = False
+
+            for r in RESERVATIONS:
+                if exclude_reservation_id is not None and r.get("id") == exclude_reservation_id:
+                    continue
+                if r.get("date") != date_str or r.get("vehicleUnitId") != unit_id:
+                    continue
+                if r.get("status") == "cancelled":
+                    continue
+                r_start = _time_to_minutes(r.get("time", ""))
+                r_buf = r.get("bufferMinutes")
+                r_buf = 45 if r_buf is None else r_buf
+                r_end = r_start + _reservation_duration_minutes(r) + int(r_buf)
+                if not (new_end <= r_start or new_start >= r_end):
+                    conflict = True
+                    break
+
+            if not conflict:
+                for b in CALENDAR_BLOCKS:
+                    if b.get("date") != date_str or b.get("vehicleUnitId") != unit_id:
+                        continue
+                    b_start = _time_to_minutes(b.get("startTime", ""))
+                    b_end = _time_to_minutes(b.get("endTime", ""))
+                    if not (new_end <= b_start or new_start >= b_end):
+                        conflict = True
+                        break
+
+            if not conflict:
+                return unit_id
+
+        return None
+    except Exception as e:
+        print(f"[!] find_available_vehicle_unit hata: {e}")
+        return None
+
+
 def resize_and_save_image(file_data, filepath, max_width=1600, max_height=1200, quality=85, crop_ratio=None):
     """Pillow yüklüyse görseli boyutlandırıp JPEG olarak kaydeder.
     crop_ratio verilirse (örn. (3, 2)) görsel önce bu en-boy oranına ortalanarak kırpılır
@@ -1069,6 +1129,25 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             if path == "/api/unit-price":
                 self._send_json({"success": True, "unitPrice": UNIT_PRICE})
                 return
+            if path == "/api/availability":
+                # FAZ 3: Sitede müsaitlik göstergesi. Filo tanımlı değilse (henüz araç birimi
+                # oluşturulmadıysa) her zaman "müsait" döner — özellik devre dışı gibi davranır,
+                # canlı siteyi kilitlemez.
+                date_str = params.get("date", "")
+                time_str = params.get("time", "")
+                if not date_str or not time_str:
+                    self._send_json({"success": True, "available": True})
+                    return
+                try:
+                    duration = int(params.get("duration", "60") or "60")
+                except ValueError:
+                    duration = 60
+                if not VEHICLE_UNITS or not any(u.get("isActive", True) for u in VEHICLE_UNITS):
+                    self._send_json({"success": True, "available": True})
+                    return
+                unit_id = find_available_vehicle_unit(date_str, time_str, duration, 45)
+                self._send_json({"success": True, "available": unit_id is not None, "date": date_str, "time": time_str})
+                return
             if path == "/api/route-prices":
                 self._send_json({"success": True, "prices": ROUTE_PRICES})
                 return
@@ -1287,6 +1366,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             "status": r.get("status", "pending"),
                             "isManual": r.get("isManual", False),
                             "price": r.get("price", 0),
+                            "pickupLat": r.get("pickupLat"),
+                            "pickupLng": r.get("pickupLng"),
+                            "dropoffLat": r.get("dropoffLat"),
+                            "dropoffLng": r.get("dropoffLng"),
                         })
                 day_blocks = [b for b in CALENDAR_BLOCKS if b.get("date") == date_str]
                 active_units = sorted(
@@ -1657,6 +1740,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if db_id:
                     reservation["id"] = db_id
                     RESERVATION_ID = db_id + 1
+                    RESERVATIONS.insert(0, reservation)  # in-memory önbelleği de senkron tut (admin/takvim buradan okuyor)
                 else:
                     RESERVATIONS.insert(0, reservation)
                     RESERVATION_ID += 1
@@ -1737,10 +1821,21 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
                 # Not: Kredi kartı ile online ödeme entegrasyonu kaldırıldı — tüm rezervasyonlar
                 # (banka havalesi / araçta ödeme) doğrudan kaydediliyor, operasyon ekibi takip ediyor.
+
+                # FAZ 3: Siteden gelen otomatik rezervasyonu çakışmayan ilk müsait araca ata.
+                auto_dur = reservation.get("estimatedDurationMinutes") or _reservation_duration_minutes(reservation)
+                assigned_unit = find_available_vehicle_unit(reservation["date"], reservation["time"], auto_dur, 45)
+                if assigned_unit is not None:
+                    reservation["vehicleUnitId"] = assigned_unit
+                    reservation["bufferMinutes"] = 45
+                    if not reservation.get("estimatedDurationMinutes"):
+                        reservation["estimatedDurationMinutes"] = auto_dur
+
                 db_id = db.save_reservation_to_db(reservation)
                 if db_id:
                     reservation["id"] = db_id
                     RESERVATION_ID = db_id + 1
+                    RESERVATIONS.insert(0, reservation)  # in-memory önbelleği de senkron tut (admin/takvim buradan okuyor)
                 else:
                     RESERVATIONS.insert(0, reservation)
                     RESERVATION_ID += 1
@@ -2692,6 +2787,7 @@ if __name__ == "__main__":
     load_slider_images()
     load_vehicle_units()
     load_calendar_blocks()
+    load_reservations()
     try:
         server = http.server.HTTPServer((HOST, PORT), GulizHandler)
         print(f"[v] Guliz VIP Backend running on http://{HOST}:{PORT}")
