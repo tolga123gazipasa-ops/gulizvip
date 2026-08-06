@@ -3115,10 +3115,12 @@
     }
 
     var DEST_AIRPORT_LABELS = { GZP: 'Gazipaşa (GZP)', AYT: 'Antalya (AYT)', both: 'İkisi de' };
+    var CURRENT_DESTINATIONS = [];
 
     function renderDestinations(destinations) {
         var tbody = document.getElementById('destinations-admin-tbody');
         if (!tbody) return;
+        CURRENT_DESTINATIONS = destinations || [];
         if (!destinations || destinations.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-gray);">Henüz destinasyon eklenmemiş.</td></tr>';
             return;
@@ -3130,16 +3132,23 @@
                 ? '<img src="' + escapeHtml(d.imageUrl) + '" alt="' + escapeHtml(d.name) + '" style="width:60px;height:40px;object-fit:cover;border-radius:6px;">'
                 : '<span style="color:var(--text-gray);font-size:11px;">Görsel yok</span>';
             var statusHtml = d.isActive
-                ? '<span style="color:#155724;background:#d4edda;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Aktif</span>'
-                : '<span style="color:#721c24;background:#f8d7da;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Pasif</span>';
+                ? '<span onclick="toggleDestinationActive(' + d.id + ', true)" title="Tıkla: Pasif yap" style="cursor:pointer;color:#155724;background:#d4edda;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Aktif</span>'
+                : '<span onclick="toggleDestinationActive(' + d.id + ', false)" title="Tıkla: Aktif yap" style="cursor:pointer;color:#721c24;background:#f8d7da;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Pasif</span>';
             var airportHtml = '<span style="color:#1B2B4C;background:#e8edf7;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">' + (DEST_AIRPORT_LABELS[d.airport] || 'İkisi de') + '</span>';
+            var upDisabled = i === 0 ? 'disabled style="opacity:.3;cursor:default;"' : '';
+            var downDisabled = i === destinations.length - 1 ? 'disabled style="opacity:.3;cursor:default;"' : '';
+            var sortHtml = '<div style="display:flex;align-items:center;gap:4px;">'
+                + '<span>' + d.sortOrder + '</span>'
+                + '<button class="btn-secondary" onclick="moveDestination(' + d.id + ', -1)" ' + upDisabled + ' style="padding:2px 7px;font-size:11px;"><i class="fa-solid fa-arrow-up"></i></button>'
+                + '<button class="btn-secondary" onclick="moveDestination(' + d.id + ', 1)" ' + downDisabled + ' style="padding:2px 7px;font-size:11px;"><i class="fa-solid fa-arrow-down"></i></button>'
+                + '</div>';
             html += '<tr>'
                 + '<td>' + d.id + '</td>'
                 + '<td>' + imgHtml + '</td>'
                 + '<td><strong>' + escapeHtml(d.name) + '</strong></td>'
                 + '<td>' + airportHtml + '</td>'
                 + '<td style="max-width:250px;white-space:normal;font-size:13px;color:var(--text-gray);">' + escapeHtml((d.description || '').substring(0, 80)) + '</td>'
-                + '<td>' + d.sortOrder + '</td>'
+                + '<td>' + sortHtml + '</td>'
                 + '<td>' + statusHtml + '</td>'
                 + '<td>'
                 + '<button class="btn-secondary" onclick="showDestinationForm(' + d.id + ')" style="padding:4px 10px;font-size:12px;margin-right:4px;"><i class="fa-solid fa-pen"></i></button>'
@@ -3320,6 +3329,54 @@
         .catch(function() {
             showDestFormStatus('Sunucu hatası!', 'error');
         });
+    }
+
+    function moveDestination(destId, direction) {
+        var idx = -1;
+        for (var i = 0; i < CURRENT_DESTINATIONS.length; i++) {
+            if (CURRENT_DESTINATIONS[i].id === destId) { idx = i; break; }
+        }
+        if (idx === -1) return;
+        var swapIdx = idx + direction;
+        if (swapIdx < 0 || swapIdx >= CURRENT_DESTINATIONS.length) return;
+        var a = CURRENT_DESTINATIONS[idx];
+        var b = CURRENT_DESTINATIONS[swapIdx];
+        var token = getToken();
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        Promise.all([
+            fetch('/api/admin/destinations', {
+                method: 'PUT',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'update', id: a.id, sortOrder: b.sortOrder })
+            }),
+            fetch('/api/admin/destinations', {
+                method: 'PUT',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'update', id: b.id, sortOrder: a.sortOrder })
+            })
+        ])
+        .then(function() { loadDestinations(); })
+        .catch(function() { alert('Sıralama güncellenemedi, sunucu hatası.'); });
+    }
+
+    function toggleDestinationActive(destId, currentActive) {
+        var token = getToken();
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+        fetch('/api/admin/destinations', {
+            method: 'PUT',
+            headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+            body: JSON.stringify({ action: 'update', id: destId, isActive: !currentActive })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                loadDestinations();
+            } else {
+                alert('Durum güncellenemedi: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası!'); });
     }
 
     function deleteDestination(destId) {
