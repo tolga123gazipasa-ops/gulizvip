@@ -41,7 +41,7 @@ except ImportError:
 
 # Pillow — görsel otomatik boyutlandırma için opsiyonel, yoksa ham dosya kaydedilir
 try:
-    from PIL import Image
+    from PIL import Image, ImageOps
     import io
     _PIL_AVAILABLE = True
 except ImportError:
@@ -305,9 +305,11 @@ def save_vehicles():
         print(f"[!] Araç kaydedilemedi: {e}")
 
 
-def resize_and_save_image(file_data, filepath, max_width=1600, max_height=1200, quality=85):
-    """Pillow yüklüyse görseli orantılı şekilde küçültüp JPEG olarak kaydeder.
-    Pillow yoksa (opsiyonel bağımlılık) ham veriyi olduğu gibi kaydeder."""
+def resize_and_save_image(file_data, filepath, max_width=1600, max_height=1200, quality=85, crop_ratio=None):
+    """Pillow yüklüyse görseli boyutlandırıp JPEG olarak kaydeder.
+    crop_ratio verilirse (örn. (3, 2)) görsel önce bu en-boy oranına ortalanarak kırpılır
+    (CSS object-fit:cover ile aynı mantıkla) — böylece hangi oranda yüklenirse yüklensin
+    sitedeki gösterim alanına kusursuz oturur. Pillow yoksa ham veri olduğu gibi kaydedilir."""
     if not _PIL_AVAILABLE:
         with open(filepath, "wb") as f:
             f.write(file_data)
@@ -315,7 +317,12 @@ def resize_and_save_image(file_data, filepath, max_width=1600, max_height=1200, 
     try:
         img = Image.open(io.BytesIO(file_data))
         img = img.convert("RGB") if img.mode in ("RGBA", "P", "LA") else img.convert("RGB")
-        img.thumbnail((max_width, max_height), Image.LANCZOS)
+        if crop_ratio:
+            ratio_w, ratio_h = crop_ratio
+            target_size = (max_width, round(max_width * ratio_h / ratio_w))
+            img = ImageOps.fit(img, target_size, Image.LANCZOS, centering=(0.5, 0.5))
+        else:
+            img.thumbnail((max_width, max_height), Image.LANCZOS)
         img.save(filepath, "JPEG", quality=quality, optimize=True)
     except Exception as e:
         print(f"[!] Görsel boyutlandırılamadı, ham dosya kaydediliyor: {e}")
@@ -908,10 +915,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     other_fields[field_name] = field_value
         return file_data, file_filename, other_fields
 
-    def _handle_image_upload(self, category, max_width=1600, max_height=1200, quality=85):
+    def _handle_image_upload(self, category, max_width=1600, max_height=1200, quality=85, crop_ratio=None):
         """Ortak görsel yükleme + otomatik boyutlandırma mantığı.
         UPLOAD_DIR/<category>/ altına kaydeder, '/uploads/<category>/<dosya>' URL'i döndürür.
         Slider, filo (fleet) ve gelecekteki tüm yükleme özellikleri bunu kullanır.
+        crop_ratio verilirse görsel o en-boy oranına ortalanarak kırpılır (bkz. resize_and_save_image).
         Başarılıysa (url, other_fields) döner, hata varsa kendi _send_error'unu çağırıp None döner."""
         file_data, file_filename, other_fields = self._parse_multipart_upload()
         if not file_data or not file_filename:
@@ -922,7 +930,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
         ext = '.jpg' if _PIL_AVAILABLE else (os.path.splitext(file_filename)[1] or '.jpg')
         unique_name = f"{int(time.time() * 1000)}{ext}"
         filepath = os.path.join(category_dir, unique_name)
-        resize_and_save_image(file_data, filepath, max_width=max_width, max_height=max_height, quality=quality)
+        resize_and_save_image(file_data, filepath, max_width=max_width, max_height=max_height, quality=quality, crop_ratio=crop_ratio)
         url = f"/uploads/{category}/{unique_name}"
         return url, other_fields
 
@@ -1415,7 +1423,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             if not user:
                 self._send_error("Yetkisiz erişim.", 401)
                 return
-            result = self._handle_image_upload("fleet", max_width=1600, max_height=1200, quality=85)
+            # index.html'de filo ana görseli ~1.5:1 (350px yükseklik) ve galeri küçük resimleri
+            # 80x60 (4:3) oranında gösteriliyor — 3:2 oranı ikisine de kusursuz oturacak şekilde
+            # ortalanarak kırpılıyor (CSS object-fit:cover ile aynı sonucu sunucu tarafında garanti eder).
+            result = self._handle_image_upload("fleet", max_width=1200, max_height=800, quality=88, crop_ratio=(3, 2))
             if result is None:
                 return  # _handle_image_upload zaten hatayı gönderdi
             url, _fields = result

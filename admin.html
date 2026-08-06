@@ -3675,8 +3675,16 @@ function renderFleetMainPreview() {
     var url = document.getElementById('fleet-main-image').value.trim();
     var preview = document.getElementById('fleet-main-image-preview');
     preview.innerHTML = url
-        ? '<img src="' + escapeHtml(url) + '" style="width:100px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">'
+        ? '<div style="position:relative;display:inline-block;">' +
+          '<img src="' + escapeHtml(url) + '" style="width:100px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">' +
+          '<button type="button" onclick="removeFleetMainImage()" title="Kaldır" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:#dc2626;color:#fff;border:2px solid #fff;cursor:pointer;font-size:13px;line-height:1;padding:0;">×</button>' +
+          '</div>'
         : '';
+}
+
+function removeFleetMainImage() {
+    document.getElementById('fleet-main-image').value = '';
+    renderFleetMainPreview();
 }
 
 function renderFleetGalleryPreview() {
@@ -3684,9 +3692,20 @@ function renderFleetGalleryPreview() {
     var preview = document.getElementById('fleet-gallery-preview');
     if (!raw) { preview.innerHTML = ''; return; }
     var urls = raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-    preview.innerHTML = urls.map(function(u) {
-        return '<img src="' + escapeHtml(u) + '" style="width:70px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">';
+    preview.innerHTML = urls.map(function(u, i) {
+        return '<div style="position:relative;display:inline-block;">' +
+            '<img src="' + escapeHtml(u) + '" style="width:70px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">' +
+            '<button type="button" onclick="removeFleetGalleryImage(' + i + ')" title="Kaldır" style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:2px solid #fff;cursor:pointer;font-size:12px;line-height:1;padding:0;">×</button>' +
+            '</div>';
     }).join('');
+}
+
+function removeFleetGalleryImage(index) {
+    var textarea = document.getElementById('fleet-gallery');
+    var urls = textarea.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    urls.splice(index, 1);
+    textarea.value = urls.join(',');
+    renderFleetGalleryPreview();
 }
 
 function hideFleetForm() {
