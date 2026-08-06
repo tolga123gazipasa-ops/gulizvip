@@ -934,8 +934,12 @@
                             <div class="form-group"><label>Telefon</label><input type="text" id="cr-phone" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group"><label>Alış Noktası</label><input type="text" id="cr-pickup" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
-                            <div class="form-group"><label>Varış Noktası</label><input type="text" id="cr-destination" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Alış Noktası</label><input type="text" id="cr-pickup" placeholder="Adres yazmaya başlayın..." onchange="crCalculateDistance();" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Varış Noktası</label><input type="text" id="cr-destination" placeholder="Adres yazmaya başlayın..." onchange="crCalculateDistance();" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                        </div>
+                        <div id="cr-map-info" style="display:none;gap:16px;background:#F8FAFC;border:1px solid var(--border-color);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:var(--text-gray);">
+                            <span><i class="fa-solid fa-road"></i> Mesafe: <strong id="cr-distance-text" style="color:var(--admin-text);">—</strong></span>
+                            <span><i class="fa-solid fa-clock"></i> Süre: <strong id="cr-duration-text" style="color:var(--admin-text);">—</strong></span>
                         </div>
                         <div class="form-row">
                             <div class="form-group"><label>Tarih</label><input type="date" id="cr-date" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
@@ -3665,6 +3669,95 @@
     var CAL_DAY_END_MIN = 1440;    // 24:00
     var CAL_DAY_SPAN = CAL_DAY_END_MIN - CAL_DAY_START_MIN; // 1080 dk
 
+    // Hızlı rezervasyon formu — harita/mesafe durumu
+    var crPickupLat = null, crPickupLng = null, crPickupText = '';
+    var crDropoffLat = null, crDropoffLng = null, crDropoffText = '';
+    var crDistanceKm = null, crDurationMinutes = null;
+    var crAutocompleteInit = false;
+
+    function initCrPlacesAutocomplete() {
+        if (crAutocompleteInit) return;
+        var pickupInput = document.getElementById('cr-pickup');
+        var destInput = document.getElementById('cr-destination');
+        if (!pickupInput || !destInput) return;
+        if (typeof google === 'undefined' || !google.maps || !google.maps.places) return;
+        crAutocompleteInit = true;
+
+        var bounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(36.0, 31.0),
+            new google.maps.LatLng(37.2, 32.8)
+        );
+        var opts = { bounds: bounds, strictBounds: false, fields: ['formatted_address', 'geometry', 'name', 'place_id'] };
+
+        var pickupAuto = new google.maps.places.Autocomplete(pickupInput, opts);
+        pickupAuto.addListener('place_changed', function() {
+            var place = pickupAuto.getPlace();
+            if (place && place.geometry) {
+                crPickupLat = place.geometry.location.lat();
+                crPickupLng = place.geometry.location.lng();
+                crPickupText = pickupInput.value.trim();
+                crCalculateDistance();
+            }
+        });
+
+        var destAuto = new google.maps.places.Autocomplete(destInput, opts);
+        destAuto.addListener('place_changed', function() {
+            var place = destAuto.getPlace();
+            if (place && place.geometry) {
+                crDropoffLat = place.geometry.location.lat();
+                crDropoffLng = place.geometry.location.lng();
+                crDropoffText = destInput.value.trim();
+                crCalculateDistance();
+            }
+        });
+    }
+
+    function crCalculateDistance() {
+        var pickupVal = document.getElementById('cr-pickup').value.trim();
+        var destVal = document.getElementById('cr-destination').value.trim();
+        if (!pickupVal || !destVal) return;
+        if (typeof google === 'undefined' || !google.maps || !google.maps.DistanceMatrixService) return;
+
+        // Metin, koordinat yakalandığı andaki değerden farklıysa (kullanıcı elle değiştirdiyse)
+        // eski koordinatları güvenilmez say — serbest metin olarak gönder.
+        var pickupCoordsValid = (crPickupLat !== null && pickupVal === crPickupText);
+        var destCoordsValid = (crDropoffLat !== null && destVal === crDropoffText);
+        if (!pickupCoordsValid) { crPickupLat = null; crPickupLng = null; }
+        if (!destCoordsValid) { crDropoffLat = null; crDropoffLng = null; }
+
+        var origins = pickupCoordsValid ? new google.maps.LatLng(crPickupLat, crPickupLng) : pickupVal;
+        var destinations = destCoordsValid ? new google.maps.LatLng(crDropoffLat, crDropoffLng) : destVal;
+
+        var infoBar = document.getElementById('cr-map-info');
+        infoBar.style.display = 'flex';
+        document.getElementById('cr-distance-text').textContent = 'Hesaplanıyor...';
+        document.getElementById('cr-duration-text').textContent = '—';
+
+        crDistanceKm = null;
+        crDurationMinutes = null;
+
+        var dmService = new google.maps.DistanceMatrixService();
+        dmService.getDistanceMatrix({
+            origins: [origins],
+            destinations: [destinations],
+            travelMode: 'DRIVING',
+            unitSystem: google.maps.UnitSystem.METRIC,
+            language: 'tr',
+            region: 'TR'
+        }, function(response, status) {
+            if (status === 'OK' && response.rows[0] && response.rows[0].elements[0] && response.rows[0].elements[0].status === 'OK') {
+                var el = response.rows[0].elements[0];
+                document.getElementById('cr-distance-text').textContent = el.distance.text;
+                document.getElementById('cr-duration-text').textContent = el.duration.text;
+                crDistanceKm = Math.round((el.distance.value / 1000) * 100) / 100;
+                crDurationMinutes = Math.round(el.duration.value / 60);
+                document.getElementById('cr-duration').value = crDurationMinutes;
+            } else {
+                document.getElementById('cr-distance-text').textContent = 'Hesaplanamadı';
+            }
+        });
+    }
+
     function todayStr() {
         var d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -3810,6 +3903,13 @@
         document.getElementById('cr-vehicle-id').value = vehicleUnitId;
         document.getElementById('cr-date').value = date;
         document.getElementById('cr-time').value = time;
+        document.getElementById('cr-pickup').value = '';
+        document.getElementById('cr-destination').value = '';
+        document.getElementById('cr-map-info').style.display = 'none';
+        crPickupLat = null; crPickupLng = null; crPickupText = '';
+        crDropoffLat = null; crDropoffLng = null; crDropoffText = '';
+        crDistanceKm = null; crDurationMinutes = null;
+        onMapsReadyOrQueue(initCrPlacesAutocomplete);
         document.getElementById('cb-vehicle-id').value = vehicleUnitId;
         document.getElementById('cb-date').value = date;
         document.getElementById('cb-start').value = time;
@@ -3871,6 +3971,9 @@
             bufferMinutes: parseInt(document.getElementById('cr-buffer').value) || 45,
             notes: document.getElementById('cr-notes').value.trim()
         };
+        if (crPickupLat !== null) { payload.pickupLat = crPickupLat; payload.pickupLng = crPickupLng; }
+        if (crDropoffLat !== null) { payload.dropoffLat = crDropoffLat; payload.dropoffLng = crDropoffLng; }
+        if (crDistanceKm !== null) payload.distanceKm = crDistanceKm;
         showCalQuickStatus('Kaydediliyor...', 'info');
         try {
             var res = await fetch('/api/admin/calendar/quick-reservation', {

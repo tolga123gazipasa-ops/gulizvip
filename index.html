@@ -2318,6 +2318,12 @@
                 payload.customerPhone = document.getElementById('transfer-phone').value;
                 payload.customerEmail = document.getElementById('transfer-email').value;
                 payload.price = document.getElementById('priceEstimate').textContent.replace(/[^0-9]/g, '') || 0;
+                if(selectedPickupLat !== null) payload.pickupLat = selectedPickupLat;
+                if(selectedPickupLng !== null) payload.pickupLng = selectedPickupLng;
+                if(selectedDestLat !== null) payload.dropoffLat = selectedDestLat;
+                if(selectedDestLng !== null) payload.dropoffLng = selectedDestLng;
+                if(lastDistanceKm !== null) payload.distanceKm = lastDistanceKm;
+                if(lastDurationMinutes !== null) payload.estimatedDurationMinutes = lastDurationMinutes;
             } else {
                 payload.pickup = document.getElementById('tahsis-pickup-input').value;
                 var vDuration = document.getElementById('vDuration');
@@ -2334,6 +2340,8 @@
                 payload.customerPhone = document.getElementById('tahsis-phone').value;
                 payload.customerEmail = document.getElementById('tahsis-email').value;
                 payload.price = document.getElementById('vipPriceDisplay').textContent.replace(/[^0-9]/g, '') || 0;
+                if(selectedPickupLat !== null) payload.pickupLat = selectedPickupLat;
+                if(selectedPickupLng !== null) payload.pickupLng = selectedPickupLng;
             }
 
             // Ödeme yöntemi — şu an yalnızca banka havalesi / EFT aktif
@@ -2404,6 +2412,8 @@
         var selectedDestLng = null;
         var selectedPickupLat = null;
         var selectedPickupLng = null;
+        var lastDistanceKm = null;
+        var lastDurationMinutes = null;
 
         // Bilinen konum koordinatları — API kapalıyken bile çalışır
         var KNOWN_LOCATIONS = {
@@ -2589,6 +2599,8 @@
         }
 
         function fetchDistance(origins, destinations) {
+            lastDistanceKm = null;
+            lastDurationMinutes = null;
             var distanceInfo = document.getElementById('distanceInfo');
             distanceInfo.style.display = 'flex';
             document.getElementById('distanceText').textContent = 'Hesaplanıyor...';
@@ -2617,6 +2629,8 @@
                             document.getElementById('durationText').textContent = duration;
 
                             var km = distMeters / 1000;
+                            lastDistanceKm = Math.round(km * 100) / 100;
+                            lastDurationMinutes = Math.round(el.duration.value / 60);
                             var price = Math.max(500, Math.round(km * UNIT_PRICE));
 
                             var pSrc = (document.getElementById("pickup-input")?.value || "").toLowerCase();

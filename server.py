@@ -1639,6 +1639,20 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "isManual": True,
                     "createdAt": datetime.now().isoformat(),
                 }
+
+                def _to_float(v):
+                    try:
+                        return float(v) if v is not None else None
+                    except (TypeError, ValueError):
+                        return None
+
+                for src_key, dst_key in (("pickupLat", "pickupLat"), ("pickupLng", "pickupLng"),
+                                          ("dropoffLat", "dropoffLat"), ("dropoffLng", "dropoffLng"),
+                                          ("distanceKm", "distanceKm")):
+                    val = _to_float(body.get(src_key))
+                    if val is not None:
+                        reservation[dst_key] = val
+
                 db_id = db.save_reservation_to_db(reservation)
                 if db_id:
                     reservation["id"] = db_id
@@ -1689,6 +1703,26 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "payment_status": "pending",
                     "createdAt": datetime.now().isoformat()
                 }
+
+                def _to_float(v):
+                    try:
+                        return float(v) if v is not None else None
+                    except (TypeError, ValueError):
+                        return None
+
+                pickup_lat = _to_float(body.get("pickupLat"))
+                pickup_lng = _to_float(body.get("pickupLng"))
+                dropoff_lat = _to_float(body.get("dropoffLat"))
+                dropoff_lng = _to_float(body.get("dropoffLng"))
+                distance_km = _to_float(body.get("distanceKm"))
+                duration_min = _to_float(body.get("estimatedDurationMinutes"))
+                if pickup_lat is not None: reservation["pickupLat"] = pickup_lat
+                if pickup_lng is not None: reservation["pickupLng"] = pickup_lng
+                if dropoff_lat is not None: reservation["dropoffLat"] = dropoff_lat
+                if dropoff_lng is not None: reservation["dropoffLng"] = dropoff_lng
+                if distance_km is not None: reservation["distanceKm"] = distance_km
+                if duration_min is not None: reservation["estimatedDurationMinutes"] = int(duration_min)
+
                 if not reservation["customerName"] or not reservation["pickup"]:
                     self._send_error("Ad ve alış noktası zorunludur.", 400)
                     return
