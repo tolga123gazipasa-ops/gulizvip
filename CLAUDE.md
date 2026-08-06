@@ -131,3 +131,10 @@
   - `GET /api/admin/notifications`, `POST /api/admin/notifications/read` — ödeme vb. dashboard bildirimleri
   - `/api/reservations` (public) ve `/api/admin/calendar/quick-reservation` artık her rezervasyonda `find_or_create_customer()` çağırıyor
 - **Admin UI:** Rezervasyon detay kartında "Ödeme Linki Oluştur" (currency+tutar) ve "WhatsApp'tan Gönder" (`wa.me` linki) butonları; takvimde ödenmiş rezervasyonlar yeşil (`paymentStatus==='paid'`); Araç Takvimi hızlı rezervasyon formunda isim/telefon autocomplete + "Müşteri Kimlik Kartı" (geçmiş transfer, toplam harcama, not kopyalama).
+
+### SEO Altyapısı (Ağustos 2026)
+- **index.html `<head>`:** title/description/keywords, canonical, hreflang (şu an sadece `tr` + `x-default` — en/de/ru için gerçek sunucu taraflı sayfa yokken hreflang eklemek Search Console hatası üretir), OG + Twitter Card etiketleri.
+- **JSON-LD:** `LocalBusiness`+`TaxiService` şeması (areaServed, telephone, priceRange, `aggregateRating` — **DİKKAT:** 4.9/127 değerleri yer tutucudur, gerçek Google puanınızla güncellenmeli, aksi halde Google'ın structured-data politikalarını ihlal eder) + görünür SSS bölümüyle birebir eşleşen `FAQPage` şeması.
+- **`/robots.txt`, `/sitemap.xml`:** `server.py`'de dinamik üretilir. robots.txt `/admin`, `/admin.html`, `/api/`, `/uploads/` disallow eder. sitemap.xml ana sayfa + aktif `/sayfa/*` + `ROUTE_SEO_PAGES` rotalarını listeler.
+- **Dinamik Rota SEO:** `ROUTE_SEO_PAGES` (server.py) — `/gazipasa-alanya-transfer` gibi 7 popüler rota. `_render_route_seo_page()` index.html'i okuyup title/description/canonical/OG/Twitter etiketlerini rotaya özel yapar; görünür sayfa içeriği ana sayfayla aynıdır (gerçek benzersiz içerik değildir — ileride her rotaya özel metin eklenmesi daha güçlü SEO sağlar).
+- **admin.html gizleme:** `<meta name="robots" content="noindex,...">` + sunucu tarafında `X-Robots-Tag: noindex, nofollow` header'ı (çift koruma) + robots.txt disallow.

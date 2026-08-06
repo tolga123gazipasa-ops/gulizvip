@@ -141,6 +141,96 @@ PAGE_CONTENT = {
     }
 }
 
+# ─── SEO: Dinamik Rota Sayfaları (Teknik SEO / Dinamik Rota SEO) ────────────────
+# Bu slug'lar gerçek bir alt sayfa değildir — index.html ile AYNI görünür içeriği
+# sunar, sadece <title>/<meta description>/canonical/OG/Twitter etiketlerini o
+# rotaya özel hale getirir (arama sonuçlarında rotaya özgü başlık/açıklama
+# görünmesi ve sitemap.xml'de ayrı URL olarak listelenmesi için). Tam benzersiz
+# içerik değildir — ilerleyen aşamada her rota için gerçek, kendine özgü içerik
+# eklenmesi SEO açısından daha da güçlü olur.
+BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+ROUTE_SEO_PAGES = {
+    "gazipasa-alanya-transfer": {
+        "title": "Gazipaşa Havalimanı (GZP) - Alanya VIP Transfer | Güliz VIP Transfer",
+        "description": "Gazipaşa Havalimanı'ndan (GZP) Alanya'ya 7/24 konforlu, dakik ve lüks Mercedes Vito VIP transfer hizmeti. Uygun fiyat, dövizle ödeme imkanı.",
+    },
+    "gazipasa-mahmutlar-transfer": {
+        "title": "Gazipaşa Havalimanı (GZP) - Mahmutlar VIP Transfer | Güliz VIP Transfer",
+        "description": "Gazipaşa Havalimanı'ndan (GZP) Mahmutlar'a 7/24 özel VIP transfer. Karşılama, bagaj yardımı ve konforlu Vito araçlarla güvenli ulaşım.",
+    },
+    "antalya-alanya-transfer": {
+        "title": "Antalya Havalimanı (AYT) - Alanya VIP Transfer | Güliz VIP Transfer",
+        "description": "Antalya Havalimanı'ndan (AYT) Alanya'ya lüks, dakik ve konforlu VIP transfer hizmeti. 7/24 hizmet, en uygun fiyat garantisi.",
+    },
+    "antalya-side-transfer": {
+        "title": "Antalya Havalimanı (AYT) - Side VIP Transfer | Güliz VIP Transfer",
+        "description": "Antalya Havalimanı'ndan (AYT) Side'ye 7/24 lüks Mercedes Vito VIP transfer. Uçuş takibi, karşılama ve dövizle ödeme imkanı.",
+    },
+    "antalya-belek-transfer": {
+        "title": "Antalya Havalimanı (AYT) - Belek VIP Transfer | Güliz VIP Transfer",
+        "description": "Antalya Havalimanı'ndan (AYT) Belek'teki otelinize konforlu, sessiz ve lüks VIP Vito transfer hizmeti. 7/24 rezervasyon.",
+    },
+    "antalya-kemer-transfer": {
+        "title": "Antalya Havalimanı (AYT) - Kemer VIP Transfer | Güliz VIP Transfer",
+        "description": "Antalya Havalimanı'ndan (AYT) Kemer'e güvenli, zamanında ve lüks VIP transfer. Mercedes Vito araç filomuzla 7/24 hizmetinizdeyiz.",
+    },
+    "antalya-manavgat-transfer": {
+        "title": "Antalya Havalimanı (AYT) - Manavgat VIP Transfer | Güliz VIP Transfer",
+        "description": "Antalya Havalimanı'ndan (AYT) Manavgat'a konforlu VIP transfer hizmeti. 7/24 uçuş takipli, dakik ve lüks ulaşım.",
+    },
+}
+
+
+def _render_route_seo_page(slug):
+    """ROUTE_SEO_PAGES'teki bir rota için index.html'i okur, title/description/
+    canonical/OG/Twitter etiketlerini rotaya özel içerikle değiştirip döndürür.
+    Görünür sayfa içeriği ana sayfayla aynıdır (bkz. yukarıdaki not)."""
+    route = ROUTE_SEO_PAGES.get(slug)
+    if not route:
+        return None
+    index_path = os.path.join(WORKSPACE, "index.html")
+    if not os.path.exists(index_path):
+        return None
+    with open(index_path, "r", encoding="utf-8") as f:
+        html = f.read()
+    page_url = f"{BASE_URL}/{slug}"
+    new_title = route["title"]
+    new_desc = route["description"]
+    html = html.replace(
+        "<title>Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP Transfer</title>",
+        f"<title>{new_title}</title>"
+    )
+    html = html.replace(
+        'content="Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı\'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP transfer hizmeti sunuyoruz."',
+        f'content="{new_desc}"'
+    )
+    html = html.replace(
+        '<link rel="canonical" href="https://gulizvip.com.tr/">',
+        f'<link rel="canonical" href="{page_url}">'
+    )
+    html = html.replace(
+        'content="Gazipaşa & Antalya Havalimanı VIP Transfer Hizmetleri | Güliz VIP"',
+        f'content="{new_title}"'
+    )
+    html = html.replace(
+        'content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından; Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 kesintisiz VIP Vito transfer ayrıcalığı."',
+        f'content="{new_desc}"'
+    )
+    html = html.replace(
+        '<meta property="og:url" content="https://gulizvip.com.tr/">',
+        f'<meta property="og:url" content="{page_url}">'
+    )
+    html = html.replace(
+        'content="Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP">',
+        f'content="{new_title}">'
+    )
+    html = html.replace(
+        'content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından Alanya, Side, Manavgat, Belek ve Kemer\'e 7/24 VIP transfer."',
+        f'content="{new_desc}"'
+    )
+    return html
+
+
 # Ana sayfa slider görselleri — varsayılan 3 görsel (kalıcı: slider_images.json)
 SLIDER_IMAGES = [
     {"src": "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&w=2074&q=80", "alt": "Gazipaşa Havalimanı"},
@@ -1177,6 +1267,17 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_text(self, text, status=200, content_type="text/plain; charset=utf-8"):
+        """robots.txt / sitemap.xml gibi düz metin/XML yanıtlar için."""
+        body = text.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self.end_headers()
+        self.wfile.write(body)
+
     def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
         if length > 0:
@@ -1194,7 +1295,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             return verify_token(token)
         return None
 
-    def _serve_static(self, filepath):
+    def _serve_static(self, filepath, extra_headers=None):
         full_path = os.path.join(WORKSPACE, filepath)
         if not os.path.exists(full_path) or os.path.isdir(full_path):
             self._send_error("Dosya bulunamadı", 404)
@@ -1204,6 +1305,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
         with open(full_path, "rb") as f:
             data = f.read()
         self.send_response(200)
+        if extra_headers:
+            for k, v in extra_headers.items():
+                self.send_header(k, v)
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-cache")
@@ -1899,8 +2003,57 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             if path.startswith("/sayfa/"):
                 self._serve_static("index.html")
                 return
+            if path == "/robots.txt":
+                lines = [
+                    "User-agent: *",
+                    "Allow: /",
+                    "Disallow: /admin.html",
+                    "Disallow: /admin",
+                    "Disallow: /api/",
+                    "Disallow: /uploads/",
+                    "",
+                    f"Sitemap: {BASE_URL}/sitemap.xml",
+                ]
+                self._send_text("\n".join(lines), content_type="text/plain; charset=utf-8")
+                return
+            if path == "/sitemap.xml":
+                today = datetime.now().strftime("%Y-%m-%d")
+                urls = [{"loc": f"{BASE_URL}/", "lastmod": today, "changefreq": "daily", "priority": "1.0"}]
+                try:
+                    for slug, page in PAGE_CONTENT.items():
+                        if not page.get("is_active", True):
+                            continue
+                        updated = page.get("updatedAt", "")
+                        lastmod = updated[:10] if updated else today
+                        urls.append({"loc": f"{BASE_URL}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5"})
+                except Exception as e:
+                    print(f"[!] sitemap.xml sayfa listesi hatası: {e}")
+                for slug in ROUTE_SEO_PAGES:
+                    urls.append({"loc": f"{BASE_URL}/{slug}", "lastmod": today, "changefreq": "weekly", "priority": "0.8"})
+                xml_parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+                             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+                for u in urls:
+                    xml_parts.append(
+                        "<url>"
+                        f"<loc>{u['loc']}</loc>"
+                        f"<lastmod>{u['lastmod']}</lastmod>"
+                        f"<changefreq>{u['changefreq']}</changefreq>"
+                        f"<priority>{u['priority']}</priority>"
+                        "</url>"
+                    )
+                xml_parts.append("</urlset>")
+                self._send_text("".join(xml_parts), content_type="application/xml; charset=utf-8")
+                return
+            route_slug = path.lstrip("/")
+            if route_slug in ROUTE_SEO_PAGES:
+                rendered = _render_route_seo_page(route_slug)
+                if rendered:
+                    self._send_html(rendered)
+                    return
             if path == "/" or path == "":
                 self._serve_static("index.html")
+            elif path == "/admin.html":
+                self._serve_static("admin.html", extra_headers={"X-Robots-Tag": "noindex, nofollow"})
             elif path.startswith("/uploads/"):
                 self._serve_upload(path[len("/uploads/"):])
             elif path.startswith("/"):
