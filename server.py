@@ -1536,6 +1536,50 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "blocks": day_blocks,
                 })
                 return
+            if path == "/api/reservations/monthly-summary":
+                # Aylık Bakış & İş Yoğunluk Noktaları — admin panelindeki aylık takvim
+                # matrisi ve harita senkronizasyonu için gün bazlı özet veri.
+                user = self._authenticate()
+                if not user:
+                    self._send_error("Yetkisiz erişim.", 401)
+                    return
+                month_str = params.get("month", "") or datetime.now().strftime("%Y-%m")
+                try:
+                    year_i, mon_i = map(int, month_str.split("-"))
+                    if not (1 <= mon_i <= 12):
+                        raise ValueError()
+                    month_str = f"{year_i:04d}-{mon_i:02d}"
+                except Exception:
+                    self._send_error("Geçersiz ay formatı. 'YYYY-MM' olmalı.", 400)
+                    return
+
+                days = {}
+                for r in RESERVATIONS:
+                    rdate = r.get("date", "") or ""
+                    if not rdate.startswith(month_str):
+                        continue
+                    if r.get("status") == "cancelled":
+                        continue
+                    day_entry = days.setdefault(rdate, {"count": 0, "reservations": []})
+                    day_entry["count"] += 1
+                    day_entry["reservations"].append({
+                        "id": r.get("id"),
+                        "time": r.get("time", ""),
+                        "customerName": r.get("customerName", ""),
+                        "pickup": r.get("pickup", ""),
+                        "destination": r.get("destination", ""),
+                        "status": r.get("status", "pending"),
+                        "vehicleUnitId": r.get("vehicleUnitId"),
+                        "pickupLat": r.get("pickupLat"),
+                        "pickupLng": r.get("pickupLng"),
+                        "dropoffLat": r.get("dropoffLat"),
+                        "dropoffLng": r.get("dropoffLng"),
+                    })
+                for d in days.values():
+                    d["reservations"].sort(key=lambda x: x.get("time", ""))
+
+                self._send_json({"success": True, "month": month_str, "days": days})
+                return
             if path == "/api/admin/telegram/config":
                 user = self._authenticate()
                 if not user:

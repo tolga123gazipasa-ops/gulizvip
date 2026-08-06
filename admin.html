@@ -409,6 +409,26 @@
         .cal-segment.block { background: #94A3B8; }
         .cal-segment:hover { filter: brightness(1.08); z-index: 5; }
         #calendar-unassigned strong { color: var(--primary-red); }
+
+        /* Aylık Bakış & İş Yoğunluk Noktaları */
+        .monthly-grid-wrap { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+        .monthly-grid-col { flex: 1 1 460px; min-width: 320px; }
+        .monthly-map-col { flex: 1 1 380px; min-width: 300px; }
+        .monthly-weekday-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 6px; }
+        .monthly-weekday-row span { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; }
+        .monthly-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .monthly-day-cell { border: 1px solid var(--border-color); border-radius: 8px; min-height: 68px; padding: 6px 6px 8px; cursor: pointer; background: #fff; transition: all 0.15s; display: flex; flex-direction: column; }
+        .monthly-day-cell.empty-cell { background: transparent; border-color: transparent; cursor: default; }
+        .monthly-day-cell:not(.empty-cell):hover { border-color: var(--primary-red); box-shadow: 0 2px 8px rgba(227,24,55,0.12); }
+        .monthly-day-cell.selected { border-color: var(--primary-red); background: #FFF5F5; box-shadow: 0 0 0 2px rgba(227,24,55,0.15); }
+        .monthly-day-num { font-size: 12px; font-weight: 700; color: var(--admin-text); }
+        .monthly-day-cell.today .monthly-day-num { color: var(--primary-red); }
+        .monthly-day-dots { margin-top: auto; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+        .monthly-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary-red); display: inline-block; }
+        .monthly-badge { font-size: 10px; font-weight: 700; color: #fff; background: var(--primary-red); border-radius: 10px; padding: 2px 7px; }
+        .monthly-available-label { font-size: 10px; color: #A7D8C5; margin-top: auto; }
+        #monthly-route-map { width: 100%; height: 420px; border-radius: 12px; border: 1px solid var(--border-color); }
+        #monthly-selected-info { font-size: 13px; color: var(--text-gray); margin: 10px 0; min-height: 18px; }
     </style>
 </head>
 <body>
@@ -862,34 +882,61 @@
                             <button class="btn-secondary" onclick="shiftCalendarDate(1)"><i class="fa-solid fa-chevron-right"></i></button>
                             <button class="btn-secondary" onclick="toggleVehicleUnitsPanel()"><i class="fa-solid fa-van-shuttle"></i> Araçları Yönet</button>
                             <button class="btn-secondary" id="cal-map-toggle-btn" onclick="toggleCalendarMap()"><i class="fa-solid fa-map-location-dot"></i> Harita Görünümü</button>
+                            <button class="btn-secondary" id="cal-monthly-toggle-btn" onclick="toggleMonthlyView()"><i class="fa-solid fa-table-cells"></i> Aylık Görünüm</button>
                         </div>
                     </div>
                     <p style="font-size:13px;color:var(--text-gray);margin:0 0 14px;">
                         Boş (yeşil) bir zamana tıklayarak o araca manuel rezervasyon ekleyebilir veya zamanı kapatabilirsiniz.
                         Kırmızı bloklar rezervasyonu, gri bloklar manuel kapatmaları gösterir — tıklayınca detay/silme seçeneği açılır.
                     </p>
-                    <div style="display:flex;gap:18px;margin-bottom:16px;font-size:12px;color:var(--text-gray);align-items:center;">
-                        <span><span class="cal-legend-dot" style="background:#10B981;"></span> Müsait</span>
-                        <span><span class="cal-legend-dot" style="background:var(--primary-red);"></span> Transfer Var</span>
-                        <span><span class="cal-legend-dot" style="background:#94A3B8;"></span> Manuel Kapalı</span>
+
+                    <div id="calendar-daily-view">
+                        <div style="display:flex;gap:18px;margin-bottom:16px;font-size:12px;color:var(--text-gray);align-items:center;">
+                            <span><span class="cal-legend-dot" style="background:#10B981;"></span> Müsait</span>
+                            <span><span class="cal-legend-dot" style="background:var(--primary-red);"></span> Transfer Var</span>
+                            <span><span class="cal-legend-dot" style="background:#94A3B8;"></span> Manuel Kapalı</span>
+                        </div>
+
+                        <div id="calendar-map-panel" style="display:none;margin-bottom:18px;">
+                            <div id="calendar-route-map" style="width:100%;height:360px;border-radius:12px;border:1px solid var(--border-color);"></div>
+                            <div id="calendar-map-empty" style="display:none;text-align:center;padding:14px;color:var(--text-gray);font-size:13px;">Bu tarihte harita üzerinde gösterilecek konum bilgili rota yok.</div>
+                        </div>
+
+                        <div id="calendar-empty-state" style="display:none;text-align:center;padding:50px 20px;color:var(--text-gray);">
+                            <i class="fa-solid fa-van-shuttle" style="font-size:32px;margin-bottom:12px;display:block;"></i>
+                            Henüz takvim için araç birimi tanımlanmamış.
+                            <br><button class="btn-primary" style="margin-top:14px;" onclick="autoGenerateVehicleUnits()"><i class="fa-solid fa-wand-magic-sparkles"></i> Filodan Otomatik Oluştur</button>
+                        </div>
+
+                        <div id="calendar-unassigned" style="display:none;background:#FFF5F5;border:1px solid #FED7D7;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;"></div>
+
+                        <div id="calendar-grid-wrapper" style="overflow-x:auto;">
+                            <div id="calendar-hour-header" class="cal-hour-header"></div>
+                            <div id="calendar-rows"></div>
+                        </div>
                     </div>
 
-                    <div id="calendar-map-panel" style="display:none;margin-bottom:18px;">
-                        <div id="calendar-route-map" style="width:100%;height:360px;border-radius:12px;border:1px solid var(--border-color);"></div>
-                        <div id="calendar-map-empty" style="display:none;text-align:center;padding:14px;color:var(--text-gray);font-size:13px;">Bu tarihte harita üzerinde gösterilecek konum bilgili rota yok.</div>
-                    </div>
-
-                    <div id="calendar-empty-state" style="display:none;text-align:center;padding:50px 20px;color:var(--text-gray);">
-                        <i class="fa-solid fa-van-shuttle" style="font-size:32px;margin-bottom:12px;display:block;"></i>
-                        Henüz takvim için araç birimi tanımlanmamış.
-                        <br><button class="btn-primary" style="margin-top:14px;" onclick="autoGenerateVehicleUnits()"><i class="fa-solid fa-wand-magic-sparkles"></i> Filodan Otomatik Oluştur</button>
-                    </div>
-
-                    <div id="calendar-unassigned" style="display:none;background:#FFF5F5;border:1px solid #FED7D7;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;"></div>
-
-                    <div id="calendar-grid-wrapper" style="overflow-x:auto;">
-                        <div id="calendar-hour-header" class="cal-hour-header"></div>
-                        <div id="calendar-rows"></div>
+                    <!-- Aylık Bakış & İş Yoğunluk Noktaları -->
+                    <div id="calendar-monthly-panel" style="display:none;">
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+                            <button class="btn-secondary" onclick="shiftMonthlyMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                            <strong id="monthly-title" style="font-size:15px;color:var(--admin-text);min-width:160px;text-align:center;">—</strong>
+                            <button class="btn-secondary" onclick="shiftMonthlyMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                            <button class="btn-secondary" onclick="showAllMonthRoutes()" style="margin-left:auto;"><i class="fa-solid fa-route"></i> Tüm Ayın Rotalarını Göster</button>
+                        </div>
+                        <div class="monthly-grid-wrap">
+                            <div class="monthly-grid-col">
+                                <div class="monthly-weekday-row">
+                                    <span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span>
+                                </div>
+                                <div id="monthly-grid" class="monthly-grid"></div>
+                            </div>
+                            <div class="monthly-map-col">
+                                <div id="monthly-selected-info">Rotalarını görmek için bir güne tıklayın.</div>
+                                <div id="monthly-route-map"></div>
+                                <div id="monthly-map-empty" style="display:none;text-align:center;padding:14px;color:var(--text-gray);font-size:13px;">Bu güne ait konum bilgili rota yok.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3960,6 +4007,228 @@
         });
 
         calendarMap.fitBounds(bounds);
+    }
+
+    // ─── Aylık Bakış & İş Yoğunluk Noktaları (Monthly View) ───────
+
+    var monthlyViewVisible = false;
+    var MONTHLY_YEAR = new Date().getFullYear();
+    var MONTHLY_MONTH = new Date().getMonth() + 1; // 1-12
+    var MONTHLY_DATA = { days: {} };
+    var MONTHLY_SELECTED_DATE = null;
+
+    var monthlyMap = null;
+    var monthlyMapMarkers = [];
+    var monthlyMapRenderers = [];
+    var monthlyMapPolylines = [];
+    var MONTHLY_MONTH_NAMES = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+    function toggleMonthlyView() {
+        monthlyViewVisible = !monthlyViewVisible;
+        document.getElementById('calendar-daily-view').style.display = monthlyViewVisible ? 'none' : 'block';
+        document.getElementById('calendar-monthly-panel').style.display = monthlyViewVisible ? 'block' : 'none';
+        var btn = document.getElementById('cal-monthly-toggle-btn');
+        if (btn) btn.classList.toggle('active', monthlyViewVisible);
+        if (monthlyViewVisible) {
+            onMapsReadyOrQueue(function() {
+                initMonthlyMap();
+                loadMonthlySummary();
+            });
+        }
+    }
+
+    function initMonthlyMap() {
+        if (monthlyMap) return;
+        var el = document.getElementById('monthly-route-map');
+        if (!el || typeof google === 'undefined' || !google.maps) return;
+        monthlyMap = new google.maps.Map(el, {
+            zoom: 10,
+            center: { lat: 36.55, lng: 31.7 },
+            mapTypeId: 'roadmap',
+            fullscreenControl: false,
+            streetViewControl: false,
+            mapTypeControl: false,
+        });
+    }
+
+    function shiftMonthlyMonth(delta) {
+        MONTHLY_MONTH += delta;
+        if (MONTHLY_MONTH > 12) { MONTHLY_MONTH = 1; MONTHLY_YEAR++; }
+        if (MONTHLY_MONTH < 1) { MONTHLY_MONTH = 12; MONTHLY_YEAR--; }
+        MONTHLY_SELECTED_DATE = null;
+        loadMonthlySummary();
+    }
+
+    async function loadMonthlySummary() {
+        var token = getToken();
+        if (!token) return;
+        var ym = MONTHLY_YEAR + '-' + String(MONTHLY_MONTH).padStart(2, '0');
+        document.getElementById('monthly-title').textContent = MONTHLY_MONTH_NAMES[MONTHLY_MONTH - 1] + ' ' + MONTHLY_YEAR;
+        try {
+            var res = await fetch('/api/reservations/monthly-summary?month=' + ym, {
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            var data = await res.json();
+            if (!data.success) return;
+            MONTHLY_DATA = data;
+            renderMonthlyGrid();
+            clearMonthlyMapOverlays();
+            document.getElementById('monthly-selected-info').textContent = 'Rotalarını görmek için bir güne tıklayın.';
+        } catch(e) {
+            console.error('Aylık özet yüklenemedi:', e);
+        }
+    }
+
+    function renderMonthlyGrid() {
+        var grid = document.getElementById('monthly-grid');
+        var year = MONTHLY_YEAR, month = MONTHLY_MONTH;
+        var firstOfMonth = new Date(year, month - 1, 1);
+        // JS: Pazar=0..Cumartesi=6 -> Pazartesi başlangıçlı indekse çevir (Pzt=0..Paz=6)
+        var startWeekday = (firstOfMonth.getDay() + 6) % 7;
+        var daysInMonth = new Date(year, month, 0).getDate();
+        var todayStr2 = todayStr();
+
+        var html = '';
+        for (var i = 0; i < startWeekday; i++) {
+            html += '<div class="monthly-day-cell empty-cell"></div>';
+        }
+        for (var d = 1; d <= daysInMonth; d++) {
+            var dateStr = year + '-' + String(month).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            var dayInfo = MONTHLY_DATA.days ? MONTHLY_DATA.days[dateStr] : null;
+            var count = dayInfo ? dayInfo.count : 0;
+            var isToday = dateStr === todayStr2;
+            var isSelected = dateStr === MONTHLY_SELECTED_DATE;
+
+            var innerHtml;
+            if (count === 0) {
+                innerHtml = '<span class="monthly-available-label">Müsait</span>';
+            } else if (count <= 3) {
+                innerHtml = '<div class="monthly-day-dots">' + '<span class="monthly-dot"></span>'.repeat(count) + '</div>';
+            } else {
+                innerHtml = '<div class="monthly-day-dots"><span class="monthly-badge">🔴 x' + count + '</span></div>';
+            }
+
+            html += '<div class="monthly-day-cell' + (isToday ? ' today' : '') + (isSelected ? ' selected' : '') +
+                '" onclick="selectMonthlyDay(\'' + dateStr + '\')" title="' + count + ' transfer">' +
+                '<span class="monthly-day-num">' + d + '</span>' + innerHtml +
+                '</div>';
+        }
+        // Ayı 7'nin katı hücreyle tamamla (son haftayı da tam göster)
+        var totalCells = startWeekday + daysInMonth;
+        var trailing = (7 - (totalCells % 7)) % 7;
+        for (var t = 0; t < trailing; t++) {
+            html += '<div class="monthly-day-cell empty-cell"></div>';
+        }
+        grid.innerHTML = html;
+    }
+
+    function clearMonthlyMapOverlays() {
+        monthlyMapMarkers.forEach(function(m) { m.setMap(null); });
+        monthlyMapMarkers = [];
+        monthlyMapRenderers.forEach(function(r) { r.setMap(null); });
+        monthlyMapRenderers = [];
+        monthlyMapPolylines.forEach(function(p) { p.setMap(null); });
+        monthlyMapPolylines = [];
+    }
+
+    function selectMonthlyDay(dateStr) {
+        MONTHLY_SELECTED_DATE = dateStr;
+        renderMonthlyGrid();
+        var dayInfo = MONTHLY_DATA.days ? MONTHLY_DATA.days[dateStr] : null;
+        var reservations = dayInfo ? dayInfo.reservations : [];
+        var infoEl = document.getElementById('monthly-selected-info');
+        infoEl.textContent = dateStr + ' — ' + reservations.length + ' transfer' + (reservations.length ? ' (rotalar haritada gösteriliyor)' : '');
+        renderRoutesOnMonthlyMap(reservations, true);
+    }
+
+    function showAllMonthRoutes() {
+        MONTHLY_SELECTED_DATE = null;
+        renderMonthlyGrid();
+        var all = [];
+        var days = MONTHLY_DATA.days || {};
+        Object.keys(days).forEach(function(dateStr) {
+            days[dateStr].reservations.forEach(function(r) { all.push(r); });
+        });
+        var infoEl = document.getElementById('monthly-selected-info');
+        infoEl.textContent = MONTHLY_MONTH_NAMES[MONTHLY_MONTH - 1] + ' ' + MONTHLY_YEAR + ' — toplam ' + all.length + ' transfer (düz çizgi rota gösterimi)';
+        renderRoutesOnMonthlyMap(all, false);
+    }
+
+    function renderRoutesOnMonthlyMap(reservations, useRealDirections) {
+        if (!monthlyMap) initMonthlyMap();
+        if (!monthlyMap) return;
+        clearMonthlyMapOverlays();
+
+        var withCoords = (reservations || []).filter(function(r) {
+            return r.pickupLat != null && r.pickupLng != null;
+        });
+
+        var emptyEl = document.getElementById('monthly-map-empty');
+        if (withCoords.length === 0) {
+            emptyEl.style.display = 'block';
+            return;
+        }
+        emptyEl.style.display = 'none';
+
+        var bounds = new google.maps.LatLngBounds();
+        var directionsService = useRealDirections ? new google.maps.DirectionsService() : null;
+
+        withCoords.forEach(function(r, idx) {
+            var color = CAL_ROUTE_COLORS[idx % CAL_ROUTE_COLORS.length];
+            var pickupPos = { lat: r.pickupLat, lng: r.pickupLng };
+
+            var marker = new google.maps.Marker({
+                position: pickupPos,
+                map: monthlyMap,
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+                title: (r.customerName || '') + ' — ' + (r.time || '')
+            });
+            var infoWin = new google.maps.InfoWindow({
+                content: '<div style="font-size:12px;"><strong>' + escapeHtml(r.customerName || '') + '</strong><br>' +
+                    (r.time || '') + '<br>' + escapeHtml(r.pickup || '') + (r.destination ? ' → ' + escapeHtml(r.destination) : '') + '</div>'
+            });
+            marker.addListener('click', function() { infoWin.open(monthlyMap, marker); });
+            monthlyMapMarkers.push(marker);
+            bounds.extend(pickupPos);
+
+            if (r.dropoffLat != null && r.dropoffLng != null) {
+                var dropoffPos = { lat: r.dropoffLat, lng: r.dropoffLng };
+                var dropoffMarker = new google.maps.Marker({
+                    position: dropoffPos,
+                    map: monthlyMap,
+                    icon: { path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 4, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+                });
+                monthlyMapMarkers.push(dropoffMarker);
+                bounds.extend(dropoffPos);
+
+                if (useRealDirections) {
+                    var renderer = new google.maps.DirectionsRenderer({
+                        map: monthlyMap,
+                        suppressMarkers: true,
+                        preserveViewport: true,
+                        polylineOptions: { strokeColor: color, strokeWeight: 4, strokeOpacity: 0.75 }
+                    });
+                    monthlyMapRenderers.push(renderer);
+                    directionsService.route({
+                        origin: pickupPos, destination: dropoffPos, travelMode: 'DRIVING'
+                    }, function(result, status) {
+                        if (status === 'OK') renderer.setDirections(result);
+                    });
+                } else {
+                    // Tüm ay gösteriminde performans/kota için gerçek rota yerine düz çizgi kullanılır.
+                    var line = new google.maps.Polyline({
+                        path: [pickupPos, dropoffPos],
+                        strokeColor: color,
+                        strokeWeight: 3,
+                        strokeOpacity: 0.65,
+                        map: monthlyMap
+                    });
+                    monthlyMapPolylines.push(line);
+                }
+            }
+        });
+
+        monthlyMap.fitBounds(bounds);
     }
 
     function renderCalendarGrid() {
