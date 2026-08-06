@@ -90,10 +90,8 @@ GOOGLE_MAPS_API_KEY = "AIzaSyD-IGkbR6iyxvdeQ_Cfekjks3KOWMD7RKw"
 # Admin tarafından belirlenen km başı birim fiyat (varsayılan: 25₺)
 UNIT_PRICE = 25.0
 
-# ─── Odesin Sanal POS (Whitelabel/Elements SDK) — Kredi Kartı Ödeme Entegrasyonu ──────────
-ODESIN_API_KEY = os.environ.get("ODESIN_API_KEY", "")
-ODESIN_API_BASE = "https://www.odesin.com"
-ODESIN_CALLBACK_BASE = os.environ.get("ODESIN_CALLBACK_BASE", "https://gulizvip.com.tr")
+# Not: Kredi kartı ödeme entegrasyonu (Odesin) kaldırıldı — banka havalesi ile devam ediliyor.
+# İleride farklı bir ödeme sağlayıcısı entegre edilecek.
 
 # ─── Page Content Fallback (PostgreSQL yoksa kullanılır) ─────────────────
 # Slug alias mapping — "mesafelisatis" (no hyphen) → "mesafeli-satis" (with hyphen)
@@ -205,8 +203,6 @@ EMAIL_TEMPLATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "
 RESERVATIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reservations.json")
 RESERVATIONS = []
 RESERVATION_ID = 1000
-PENDING_RESERVATIONS = {}  # payment_session_id -> reservation dict (ödeme onayı bekleyen)
-pending_lock = threading.Lock()
 
 # ─── Price Data (Rota Fiyatları) ────────────────────────────────────────────────
 PRICES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prices.json")
@@ -535,47 +531,6 @@ def send_confirmation_email(reservation):
         return True
     except Exception as e:
         print(f"[!] E-posta gönderilemedi: {e}")
-        return False
-
-
-# ─── Odesin Sanal POS HMAC İmzalama ve Doğrulama ──────────────────────────
-
-def _odesin_sign_post(raw_body: str) -> dict:
-    """Create Odesin HMAC-SHA256 signature for POST requests.
-
-    Signature format: {unixTs}\\nPOST\\n{rawBody}
-    Returns dict with x-api-key, X-Odesin-Timestamp, X-Odesin-Signature headers.
-    """
-    ts = str(int(time.time()))
-    msg = f"{ts}\nPOST\n{raw_body}".encode("utf-8")
-    sig = hmac.new(ODESIN_API_KEY.encode("utf-8"), msg, hashlib.sha256).hexdigest()
-    return {
-        "x-api-key": ODESIN_API_KEY,
-        "x-odesin-timestamp": ts,
-        "x-odesin-signature": sig,
-    }
-
-
-def _odesin_verify_webhook(payload_body: bytes, signature_header: str, ts_header: str = "") -> bool:
-    """Verify Odesin webhook signature.
-
-    Webhook signature = HMAC-SHA256(api_key, "{ts}\\nPOST\\n{rawBody}")
-    sent as x-odesin-signature header, with timestamp in x-odesin-timestamp header.
-    """
-    if not ODESIN_API_KEY or not signature_header:
-        return False
-    ts = ts_header.strip() if ts_header else ""
-    if not ts:
-        return False
-    try:
-        msg = f"{ts}\nPOST\n".encode("utf-8") + payload_body
-        expected = hmac.new(
-            ODESIN_API_KEY.encode("utf-8"),
-            msg,
-            hashlib.sha256
-        ).hexdigest()
-        return hmac.compare_digest(expected, signature_header.strip())
-    except Exception:
         return False
 
 
@@ -1404,121 +1359,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             if path.startswith("/sayfa/"):
                 self._serve_static("index.html")
                 return
-            if path == "/api/payment/return":
-                # Odesin yönlendirme sonrası — query param'ları göster
-                params = urllib.parse.parse_qs(parsed.query)
-                odesin_payment = params.get("odesin_payment", [""])[0]
-                odesin_ref = params.get("odesin_ref", [""])[0]
-                odesin_detail = params.get("odesin_detail", [""])[0]
-                odesin_hash_ok = params.get("odesin_hash_ok", [""])[0]
-                is_success = odesin_hash_ok == "1"
-                # Ödeme başarılıysa — PENDING_RESERVATIONS'da varsa kalıcı kaydet (webhook henüz gelmemiş olabilir)
-                if is_success and odesin_payment:
-                    with pending_lock:
-                        pending_entry = PENDING_RESERVATIONS.pop(odesin_payment, None)
-                    if pending_entry:
-                        reservation = pending_entry["reservation"]
-                        session_id = pending_entry.get("sessionId", "")
-                        reservation["payment_status"] = "paid"
-                        reservation["payment_ref"] = odesin_ref
-                        reservation["payment_session_id"] = odesin_payment
-                        reservation["status"] = "confirmed"
-                        # ID zaten /api/reservations'ta atandı — olduğu gibi kaydet
-                        db_id = db.save_reservation_to_db(reservation)
-                        if db_id:
-                            reservation["id"] = db_id
-                        else:
-                            RESERVATIONS.insert(0, reservation)
-                            save_reservations()
-                        print(f"[✓] [return] Rezervasyon #{reservation['id']} kaydedildi (webhook öncesi).")
-                        # Telegram bildirimi
-                        tip_etiket = "🚗 Transfer" if reservation["type"] == "transfer" else "👑 Şoförlü Günlük VIP"
-                        telegram_rez = (
-                            f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
-                            f"📋 <b>Tür:</b> {tip_etiket}\n"
-                            f"👤 <b>İsim:</b> {reservation['customerName']}\n"
-                            f"📞 <b>Telefon:</b> {reservation['customerPhone']}\n"
-                            f"📍 <b>Alış:</b> {reservation['pickup']}\n"
-                            f"🏁 <b>Varış:</b> {reservation['destination']}\n"
-                            f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
-                            f"👥 <b>Kişi:</b> {reservation['passengers']}\n"
-                            f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
-                            f"🕐 <b>Oluşturulma:</b> {reservation['createdAt']}"
-                        )
-                        if reservation.get("flightNumber"):
-                            telegram_rez += f"\n✈️ <b>Uçuş:</b> {reservation['flightNumber']}"
-                        send_telegram(telegram_rez)
-                        try:
-                            send_confirmation_email(reservation)
-                        except Exception as e:
-                            print(f"[!] E-posta gönderme hatası: {e}")
-                        if session_id:
-                            with visitor_lock:
-                                if session_id in VISITOR_SESSIONS:
-                                    name_parts = reservation.get("customerName", "").split()
-                                    short_name = name_parts[0] + " " + (name_parts[1][0] + "." if len(name_parts) > 1 else "") if name_parts else reservation.get("customerName", "")
-                                    email_val = reservation.get("customerEmail", "")
-                                    display_name = f"{short_name} ({email_val})" if email_val else short_name
-                                    VISITOR_SESSIONS[session_id]["name"] = display_name
-                                    VISITOR_SESSIONS[session_id]["email"] = email_val
-                                    VISITOR_SESSIONS[session_id]["reservationId"] = str(reservation["id"])
-                    else:
-                        # Webhook zaten gelmiş ve kaydetmiş olabilir — mevcut kaydı güncelle
-                        for r in RESERVATIONS:
-                            if r.get("payment_session_id") == odesin_payment or r.get("payment_ref") == odesin_ref:
-                                if is_success:
-                                    r["payment_status"] = "paid"
-                                    r["status"] = "confirmed"
-                                    r["payment_ref"] = odesin_ref
-                                else:
-                                    r["payment_status"] = "failed"
-                                save_reservations()
-                                try:
-                                    db.save_reservation_to_db(r)
-                                except Exception:
-                                    pass
-                                break
-                # Basit bir HTML sonuç sayfası göster
-                if is_success:
-                    html = (
-                        "<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'>"
-                        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-                        "<title>Ödeme Başarılı — Güliz VIP</title>"
-                        "<style>body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0fdf4}"
-                        ".card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1);max-width:420px}"
-                        ".icon{font-size:64px;color:#22c55e;margin-bottom:16px}"
-                        "h1{color:#166534;margin:0 0 8px 0}"
-                        "p{color:#475569;margin:0 0 24px 0;line-height:1.6}"
-                        ".btn{display:inline-block;background:#1B2B4C;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600}"
-                        "</style></head><body><div class='card'>"
-                        "<div class='icon'>&#10003;</div>"
-                        "<h1>Ödeme Başarılı!</h1>"
-                        "<p>Rezervasyonunuz onaylandı.<br>Detaylar e-posta adresinize gönderilecektir.</p>"
-                        "<a href='/' class='btn'>Ana Sayfaya Dön</a>"
-                        f"<p style='margin-top:16px;font-size:13px;color:#94a3b8'>Referans: {odesin_ref}</p>"
-                        "</div></body></html>"
-                    )
-                else:
-                    html = (
-                        "<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'>"
-                        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-                        "<title>Ödeme Başarısız — Güliz VIP</title>"
-                        "<style>body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fef2f2}"
-                        ".card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1);max-width:420px}"
-                        ".icon{font-size:64px;color:#ef4444;margin-bottom:16px}"
-                        "h1{color:#991b1b;margin:0 0 8px 0}"
-                        "p{color:#475569;margin:0 0 24px 0;line-height:1.6}"
-                        ".btn{display:inline-block;background:#1B2B4C;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600}"
-                        "</style></head><body><div class='card'>"
-                        "<div class='icon'>&#10007;</div>"
-                        "<h1>Ödeme Başarısız</h1>"
-                        "<p>Ödeme işlemi tamamlanamadı.<br>Lütfen tekrar deneyin veya banka havalesi kullanın.</p>"
-                        "<a href='/' class='btn'>Ana Sayfaya Dön</a>"
-                        f"<p style='margin-top:16px;font-size:13px;color:#94a3b8'>{odesin_detail}</p>"
-                        "</div></body></html>"
-                    )
-                self._send_html(html)
-                return
             if path == "/" or path == "":
                 self._serve_static("index.html")
             elif path.startswith("/uploads/"):
@@ -1581,159 +1421,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             url, _fields = result
             self._send_json({"success": True, "url": url, "resized": _PIL_AVAILABLE})
             return
-        if path == "/api/payment/create-session":
-            try:
-                body = json.loads(self._read_body())
-                if not ODESIN_API_KEY:
-                    self._send_error("Ödeme sistemi yapılandırılmamış.", 503)
-                    return
-                amount = body.get("amount", 0)
-                if not amount or amount < 100:
-                    self._send_error("Geçersiz tutar.", 400)
-                    return
-                return_url = body.get("return_url", ODESIN_CALLBACK_BASE + "/api/payment/return")
-                callback_url = body.get("callback_url", ODESIN_CALLBACK_BASE + "/api/payment/webhook")
-                customer_name = body.get("customer_name", "")
-                customer_email = body.get("customer_email", "")
-                customer_phone = body.get("customer_phone", "")
-                description = body.get("description", "Güliz VIP Transfer Rezervasyonu")
-                payload = json.dumps({
-                    "mode": "card_whitelabel",
-                    "amount": int(amount),
-                    "return_url": return_url,
-                    "callback_url": callback_url,
-                    "customer_name": customer_name,
-                    "customer_email": customer_email,
-                    "customer_phone": customer_phone,
-                    "description": description,
-                })
-                headers = _odesin_sign_post(payload)
-                headers["Content-Type"] = "application/json"
-                req = urllib.request.Request(
-                    ODESIN_API_BASE + "/api/payment/create-session",
-                    data=payload.encode("utf-8"),
-                    headers=headers,
-                    method="POST"
-                )
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    result = json.loads(resp.read().decode("utf-8"))
-                if result.get("status") == "success":
-                    self._send_json({
-                        "success": True,
-                        "session_id": result.get("session_id", ""),
-                        "elements_script_url": result.get("elements_script_url", ""),
-                        "elements_config_url": result.get("elements_config_url", ""),
-                        "embed_script_url": result.get("embed_script_url", ""),
-                        "checkout_url": result.get("checkout_url", ""),
-                        "payment_id": result.get("payment_id", ""),
-                        "reference_code": result.get("reference_code", ""),
-                    })
-                else:
-                    self._send_error(result.get("message", "Ödeme oturumu oluşturulamadı."), 502)
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except urllib.error.HTTPError as e:
-                err_body = e.read().decode("utf-8", errors="replace")[:500]
-                self._send_error(f"Odesin API hatası: {err_body}", 502)
-            except Exception as e:
-                self._send_error(f"Ödeme sistemi hatası: {str(e)}", 502)
-            return
-        if path == "/api/payment/webhook":
-            try:
-                raw_body = self._read_body().encode("utf-8")
-                sig = self.headers.get("x-odesin-signature", "")
-                ts = self.headers.get("x-odesin-timestamp", "")
-                if not _odesin_verify_webhook(raw_body, sig, ts):
-                    self._send_error("Geçersiz webhook imzası.", 401)
-                    print(f"[!] Odesin webhook: imza doğrulaması BAŞARISIZ")
-                    return
-                event = json.loads(raw_body.decode("utf-8"))
-                event_type = event.get("type", "")
-                data = event.get("data", {})
-                payment_id = data.get("payment_id", "") or event.get("payment_id", "")
-                payment_ref = data.get("payment_ref", "") or event.get("payment_ref", "")
-                print(f"[✓] Odesin webhook: {event_type} | payment_id={payment_id} ref={payment_ref}")
-                if event_type == "payment.approved":
-                    # Bekleme havuzundan rezervasyonu al ve kalıcı olarak kaydet
-                    with pending_lock:
-                        pending_entry = PENDING_RESERVATIONS.pop(payment_id, None)
-                    if pending_entry:
-                        reservation = pending_entry["reservation"]
-                        session_id = pending_entry.get("sessionId", "")
-                        reservation["payment_status"] = "paid"
-                        reservation["payment_ref"] = payment_ref
-                        reservation["payment_session_id"] = payment_id
-                        reservation["status"] = "confirmed"
-                        reservation["id"] = RESERVATION_ID
-                        db_id = db.save_reservation_to_db(reservation)
-                        if db_id:
-                            reservation["id"] = db_id
-                            RESERVATION_ID = db_id + 1
-                        else:
-                            RESERVATIONS.insert(0, reservation)
-                            RESERVATION_ID += 1
-                            save_reservations()
-                        print(f"[✓] Rezervasyon #{reservation['id']} ödemesi onaylandı ve kaydedildi.")
-                        # Telegram bildirimi
-                        tip_etiket = "🚗 Transfer" if reservation["type"] == "transfer" else "👑 Şoförlü Günlük VIP"
-                        telegram_rez = (
-                            f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
-                            f"📋 <b>Tür:</b> {tip_etiket}\n"
-                            f"👤 <b>İsim:</b> {reservation['customerName']}\n"
-                            f"📞 <b>Telefon:</b> {reservation['customerPhone']}\n"
-                            f"📍 <b>Alış:</b> {reservation['pickup']}\n"
-                            f"🏁 <b>Varış:</b> {reservation['destination']}\n"
-                            f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
-                            f"👥 <b>Kişi:</b> {reservation['passengers']}\n"
-                            f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
-                            f"🕐 <b>Oluşturulma:</b> {reservation['createdAt']}"
-                        )
-                        if reservation.get("flightNumber"):
-                            telegram_rez += f"\n✈️ <b>Uçuş:</b> {reservation['flightNumber']}"
-                        send_telegram(telegram_rez)
-                        # E-posta bildirimi
-                        try:
-                            send_confirmation_email(reservation)
-                        except Exception as e:
-                            print(f"[!] E-posta gönderme hatası: {e}")
-                        # Identity matching
-                        if session_id:
-                            with visitor_lock:
-                                if session_id in VISITOR_SESSIONS:
-                                    name_parts = reservation.get("customerName", "").split()
-                                    short_name = name_parts[0] + " " + (name_parts[1][0] + "." if len(name_parts) > 1 else "") if name_parts else reservation.get("customerName", "")
-                                    email_val = reservation.get("customerEmail", "")
-                                    display_name = f"{short_name} ({email_val})" if email_val else short_name
-                                    VISITOR_SESSIONS[session_id]["name"] = display_name
-                                    VISITOR_SESSIONS[session_id]["email"] = email_val
-                                    VISITOR_SESSIONS[session_id]["reservationId"] = str(reservation["id"])
-                                    print(f"[tracking] Identity matched: session {session_id} → {display_name}")
-                    else:
-                        # Rezervasyon daha önce başka kanaldan kaydedilmiş olabilir — mevcut akış
-                        for r in RESERVATIONS:
-                            if r.get("payment_session_id") == payment_id or r.get("payment_ref") == payment_ref:
-                                r["payment_status"] = "paid"
-                                r["payment_ref"] = payment_ref
-                                r["status"] = "confirmed"
-                                print(f"[✓] Rezervasyon #{r['id']} ödemesi onaylandı (mevcut kayıt).")
-                                save_reservations()
-                                break
-                elif event_type == "payment.rejected":
-                    with pending_lock:
-                        PENDING_RESERVATIONS.pop(payment_id, None)
-                    for r in RESERVATIONS:
-                        if r.get("payment_session_id") == payment_id or r.get("payment_ref") == payment_ref:
-                            r["payment_status"] = "failed"
-                            print(f"[!] Rezervasyon #{r['id']} ödemesi reddedildi.")
-                            save_reservations()
-                            break
-                self._send_json({"success": True})
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                print(f"[!] Odesin webhook hatası: {e}")
-                self._send_error(str(e), 500)
-            return
         if path == "/api/reservations":
             try:
                 body = json.loads(self._read_body())
@@ -1771,66 +1458,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not dest_ok:
                     self._send_error("Üzgünüz, bu varış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.", 400)
                     return
-                # ─── ÖDEME ÖNCELİKLİ AKIŞ ───
-                # Kredi kartı: rezervasyonu hemen kaydetme, önce ödemeyi bekle
-                if reservation["paymentMethod"] == "kredi_karti" and ODESIN_API_KEY:
-                    try:
-                        price_kurus = int(float(reservation.get("price", 0)) * 100)
-                        if price_kurus < 100:
-                            self._send_error("Geçersiz tutar.", 400)
-                            return
-                        odesin_payload = json.dumps({
-                            "mode": "card_whitelabel",
-                            "amount": price_kurus,
-                            "return_url": ODESIN_CALLBACK_BASE + "/api/payment/return",
-                            "callback_url": ODESIN_CALLBACK_BASE + "/api/payment/webhook",
-                            "customer_name": reservation["customerName"],
-                            "customer_email": reservation.get("customerEmail", ""),
-                            "customer_phone": reservation.get("customerPhone", ""),
-                            "description": f"Güliz VIP Rezervasyon #{reservation['id']}",
-                        })
-                        headers = _odesin_sign_post(odesin_payload)
-                        headers["Content-Type"] = "application/json"
-                        req = urllib.request.Request(
-                            ODESIN_API_BASE + "/api/payment/create-session",
-                            data=odesin_payload.encode("utf-8"),
-                            headers=headers,
-                            method="POST"
-                        )
-                        with urllib.request.urlopen(req, timeout=30) as resp:
-                            odesin_result = json.loads(resp.read().decode("utf-8"))
-                        if odesin_result.get("status") != "success":
-                            self._send_error(odesin_result.get("message", "Ödeme oturumu oluşturulamadı."), 502)
-                            return
-                        payment_session_id = odesin_result.get("session_id", "") or odesin_result.get("payment_id", "")
-                        elements_script_url = odesin_result.get("elements_script_url", "")
-                        elements_config_url = odesin_result.get("elements_config_url", "")
-                        reservation_id = RESERVATION_ID
-                        RESERVATION_ID += 1
-                        # Geçici olarak bekleme havuzuna koy — ödeme onaylanınca kalıcı olarak kaydedilecek
-                        with pending_lock:
-                            PENDING_RESERVATIONS[payment_session_id] = {
-                                "reservation": reservation,
-                                "sessionId": body.get("sessionId", ""),
-                                "createdAt": datetime.now().isoformat()
-                            }
-                        print(f"[✓] Ödeme bekleniyor: session={payment_session_id}, tutar={price_kurus}kurus")
-                        self._send_json({
-                            "success": True,
-                            "reservation": reservation,
-                            "session_id": payment_session_id,
-                            "elements_script_url": elements_script_url,
-                            "elements_config_url": elements_config_url,
-                        })
-                        return  # Rezervasyon kalıcı kaydedilmedi — webhook bekleniyor
-                    except urllib.error.HTTPError as e:
-                        err_body = e.read().decode("utf-8", errors="replace")[:500]
-                        self._send_error(f"Ödeme sistemi hatası: {err_body}", 502)
-                        return
-                    except Exception as e:
-                        self._send_error(f"Ödeme sistemi hatası: {str(e)}", 502)
-                        return
-                # ─── Havale/EFT — direkt kaydet ───
+                # Not: Kredi kartı ile online ödeme entegrasyonu kaldırıldı — tüm rezervasyonlar
+                # (banka havalesi / araçta ödeme) doğrudan kaydediliyor, operasyon ekibi takip ediyor.
                 db_id = db.save_reservation_to_db(reservation)
                 if db_id:
                     reservation["id"] = db_id
