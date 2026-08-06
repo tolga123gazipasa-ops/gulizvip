@@ -676,23 +676,69 @@
                 </div>
 
                 <div class="panel-section">
-                    <div class="section-header"><h3>Filomuz (Araç Galerisi)</h3></div>
-                    <div class="image-grid">
-                        <div class="image-card">
-                            <button class="delete-img"><i class="fa-solid fa-xmark"></i></button>
-                            <img src="vitoaracimiz.jpeg" alt="vito">
-                            <p style="font-size: 12px; font-weight: 600;">Ana Görsel</p>
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-truck"></i> Filo Yönetimi</h3>
+                        <button class="btn-primary" onclick="showFleetForm()"><i class="fa-solid fa-plus"></i> Yeni Araç Ekle</button>
+                    </div>
+                    <div id="fleet-list">
+                        <p style="color:var(--text-gray);text-align:center;padding:40px;">Yükleniyor...</p>
+                    </div>
+                </div>
+
+                <!-- Araç Ekleme/Düzenleme Formu -->
+                <div id="fleet-form" class="panel-section" style="display:none;">
+                    <div class="section-header">
+                        <h3 id="fleet-form-title"><i class="fa-solid fa-pen"></i> Yeni Araç Ekle</h3>
+                        <button class="btn-secondary" onclick="hideFleetForm()">İptal</button>
+                    </div>
+                    <input type="hidden" id="fleet-edit-id" value="">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Araç Adı <span style="color:var(--primary-red);">*</span></label>
+                            <input type="text" id="fleet-name" placeholder="Örn: Mercedes-Benz Vito VIP" maxlength="200">
                         </div>
-                        <div class="image-card">
-                            <button class="delete-img"><i class="fa-solid fa-xmark"></i></button>
-                            <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&w=400&q=80" alt="vito ic">
-                            <p style="font-size: 12px; font-weight: 600;">İç Mekan</p>
-                        </div>
-                        <div class="add-image-card">
-                            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 30px; margin-bottom: 10px;"></i>
-                            <p style="font-size: 13px; font-weight: 600;">Yeni Araç Resmi Ekle</p>
+                        <div class="form-group">
+                            <label>Araç Adedi</label>
+                            <input type="number" id="fleet-count" value="1" min="1" max="99">
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Yolcu Kapasitesi</label>
+                            <input type="number" id="fleet-passengers" value="6" min="1" max="99">
+                        </div>
+                        <div class="form-group">
+                            <label>Bavul Sayısı</label>
+                            <input type="number" id="fleet-luggage" value="6" min="0" max="99">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ana Görsel</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="fleet-main-image" placeholder="vitoaracimiz.jpeg veya https://..." style="flex:1;" oninput="renderFleetMainPreview()">
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('fleet-main-image-file').click()"><i class="fa-solid fa-cloud-arrow-up"></i> Yükle</button>
+                            <input type="file" id="fleet-main-image-file" accept="image/*" style="display:none" onchange="uploadFleetImage(this, 'main')">
+                        </div>
+                        <div id="fleet-main-image-preview" style="margin-top:8px;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Galeri Resimleri (virgülle ayırın)</label>
+                        <textarea id="fleet-gallery" rows="3" placeholder="vitoaracimiz.jpeg,https://...,https://..." oninput="renderFleetGalleryPreview()"></textarea>
+                        <div style="margin-top:8px;">
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('fleet-gallery-file').click()"><i class="fa-solid fa-cloud-arrow-up"></i> Galeriye Resim Yükle</button>
+                            <input type="file" id="fleet-gallery-file" accept="image/*" style="display:none" onchange="uploadFleetImage(this, 'gallery')" multiple>
+                        </div>
+                        <div id="fleet-gallery-preview" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Özellikler (virgülle ayırın)</label>
+                        <textarea id="fleet-features" rows="3" placeholder="Hakiki Deri Koltuklar,Ücretsiz Hızlı Wi-Fi,VIP İkram ve İçecekler"></textarea>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:16px;">
+                        <button class="btn-primary" onclick="saveFleet()"><i class="fa-solid fa-floppy-disk"></i> Kaydet</button>
+                        <button class="btn-secondary" onclick="hideFleetForm()">Vazgeç</button>
+                    </div>
+                    <div id="fleet-form-status" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13px;font-weight:600;"></div>
                 </div>
             </div>
 
@@ -1028,6 +1074,16 @@
         if (tabId === 'view-page-management') {
             loadPageButtons();
         }
+
+        // Fiyat sekmesi: rota fiyatlarını yenile
+        if (tabId === 'view-pricing') {
+            adminLoadPrices();
+        }
+
+        // Filo sekmesi: araç listesini yenile
+        if (tabId === 'view-fleet') {
+            loadFleet();
+        }
     }
 </script>
 
@@ -1067,6 +1123,7 @@
                 loadAdminFlights();
                 loadAytFlights();
                 loadSliderImages();
+                loadFleet();
                 loadBankAccounts();
                 loadTelegramConfig();
                 adminLoadPrices();
@@ -2553,7 +2610,7 @@
         if(!token) { alert('Oturum süreniz dolmuş.'); return; }
 
         var formData = new FormData();
-        formData.append('image', file);
+        formData.append('file', file);
 
         fetch('/api/admin/slider-images/upload', {
             method: 'POST',
@@ -3425,6 +3482,298 @@
             statusEl.innerHTML = '<i class="fa-solid fa-exclamation-circle"></i> Sunucu hatası!';
         }
     }
+</script>
+
+<script>
+// ─── FİLO YÖNETİMİ ──────────────────────────────────────────
+function loadFleet() {
+    var token = getToken();
+    if (!token) return;
+    var listEl = document.getElementById('fleet-list');
+    if (!listEl) return;
+
+    fetch('/api/admin/fleet', {
+        headers: {'Authorization': 'Bearer ' + token}
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success && Array.isArray(data.vehicles)) {
+            renderFleet(data.vehicles);
+        } else {
+            listEl.innerHTML = '<p style="color:var(--text-gray);text-align:center;padding:40px;">Araç bulunamadı.</p>';
+        }
+    })
+    .catch(function(err) {
+        listEl.innerHTML = '<p style="color:#d00;text-align:center;padding:40px;">Yüklenirken hata oluştu.</p>';
+        console.error('Filo yüklenirken hata:', err);
+    });
+}
+
+function renderFleet(vehicles) {
+    var listEl = document.getElementById('fleet-list');
+    if (!vehicles || vehicles.length === 0) {
+        listEl.innerHTML = '<p style="color:var(--text-gray);text-align:center;padding:40px;">Henüz araç eklenmemiş. Yeni Araç Ekle butonunu kullanın.</p>';
+        return;
+    }
+
+    var html = '<div style="display:flex;flex-direction:column;gap:20px;">';
+    for (var i = 0; i < vehicles.length; i++) {
+        var v = vehicles[i];
+        var images = v.gallery_images ? v.gallery_images.split(',') : [];
+        var features = v.features ? v.features.split(',') : [];
+        var mainImg = v.main_image || (images.length > 0 ? images[0] : '');
+
+        html += '<div class="panel-section" style="margin:0;position:relative;">';
+        html += '<div style="display:flex;gap:20px;flex-wrap:wrap;">';
+
+        html += '<div style="flex:0 0 180px;">';
+        if (mainImg) {
+            html += '<img src="' + escapeHtml(mainImg) + '" alt="' + escapeHtml(v.name) + '" style="width:100%;height:130px;object-fit:cover;border-radius:10px;">';
+        }
+        html += '</div>';
+
+        html += '<div style="flex:1;min-width:200px;">';
+        html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
+        html += '<h4 style="margin:0;font-size:15px;color:#1B2B4C;">' + escapeHtml(v.name) + '</h4>';
+        html += '<span style="background:#E31837;color:#fff;font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;">×' + v.count + '</span>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:14px;margin:8px 0;font-size:13px;color:#666;">';
+        html += '<span><i class="fa-solid fa-users"></i> ' + v.passenger_count + ' Yolcu</span>';
+        html += '<span><i class="fa-solid fa-suitcase"></i> ' + v.luggage_count + ' Bavul</span>';
+        html += '</div>';
+
+        if (features.length > 0) {
+            html += '<div style="display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:#555;">';
+            for (var f = 0; f < Math.min(features.length, 4); f++) {
+                html += '<span style="background:#f0f4ff;padding:2px 8px;border-radius:4px;">' + escapeHtml(features[f].trim()) + '</span>';
+            }
+            if (features.length > 4) {
+                html += '<span style="color:#999;font-size:11px;">+' + (features.length - 4) + ' daha</span>';
+            }
+            html += '</div>';
+        }
+
+        html += '</div>';
+
+        html += '<div style="display:flex;flex-direction:column;gap:6px;justify-content:center;">';
+        html += '<button class="btn-view" onclick="showFleetForm(' + v.id + ')" style="padding:6px 16px;font-size:12px;"><i class="fa-solid fa-pen"></i> Düzenle</button>';
+        html += '<button class="btn-danger" onclick="deleteFleet(' + v.id + ')" style="padding:6px 16px;font-size:12px;"><i class="fa-solid fa-trash"></i> Sil</button>';
+        html += '</div>';
+
+        html += '</div></div>';
+    }
+    html += '</div>';
+    listEl.innerHTML = html;
+}
+
+function showFleetForm(vehicleId) {
+    var form = document.getElementById('fleet-form');
+    var title = document.getElementById('fleet-form-title');
+    var idInput = document.getElementById('fleet-edit-id');
+
+    if (vehicleId && typeof vehicleId === 'number') {
+        title.innerHTML = '<i class="fa-solid fa-pen"></i> Aracı Düzenle';
+        var token = getToken();
+        if (!token) return;
+        fetch('/api/admin/fleet', {
+            headers: {'Authorization': 'Bearer ' + token}
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success && Array.isArray(data.vehicles)) {
+                for (var i = 0; i < data.vehicles.length; i++) {
+                    var v = data.vehicles[i];
+                    if (v.id === vehicleId) {
+                        document.getElementById('fleet-edit-id').value = v.id;
+                        document.getElementById('fleet-name').value = v.name || '';
+                        document.getElementById('fleet-count').value = v.count || 1;
+                        document.getElementById('fleet-passengers').value = v.passenger_count || 6;
+                        document.getElementById('fleet-luggage').value = v.luggage_count || 6;
+                        document.getElementById('fleet-main-image').value = v.main_image || '';
+                        document.getElementById('fleet-gallery').value = v.gallery_images || '';
+                        document.getElementById('fleet-features').value = v.features || '';
+                        break;
+                    }
+                }
+            }
+            form.style.display = 'block';
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('fleet-form-status').style.display = 'none';
+            renderFleetMainPreview();
+            renderFleetGalleryPreview();
+        })
+        .catch(function() {
+            form.style.display = 'block';
+        });
+    } else {
+        title.innerHTML = '<i class="fa-solid fa-pen"></i> Yeni Araç Ekle';
+        idInput.value = '';
+        document.getElementById('fleet-name').value = '';
+        document.getElementById('fleet-count').value = 1;
+        document.getElementById('fleet-passengers').value = 6;
+        document.getElementById('fleet-luggage').value = 6;
+        document.getElementById('fleet-main-image').value = '';
+        document.getElementById('fleet-gallery').value = '';
+        document.getElementById('fleet-features').value = '';
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('fleet-form-status').style.display = 'none';
+        renderFleetMainPreview();
+        renderFleetGalleryPreview();
+    }
+}
+
+function uploadFleetImage(input, target) {
+    var files = input.files;
+    if (!files || files.length === 0) return;
+    var token = getToken();
+    if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+    function uploadOne(file) {
+        var formData = new FormData();
+        formData.append('file', file);
+        return fetch('/api/admin/fleet/upload', {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + token},
+            body: formData
+        }).then(function(r) { return r.json(); });
+    }
+
+    var fileArray = Array.prototype.slice.call(files);
+    var uploadedUrls = [];
+    var chain = Promise.resolve();
+    fileArray.forEach(function(file) {
+        chain = chain.then(function() {
+            return uploadOne(file).then(function(data) {
+                if (data.success) {
+                    uploadedUrls.push(data.url);
+                } else {
+                    alert('Yükleme hatası: ' + (data.error || 'bilinmeyen hata'));
+                }
+            });
+        });
+    });
+
+    chain.then(function() {
+        if (uploadedUrls.length === 0) return;
+        if (target === 'main') {
+            document.getElementById('fleet-main-image').value = uploadedUrls[0];
+            renderFleetMainPreview();
+        } else {
+            var textarea = document.getElementById('fleet-gallery');
+            var current = textarea.value.trim();
+            textarea.value = current ? current + ',' + uploadedUrls.join(',') : uploadedUrls.join(',');
+            renderFleetGalleryPreview();
+        }
+        input.value = '';
+    }).catch(function() {
+        alert('Sunucu hatası');
+    });
+}
+
+function renderFleetMainPreview() {
+    var url = document.getElementById('fleet-main-image').value.trim();
+    var preview = document.getElementById('fleet-main-image-preview');
+    preview.innerHTML = url
+        ? '<img src="' + escapeHtml(url) + '" style="width:100px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">'
+        : '';
+}
+
+function renderFleetGalleryPreview() {
+    var raw = document.getElementById('fleet-gallery').value.trim();
+    var preview = document.getElementById('fleet-gallery-preview');
+    if (!raw) { preview.innerHTML = ''; return; }
+    var urls = raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    preview.innerHTML = urls.map(function(u) {
+        return '<img src="' + escapeHtml(u) + '" style="width:70px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">';
+    }).join('');
+}
+
+function hideFleetForm() {
+    document.getElementById('fleet-form').style.display = 'none';
+    document.getElementById('fleet-form-status').style.display = 'none';
+}
+
+function saveFleet() {
+    var token = getToken();
+    if (!token) {
+        alert('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        return;
+    }
+
+    var id = document.getElementById('fleet-edit-id').value;
+    var name = document.getElementById('fleet-name').value.trim();
+    var count = parseInt(document.getElementById('fleet-count').value) || 1;
+    var passengers = parseInt(document.getElementById('fleet-passengers').value) || 6;
+    var luggage = parseInt(document.getElementById('fleet-luggage').value) || 6;
+    var mainImage = document.getElementById('fleet-main-image').value.trim();
+    var gallery = document.getElementById('fleet-gallery').value.trim();
+    var features = document.getElementById('fleet-features').value.trim();
+
+    if (!name) {
+        showFleetFormStatus('Araç adı gerekli!', 'error');
+        return;
+    }
+
+    var action = id ? 'update' : 'add';
+    var body = { action: action, name: name, count: count, passenger_count: passengers, luggage_count: luggage, main_image: mainImage, gallery_images: gallery, features: features };
+    if (id) body.id = parseInt(id);
+
+    fetch('/api/admin/fleet', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+        body: JSON.stringify(body)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showFleetFormStatus('Araç başarıyla kaydedildi!', 'success');
+            hideFleetForm();
+            loadFleet();
+        } else {
+            showFleetFormStatus('Hata: ' + (data.error || 'Kaydedilemedi'), 'error');
+        }
+    })
+    .catch(function() {
+        showFleetFormStatus('Sunucu hatası!', 'error');
+    });
+}
+
+function deleteFleet(id) {
+    if (!confirm('Bu aracı silmek istediğinize emin misiniz?')) return;
+
+    var token = getToken();
+    if (!token) {
+        alert('Oturum süreniz dolmuş.');
+        return;
+    }
+
+    fetch('/api/admin/fleet', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+        body: JSON.stringify({ action: 'delete', id: id })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            loadFleet();
+        } else {
+            alert('Hata: ' + (data.error || 'Silinemedi'));
+        }
+    })
+    .catch(function() {
+        alert('Sunucu hatası!');
+    });
+}
+
+function showFleetFormStatus(msg, type) {
+    var el = document.getElementById('fleet-form-status');
+    if (!el) return;
+    el.style.display = 'block';
+    el.style.background = type === 'error' ? '#f8d7da' : '#d4edda';
+    el.style.color = type === 'error' ? '#721c24' : '#155724';
+    el.innerHTML = type === 'error' ? '<i class="fa-solid fa-exclamation-circle"></i> ' + msg : '<i class="fa-solid fa-check-circle"></i> ' + msg;
+}
 </script>
 
 <script>

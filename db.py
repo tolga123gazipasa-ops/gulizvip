@@ -366,6 +366,34 @@ def set_config(key, value):
         return False
 
 
+# ─── Genel JSON Config Blokları (araçlar, fiyatlar, slider görselleri) ──────────
+# Küçük, admin panelinden yönetilen listeler/nesneler için: config tablosuna
+# tek bir satır olarak JSON serialize edilip yazılır. Yeni bir SQL tablosu
+# gerektirmez — vehicles.json, prices.json, slider_images.json gibi dosyaların
+# PostgreSQL karşılığı budur.
+
+def get_json_config(key, default=None):
+    """config tablosundan bir JSON değeri okuyup Python nesnesine çevirir."""
+    raw = get_config(key)
+    if raw is None:
+        return default
+    try:
+        return json.loads(raw)
+    except Exception as e:
+        print(f"[!] JSON config parse hatası ({key}): {e}")
+        return default
+
+
+def set_json_config(key, value):
+    """Bir Python nesnesini JSON'a çevirip config tablosuna yazar (upsert)."""
+    try:
+        raw = json.dumps(value, ensure_ascii=False)
+    except Exception as e:
+        print(f"[!] JSON config serialize hatası ({key}): {e}")
+        return False
+    return set_config(key, raw)
+
+
 # ─── Admin Credentials (JSON fallback) ─────────────────────────────────────────────
 
 def _load_admin_config():

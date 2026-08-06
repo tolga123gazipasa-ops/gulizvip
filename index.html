@@ -292,8 +292,14 @@
         .nav-menu a:hover { color: var(--primary-red); }
 
         .header-actions { display: flex; gap: 15px; align-items: center; }
-        .lang-switcher { display: flex; gap: 8px; color: var(--pure-white); font-size: 12px; font-weight: 700; margin-right: 10px; opacity: 0.9; cursor: pointer; }
-        .lang-switcher span:hover, .lang-switcher span.active { color: var(--primary-red); }
+        .lang-switcher { position: relative; display: flex; align-items: center; margin-right: 12px; cursor: pointer; }
+        .lang-switcher .flag-trigger { display: flex; align-items: center; padding: 3px; border-radius: 4px; transition: var(--transition); }
+        .lang-switcher .flag-trigger:hover { background: rgba(255,255,255,0.1); }
+        .lang-switcher .flag-trigger svg, .lang-switcher .flag-item svg { width: 26px; height: 18px; border-radius: 3px; display: block; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+        .lang-switcher .flag-dropdown { display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: var(--primary-navy); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.4); min-width: 44px; }
+        .lang-switcher .flag-dropdown .flag-item { display: flex; align-items: center; padding: 5px 6px; border-radius: 4px; transition: var(--transition); cursor: pointer; }
+        .lang-switcher .flag-dropdown .flag-item:hover { background: rgba(255,255,255,0.1); }
+        .lang-switcher:hover .flag-dropdown { display: flex; flex-direction: column; gap: 3px; }
         
         .call-btn { background: transparent; color: var(--pure-white); border: 1px solid rgba(255, 255, 255, 0.3); padding: 12px 20px; border-radius: 8px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
         .call-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--pure-white); }
@@ -413,11 +419,23 @@
         .card-icons img, .card-icons i { height: 22px; opacity: 0.3; transition: opacity 0.3s ease; }
         .card-icons .active { opacity: 1; }
         .card-type-hint { font-size: 11px; color: #94A3B8; font-weight: 500; margin-top: 4px; }
+        /* --- ODESIN SANAL POS (HOSTED CHECKOUT) --- */
+        .odesin-payment-info { display: flex; align-items: flex-start; gap: 12px; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+        .odesin-payment-icon { flex-shrink: 0; width: 36px; height: 36px; background: #DCFCE7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .odesin-payment-text { font-size: 13px; line-height: 1.5; color: #166534; }
+        .odesin-payment-text strong { font-size: 14px; }
+        .odesin-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+        .odesin-badge { display: inline-flex; align-items: center; gap: 5px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 5px 10px; font-size: 12px; color: #475569; }
+
 
         /* --- FİLOMUZ & GALERİ --- */
         .fleet-section { padding: 100px 0; background: var(--primary-navy); color: var(--pure-white); }
         .fleet-section .section-title h2 { color: var(--pure-white); }
         .fleet-section .section-title p { color: #94A3B8; }
+        .fleet-switcher { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+        .fleet-switch-btn { background: rgba(255,255,255,0.08); color: var(--pure-white); border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 30px; font-weight: 700; font-size: 13px; cursor: pointer; transition: var(--transition); }
+        .fleet-switch-btn:hover { background: rgba(255,255,255,0.16); }
+        .fleet-switch-btn.active { background: var(--primary-red); border-color: var(--primary-red); }
         .fleet-showcase { display: flex; background: var(--pure-white); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-strong); color: var(--text-dark); }
         .fleet-image-wrapper { flex: 1; display: flex; flex-direction: column; background: #f8fafc; padding: 20px; border-right: 1px solid var(--border-light); }
         .fleet-main-img { width: 100%; height: 350px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; box-shadow: var(--shadow-subtle); transition: var(--transition); }
@@ -501,7 +519,42 @@
         .how-it-works { padding: 80px 0; background: var(--bg-light); }
         .step-card { text-align: center; }
         .step-number { width: 50px; height: 50px; background: var(--primary-navy); color: var(--pure-white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; margin: 0 auto 20px auto; }
-        
+
+        /* İLETİŞİM */
+        .iletisim-section { padding: 100px 0; background: var(--pure-white); }
+        .iletisim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: start; }
+        .iletisim-info { display: flex; flex-direction: column; gap: 20px; }
+        .iletisim-card { background: var(--bg-light); border-radius: 16px; padding: 24px 28px; border: 1px solid var(--border-light); transition: var(--transition); display: flex; align-items: flex-start; gap: 16px; }
+        .iletisim-card:hover { border-color: var(--primary-red); box-shadow: var(--shadow-strong); transform: translateY(-2px); }
+        .iletisim-card-icon { width: 48px; height: 48px; min-width: 48px; background: rgba(227, 24, 55, 0.1); color: var(--primary-red); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .iletisim-card h4 { font-size: 14px; font-weight: 700; color: var(--primary-navy); margin-bottom: 4px; }
+        .iletisim-card p, .iletisim-card a { font-size: 15px; color: var(--text-gray); line-height: 1.5; text-decoration: none; }
+        .iletisim-card a:hover { color: var(--primary-red); }
+        .iletisim-map { border-radius: 16px; overflow: hidden; border: 1px solid var(--border-light); box-shadow: var(--shadow-subtle); margin-top: 4px; }
+        .iletisim-map iframe { width: 100%; height: 220px; display: block; border: none; }
+
+        .iletisim-form-wrapper { background: var(--bg-light); border-radius: 16px; padding: 40px; border: 1px solid var(--border-light); }
+        .iletisim-form-wrapper h3 { font-size: 22px; font-weight: 800; color: var(--primary-navy); margin-bottom: 8px; }
+        .iletisim-form-wrapper > p { font-size: 14px; color: var(--text-gray); margin-bottom: 28px; }
+        .iletisim-form .input-wrapper { position: relative; margin-bottom: 18px; }
+        .iletisim-form .input-wrapper i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 14px; z-index: 1; }
+        .iletisim-form .input-wrapper input,
+        .iletisim-form .input-wrapper textarea { width: 100%; padding: 14px 16px 14px 44px; border: 1px solid var(--border-light); border-radius: 10px; font-family: 'Montserrat', sans-serif; font-size: 14px; background: var(--pure-white); transition: var(--transition); outline: none; color: var(--text-dark); }
+        .iletisim-form .input-wrapper textarea { padding-left: 44px; min-height: 120px; resize: vertical; }
+        .iletisim-form .input-wrapper input:focus,
+        .iletisim-form .input-wrapper textarea:focus { border-color: var(--primary-red); box-shadow: 0 0 0 3px rgba(227, 24, 55, 0.1); }
+        .submit-btn { width: 100%; padding: 16px; background: var(--primary-red); color: var(--pure-white); border: none; border-radius: 10px; font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .submit-btn:hover { background: #C0102E; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(227, 24, 55, 0.3); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .iletisim-success { display: none; background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; border-radius: 12px; padding: 16px 20px; font-size: 14px; font-weight: 600; margin-top: 16px; text-align: center; }
+
+        @media (max-width: 768px) {
+            .iletisim-grid { grid-template-columns: 1fr; gap: 30px; }
+            .iletisim-section { padding: 60px 0; }
+            .iletisim-form-wrapper { padding: 24px 20px; }
+            .iletisim-card { padding: 18px 20px; }
+        }
+
         /* FOOTER */
         .footer { background: var(--text-dark); color: var(--pure-white); padding: 80px 0 30px 0; }
         .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 50px; margin-bottom: 60px; }
@@ -633,7 +686,8 @@
             .nav-menu a { font-size: 13px; }
             .logo-container img { height: 36px; }
             .call-btn { padding: 8px 12px; font-size: 11px; }
-            .lang-switcher { font-size: 10px; gap: 4px; margin-right: 4px; }
+            .lang-switcher { margin-right: 2px; }
+            .lang-switcher .flag-trigger svg, .lang-switcher .flag-item svg { width: 22px; height: 15px; }
             .hero { padding: 12px 12px 40px 12px; }
             .booking-engine { margin-bottom: -20px; border-radius: 12px; }
             .tab-header { border-radius: 12px 12px 0 0; }
@@ -709,9 +763,45 @@
         /* Form-grid-3: 3-column grid class */
         .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px; text-align: left; }
         @media (max-width: 992px) { .form-grid-3 { grid-template-columns: 1fr; } }
+
+        /* --- SAYFA MODU (Hakkımızda, Gizlilik, Mesafeli Satış vb. içerik sayfaları) --- */
+        .page-hero { display: none; background: linear-gradient(135deg, var(--primary-navy) 0%, #0F172A 100%); padding: 70px 20px 60px; text-align: center; position: relative; overflow: hidden; }
+        .page-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.03"><path d="M20,80 L50,10 L80,80 Z" fill="white"/></svg>') repeat; background-size: 60px; }
+        .page-hero h1 { color: var(--pure-white); font-size: 36px; font-weight: 800; position: relative; z-index: 1; }
+        .page-hero p { color: #94A3B8; font-size: 16px; margin-top: 10px; position: relative; z-index: 1; max-width: 600px; margin-left: auto; margin-right: auto; }
+        .page-content { display: none; max-width: 860px; margin: 0 auto; padding: 60px 24px 100px; min-height: 50vh; }
+        .page-content h2 { color: var(--primary-navy); font-size: 24px; font-weight: 700; margin: 40px 0 16px; }
+        .page-content h2:first-child { margin-top: 0; }
+        .page-content h3 { color: var(--primary-navy); font-size: 20px; font-weight: 700; margin: 32px 0 12px; }
+        .page-content p { color: var(--text-gray); font-size: 15px; line-height: 1.8; margin-bottom: 16px; }
+        .page-content ul, .page-content ol { margin: 0 0 20px 24px; color: var(--text-gray); font-size: 15px; line-height: 1.8; }
+        .page-content ul li, .page-content ol li { margin-bottom: 8px; }
+        .page-content strong { color: var(--primary-navy); }
+        .page-content a { color: var(--primary-red); font-weight: 600; }
+        .page-content a:hover { text-decoration: underline; }
+        .page-content img { max-width: 100%; height: auto; border-radius: 12px; margin: 20px 0; }
+        .last-updated { font-size: 13px; color: #94A3B8; margin-bottom: 24px; font-style: italic; }
+
+        /* Sayfa modundayken ana sayfaya özel bölümler gizlenir */
+        body.page-mode .homepage-section { display: none !important; }
+        body.page-mode .page-hero { display: block; }
+        body.page-mode .page-content { display: block; }
+
+        @media (max-width: 768px) {
+            .page-hero { padding: 50px 20px 40px; }
+            .page-hero h1 { font-size: 24px; }
+            .page-content { padding: 40px 20px 60px; }
+            .page-content h2 { font-size: 20px; }
+        }
     </style>
 </head>
 <body>
+    <script>
+        // Sayfa modu tespiti (/sayfa/<slug>) — flash önlemek için erken ekleniyor
+        if (window.location.pathname.indexOf('/sayfa/') === 0) {
+            document.body.classList.add('page-mode');
+        }
+    </script>
 
     <h1 class="seo-h1">Gazipaşa VIP Vito Kiralama ve Alanya Havalimanı Lüks Transfer - Güliz Transfer</h1>
 
@@ -719,18 +809,34 @@
 
     <header class="header">
         <div class="container">
-            <a href="#" onclick="window.scrollTo(0,0); return false;" class="logo-container">
-                <img src="logo.png" alt="Güliz Premium VIP Logo">
+            <a href="/" onclick="if(document.body.classList.contains('page-mode')){return true;} window.scrollTo(0,0); return false;" class="logo-container">
+                <img src="/logo.png" alt="Güliz Premium VIP Logo">
             </a>
             <nav class="nav-menu">
-                <a href="#hizmetler">Hizmetler</a>
-                <a href="#filo">Filomuz</a>
-                <a href="#blog">Bölgeler</a>
-                <a href="#ucus-ekrani">Canlı Uçuşlar</a>
-                <a href="#sss">S.S.S</a>
+                <a href="/#hizmetler">Hizmetler</a>
+                <a href="/#filo">Filomuz</a>
+                <a href="/#blog">Bölgeler</a>
+                <a href="/#ucus-ekrani">Canlı Uçuşlar</a>
+                <a href="/#iletisim">İletişim</a>
+                <a href="/#sss">S.S.S</a>
             </nav>
             <div class="header-actions">
-                <div class="lang-switcher"><span class="active">TR</span> | <span>EN</span> | <span>RU</span></div>
+                <div class="lang-switcher">
+                    <div class="flag-trigger">
+                        <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#E30A17"/><circle cx="16" cy="12" r="6" fill="#fff"/><circle cx="18" cy="12" r="5" fill="#E30A17"/><path d="M22 8l-1 4 3-2-3 2 1 4" fill="#fff"/></svg>
+                    </div>
+                    <div class="flag-dropdown">
+                        <div class="flag-item" onclick="switchLanguage('tr')">
+                            <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#E30A17"/><circle cx="16" cy="12" r="6" fill="#fff"/><circle cx="18" cy="12" r="5" fill="#E30A17"/><path d="M22 8l-1 4 3-2-3 2 1 4" fill="#fff"/></svg>
+                        </div>
+                        <div class="flag-item" onclick="switchLanguage('en')">
+                            <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#012169"/><path d="M0 0v24h36V0H0z" fill="none"/><path d="M0 0l36 24m0-24L0 24" stroke="#fff" stroke-width="5"/><path d="M0 0l36 24m0-24L0 24" stroke="#C8102E" stroke-width="3"/><path d="M18 0v24M0 12h36" stroke="#fff" stroke-width="6"/><path d="M18 0v24M0 12h36" stroke="#C8102E" stroke-width="3"/><path d="M10 0v8H0v3h10v13h3V11h10V8H13V0h-3z" fill="#fff"/><path d="M10 0v8H0v3h10v13h3V11h10V8H13V0h-3z" fill="none"/></svg>
+                        </div>
+                        <div class="flag-item" onclick="switchLanguage('ru')">
+                            <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#fff"/><rect y="8" width="36" height="8" fill="#0039A6"/><rect y="16" width="36" height="8" fill="#D52B1E"/></svg>
+                        </div>
+                    </div>
+                </div>
                 <a href="tel:+902426062548" class="call-btn"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a>
                 <button class="cta-button" onclick="quickReservation()">Hızlı Rezervasyon</button>
                 <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Menüyü Aç/Kapat"><i class="fa-solid fa-bars"></i></button>
@@ -738,7 +844,16 @@
         </div>
     </header>
 
-    <section class="hero">
+    <!-- ===== SAYFA MODU: Hakkımızda, Gizlilik vb. içerik sayfaları için (JS ile doldurulur) ===== -->
+    <div class="page-hero" id="pageHero">
+        <h1 id="page-title">Yükleniyor...</h1>
+        <p id="page-subtitle">&nbsp;</p>
+    </div>
+    <div class="page-content" id="page-content">
+        <p>İçerik yükleniyor...</p>
+    </div>
+
+    <section class="hero homepage-section">
         <div class="hero-slider" id="bgSlider">
             <!-- Slides loaded dynamically from /api/slider-images -->
         </div>
@@ -840,7 +955,7 @@
                         <div class="bank-options">
                             <label class="bank-option selected" id="transfer-halkbank-label">
                                 <input type="radio" name="transfer-bank" value="halkbank" checked>
-                                <img class="bank-logo" id="transfer-halkbank-logo" src="halkbank.png" alt="Halkbank" style="width:40px;height:40px;object-fit:contain;">
+                                <img class="bank-logo" id="transfer-halkbank-logo" src="/halkbank.png" alt="Halkbank" style="width:40px;height:40px;object-fit:contain;">
                                 <div class="bank-info">
                                     <div class="bank-name">Halkbank</div>
                                     <div class="bank-iban">TR12 0001 2009 4321 1234 5678 90</div>
@@ -848,7 +963,7 @@
                             </label>
                             <label class="bank-option" id="transfer-vakifbank-label">
                                 <input type="radio" name="transfer-bank" value="vakifbank">
-                                <img class="bank-logo" id="transfer-vakifbank-logo" src="vakifbank.png" alt="VakıfBank" style="width:40px;height:40px;object-fit:contain;">
+                                <img class="bank-logo" id="transfer-vakifbank-logo" src="/vakifbank.png" alt="VakıfBank" style="width:40px;height:40px;object-fit:contain;">
                                 <div class="bank-info">
                                     <div class="bank-name">VakıfBank</div>
                                     <div class="bank-iban">TR34 0001 5001 2345 6789 0123 45</div>
@@ -856,51 +971,25 @@
                             </label>
                         </div>
                     </div>
-                    <!-- Credit Card Form -->
+                    <!-- Credit Card Info - OdesinElements Whitelabel -->
                     <div class="card-form" id="transfer-card-form">
-                        <div class="payment-section-title" style="font-size:14px; margin-bottom:12px; border:none; padding:0;"><i class="fa-solid fa-lock" style="color:#10B981; font-size:13px;"></i> Kart Bilgileri</div>
-                        <div class="card-form-grid">
-                            <div class="full-width">
-                                <div class="input-group">
-                                    <label>Kart Üzerindeki İsim</label>
-                                    <div class="input-wrapper">
-                                        <i class="fa-regular fa-user"></i>
-                                        <input type="text" id="transfer-card-name" placeholder="Adınız Soyadınız" maxlength="50" autocomplete="cc-name">
-                                    </div>
-                                </div>
+                        <div class="odesin-payment-info">
+                            <div class="odesin-payment-icon"><i class="fa-solid fa-lock" style="color:#10B981;"></i></div>
+                            <div class="odesin-payment-text">
+                                <strong>Güvenli Ödeme</strong><br>
+                                Kart bilgilerinizi aşağıdaki alana girin. Ödemeniz 3D Secure ile korunmaktadır.
                             </div>
-                            <div class="full-width">
-                                <div class="input-group">
-                                    <label>Kart Numarası</label>
-                                    <div class="input-wrapper">
-                                        <i class="fa-regular fa-credit-card"></i>
-                                        <input type="text" id="transfer-card-number" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" oninput="formatCardNumber(this)">
-                                        <div class="card-icons">
-                                            <i class="fa-brands fa-cc-visa" id="transfer-card-visa"></i>
-                                            <i class="fa-brands fa-cc-mastercard" id="transfer-card-mastercard"></i>
-                                        </div>
-                                    </div>
-                                    <div class="card-type-hint" id="transfer-card-type-hint"></div>
-                                </div>
+                        </div>
+                        <div id="transfer-odesin-container" style="min-height:200px;margin:12px 0;padding:16px;background:#FAFBFC;border:2px dashed #D1D5DB;border-radius:10px;">
+                            <div style="text-align:center;padding:40px 0;color:#94A3B8;">
+                                <i class="fa-solid fa-credit-card" style="font-size:32px;display:block;margin-bottom:10px;"></i>
+                                <span>Kart bilgilerinizi girmek için "Rezervasyonu Tamamla"ya tıklayın.</span>
                             </div>
-                            <div>
-                                <div class="input-group">
-                                    <label>Son Kullanma</label>
-                                    <div class="input-wrapper">
-                                        <i class="fa-regular fa-calendar"></i>
-                                        <input type="text" id="transfer-card-expiry" inputmode="numeric" placeholder="AA / YY" maxlength="5" autocomplete="cc-exp" oninput="formatCardExpiry(this)">
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="input-group">
-                                    <label>CVV</label>
-                                    <div class="input-wrapper">
-                                        <i class="fa-solid fa-lock"></i>
-                                        <input type="text" id="transfer-card-cvv" inputmode="numeric" placeholder="***" maxlength="4" autocomplete="cc-csc" oninput="formatCardCvv(this)">
-                                    </div>
-                                </div>
-                            </div>
+                        </div>
+                        <div class="odesin-badges">
+                            <span class="odesin-badge"><i class="fa-brands fa-cc-visa"></i> Visa</span>
+                            <span class="odesin-badge"><i class="fa-brands fa-cc-mastercard"></i> MasterCard</span>
+                            <span class="odesin-badge"><i class="fa-solid fa-shield-halved"></i> 3D Secure</span>
                         </div>
                     </div>
                     <div class="form-nav">
@@ -982,7 +1071,7 @@
                         <div class="bank-options">
                             <label class="bank-option selected" id="tahsis-halkbank-label">
                                 <input type="radio" name="tahsis-bank" value="halkbank" checked>
-                                <img class="bank-logo" id="tahsis-halkbank-logo" src="halkbank.png" alt="Halkbank" style="width:40px;height:40px;object-fit:contain;">
+                                <img class="bank-logo" id="tahsis-halkbank-logo" src="/halkbank.png" alt="Halkbank" style="width:40px;height:40px;object-fit:contain;">
                                 <div class="bank-info">
                                     <div class="bank-name">Halkbank</div>
                                     <div class="bank-iban">TR12 0001 2009 4321 1234 5678 90</div>
@@ -990,7 +1079,7 @@
                             </label>
                             <label class="bank-option" id="tahsis-vakifbank-label">
                                 <input type="radio" name="tahsis-bank" value="vakifbank">
-                                <img class="bank-logo" id="tahsis-vakifbank-logo" src="vakifbank.png" alt="VakıfBank" style="width:40px;height:40px;object-fit:contain;">
+                                <img class="bank-logo" id="tahsis-vakifbank-logo" src="/vakifbank.png" alt="VakıfBank" style="width:40px;height:40px;object-fit:contain;">
                                 <div class="bank-info">
                                     <div class="bank-name">VakıfBank</div>
                                     <div class="bank-iban">TR34 0001 5001 2345 6789 0123 45</div>
@@ -998,51 +1087,25 @@
                             </label>
                         </div>
                     </div>
-                    <!-- Credit Card Form -->
+                    <!-- Credit Card Info - OdesinElements Whitelabel -->
                     <div class="card-form" id="tahsis-card-form">
-                        <div class="payment-section-title" style="font-size:14px; margin-bottom:12px; border:none; padding:0;"><i class="fa-solid fa-lock" style="color:#10B981; font-size:13px;"></i> Kart Bilgileri</div>
-                        <div class="card-form-grid">
-                            <div class="full-width">
-                                <div class="input-group">
-                                    <label>Kart Üzerindeki İsim</label>
-                                    <div class="input-wrapper">
-                                        <i class="fa-regular fa-user"></i>
-                                        <input type="text" id="tahsis-card-name" placeholder="Adınız Soyadınız" maxlength="50" autocomplete="cc-name">
-                                    </div>
-                                </div>
+                        <div class="odesin-payment-info">
+                            <div class="odesin-payment-icon"><i class="fa-solid fa-lock" style="color:#10B981;"></i></div>
+                            <div class="odesin-payment-text">
+                                <strong>Güvenli Ödeme</strong><br>
+                                Kart bilgilerinizi aşağıdaki alana girin. Ödemeniz 3D Secure ile korunmaktadır.
                             </div>
-                            <div class="full-width">
-                                <div class="input-group">
-                                    <label>Kart Numarası</label>
-                                    <div class="input-wrapper">
-                                        <i class="fa-regular fa-credit-card"></i>
-                                        <input type="text" id="tahsis-card-number" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" oninput="formatCardNumber(this)">
-                                        <div class="card-icons">
-                                            <i class="fa-brands fa-cc-visa" id="tahsis-card-visa"></i>
-                                            <i class="fa-brands fa-cc-mastercard" id="tahsis-card-mastercard"></i>
-                                        </div>
-                                    </div>
-                                    <div class="card-type-hint" id="tahsis-card-type-hint"></div>
-                                </div>
+                        </div>
+                        <div id="tahsis-odesin-container" style="min-height:200px;margin:12px 0;padding:16px;background:#FAFBFC;border:2px dashed #D1D5DB;border-radius:10px;">
+                            <div style="text-align:center;padding:40px 0;color:#94A3B8;">
+                                <i class="fa-solid fa-credit-card" style="font-size:32px;display:block;margin-bottom:10px;"></i>
+                                <span>Kart bilgilerinizi girmek için "Rezervasyonu Tamamla"ya tıklayın.</span>
                             </div>
-                            <div>
-                                <div class="input-group">
-                                    <label>Son Kullanma</label>
-                                    <div class="input-wrapper">
-                                        <i class="fa-regular fa-calendar"></i>
-                                        <input type="text" id="tahsis-card-expiry" inputmode="numeric" placeholder="AA / YY" maxlength="5" autocomplete="cc-exp" oninput="formatCardExpiry(this)">
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="input-group">
-                                    <label>CVV</label>
-                                    <div class="input-wrapper">
-                                        <i class="fa-solid fa-lock"></i>
-                                        <input type="text" id="tahsis-card-cvv" inputmode="numeric" placeholder="***" maxlength="4" autocomplete="cc-csc" oninput="formatCardCvv(this)">
-                                    </div>
-                                </div>
-                            </div>
+                        </div>
+                        <div class="odesin-badges">
+                            <span class="odesin-badge"><i class="fa-brands fa-cc-visa"></i> Visa</span>
+                            <span class="odesin-badge"><i class="fa-brands fa-cc-mastercard"></i> MasterCard</span>
+                            <span class="odesin-badge"><i class="fa-solid fa-shield-halved"></i> 3D Secure</span>
                         </div>
                     </div>
                     <div class="form-nav">
@@ -1055,7 +1118,7 @@
         </div>
     </section>
 
-    <section class="services-section" id="hizmetler">
+    <section class="services-section homepage-section" id="hizmetler">
         <div class="container">
             <div class="section-title"><h2>Premium Hizmetlerimiz</h2><p>Antalya ve Gazipaşa bölgesinde lüksü, güvenliği ve konforu bir araya getiren ayrıcalıklı ulaşım çözümleri sunuyoruz.</p></div>
             <div class="grid-3">
@@ -1066,7 +1129,7 @@
         </div>
     </section>
 
-    <section class="blog-section" id="blog">
+    <section class="blog-section homepage-section" id="blog">
         <div class="container">
             <div class="section-title">
                 <h2>Popüler Turistik Bölgeler</h2>
@@ -1086,43 +1149,42 @@
         </div>
     </section>
 
-    <section class="fleet-section" id="filo">
-        <div class="container">
-            <div class="section-title">
-                <h2>Lüks Araç Filomuz</h2>
-                <p>Seyahatinizi unutulmaz kılacak, en üst düzey donanıma sahip VIP araçlarla hizmet veriyoruz.</p>
-            </div>
-            <div class="fleet-showcase">
-                <div class="fleet-image-wrapper">
-                    <img id="mainFleetImg" src="vitoaracimiz.jpeg" class="fleet-main-img" alt="Gazipaşa VIP Vito">
-                    <div class="fleet-gallery">
-                        <img src="vitoaracimiz.jpeg" class="thumb active-thumb" onclick="changeImage(this)">
-                        <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&w=400&q=80" class="thumb" onclick="changeImage(this)">
-                        <img src="https://images.unsplash.com/photo-1619551734325-81aaf323686c?ixlib=rb-4.0.3&w=400&q=80" class="thumb" onclick="changeImage(this)">
-                    </div>
-                </div>
-
-                <div class="fleet-details">
-                    <h3>Mercedes-Benz Vito VIP</h3>
-                    <div class="capacity">
-                        <span><i class="fa-solid fa-users"></i> 1-6 Yolcu</span>
-                        <span><i class="fa-solid fa-suitcase"></i> 6 Bavul</span>
-                    </div>
-                    <div class="fleet-features">
-                        <div class="feature-item"><i class="fa-solid fa-check"></i> Hakiki Deri Koltuklar</div>
-                        <div class="feature-item"><i class="fa-solid fa-check"></i> Ücretsiz Hızlı Wi-Fi</div>
-                        <div class="feature-item"><i class="fa-solid fa-check"></i> VIP İkram ve İçecekler</div>
-                        <div class="feature-item"><i class="fa-solid fa-check"></i> Klima / İklimlendirme</div>
-                        <div class="feature-item"><i class="fa-solid fa-check"></i> Bebek Koltuğu (Talep Üzerine)</div>
-                        <div class="feature-item"><i class="fa-solid fa-check"></i> Araçta Kredi Kartı Geçerli</div>
-                    </div>
-                    <button class="cta-button" style="width: fit-content;" onclick="window.scrollTo(0,0);">Hemen Rezervasyon Yap</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="how-it-works" id="nasil-calisir">
+    	    <section class="fleet-section homepage-section" id="filo">
+	        <div class="container">
+	            <div class="section-title">
+	                <h2>Lüks Araç Filomuz</h2>
+	                <p>Seyahatinizi unutulmaz kılacak, en üst düzey donanıma sahip VIP araçlarla hizmet veriyoruz.</p>
+	            </div>
+	            <div id="fleetSwitcher" class="fleet-switcher" style="display:none;"></div>
+	            <div class="fleet-showcase">
+	                <div class="fleet-image-wrapper">
+	                    <img id="mainFleetImg" src="/vitoaracimiz.jpeg" class="fleet-main-img" alt="Gazipaşa VIP Vito">
+	                    <div class="fleet-gallery">
+	                        <img src="/vitoaracimiz.jpeg" class="thumb active-thumb" onclick="changeImage(this)">
+	                        <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&w=400&q=80" class="thumb" onclick="changeImage(this)">
+	                        <img src="https://images.unsplash.com/photo-1619551734325-81aaf323686c?ixlib=rb-4.0.3&w=400&q=80" class="thumb" onclick="changeImage(this)">
+	                    </div>
+	                </div>
+	                <div class="fleet-details">
+	                    <h3>Mercedes-Benz Vito VIP</h3>
+	                    <div class="capacity">
+	                        <span><i class="fa-solid fa-users"></i> 1-6 Yolcu</span>
+	                        <span><i class="fa-solid fa-suitcase"></i> 6 Bavul</span>
+	                    </div>
+	                    <div class="fleet-features">
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Hakiki Deri Koltuklar</div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Ücretsiz Hızlı Wi-Fi</div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> VIP İkram ve İçecekler</div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Klima / İklimlendirme</div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Bebek Koltuğu (Talep Üzerine)</div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Araçta Kredi Kartı Geçerli</div>
+	                    </div>
+	                    <button class="cta-button" style="width: fit-content;" onclick="window.scrollTo(0,0);">Hemen Rezervasyon Yap</button>
+	                </div>
+	            </div>
+	        </div>
+	    </section>
+<section class="how-it-works homepage-section" id="nasil-calisir">
         <div class="container">
             <div class="section-title">
                 <h2>Nasıl Çalışır?</h2>
@@ -1136,7 +1198,7 @@
         </div>
     </section>
 
-    <section class="flight-board-section" id="ucus-ekrani">
+    <section class="flight-board-section homepage-section" id="ucus-ekrani">
         <div class="container">
             <div class="section-title">
                 <h2>Canlı Uçuş Ekranı <span style="font-size: 0.7em; font-weight: 400; color: var(--text-gray);">(GZP & AYT)</span></h2>
@@ -1189,7 +1251,7 @@
         </div>
     </section>
 
-    <section class="faq-section" id="sss">
+    <section class="faq-section homepage-section" id="sss">
         <div class="container">
             <div class="section-title">
                 <h2>Sıkça Sorulan Sorular</h2>
@@ -1224,11 +1286,74 @@
         </div>
     </section>
 
+    <section class="iletisim-section homepage-section" id="iletisim">
+        <div class="container">
+            <div class="section-title">
+                <h2>İletişim</h2>
+                <p>VIP transfer ve şoförlü araç hizmetlerimiz için bize ulaşın. Size en kısa sürede dönüş yapalım.</p>
+            </div>
+            <div class="iletisim-grid">
+                <div class="iletisim-info">
+                    <div class="iletisim-card">
+                        <div class="iletisim-card-icon"><i class="fa-solid fa-phone"></i></div>
+                        <div>
+                            <h4>Telefon</h4>
+                            <a href="tel:+902426062548">+90 242 606 25 48</a>
+                        </div>
+                    </div>
+                    <div class="iletisim-card">
+                        <div class="iletisim-card-icon"><i class="fa-solid fa-envelope"></i></div>
+                        <div>
+                            <h4>E-posta</h4>
+                            <a href="mailto:info@gulizvip.com.tr">info@gulizvip.com.tr</a>
+                        </div>
+                    </div>
+                    <div class="iletisim-card">
+                        <div class="iletisim-card-icon"><i class="fa-solid fa-location-dot"></i></div>
+                        <div>
+                            <h4>Adres</h4>
+                            <p>Gazipaşa / Antalya, Türkiye</p>
+                        </div>
+                    </div>
+                    <div class="iletisim-map">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3194.3656246438376!2d32.3015696!3d36.299366!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14dd7baa4a0b17c3%3A0xe2a2c5a0c2a2c5a0!2sGazipa%C5%9Fa%20Havaliman%C4%B1%20(GZP)!5e0!3m2!1str!2str!4v1" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                </div>
+                <div class="iletisim-form-wrapper">
+                    <h3>Bize Ulaşın</h3>
+                    <p>Rezervasyon, teklif veya sorularınız için formu doldurun, size hızlıca dönüş yapalım.</p>
+                    <form class="iletisim-form" id="iletisimForm" onsubmit="return submitContactForm(event)">
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="contactName" placeholder="Adınız Soyadınız" required>
+                        </div>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-phone"></i>
+                            <input type="tel" id="contactPhone" placeholder="Telefon Numaranız (05XX...)" required>
+                        </div>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-envelope"></i>
+                            <input type="email" id="contactEmail" placeholder="E-posta Adresiniz">
+                        </div>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-comment" style="top:18px; transform:none;"></i>
+                            <textarea id="contactMessage" placeholder="Mesajınız..." required></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn" id="contactSubmitBtn">
+                            <i class="fa-solid fa-paper-plane"></i> Mesajı Gönder
+                        </button>
+                        <div class="iletisim-success" id="iletisimSuccess">Mesajınız alındı. En kısa sürede size dönüş yapacağız.</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <footer class="footer">
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-about">
-                    <img src="logo.png" alt="Güliz VIP" style="height: 50px; margin-bottom: 20px;">
+                    <img src="/logo.png" alt="Güliz VIP" style="height: 50px; margin-bottom: 20px;">
                     <p>Antalya ve Gazipaşa bölgelerinde lüks, güvenli ve zamanında ulaşım çözümleri sunan premium VIP transfer markası.</p>
                     <div class="footer-social">
                         <a href="#"><i class="fa-brands fa-instagram"></i></a>
@@ -1239,10 +1364,11 @@
                 <div class="footer-links">
                     <h4>Hızlı Menü</h4>
                     <ul>
-                        <li><a href="#hizmetler">Hizmetlerimiz</a></li>
-                        <li><a href="#filo">VIP Filomuz</a></li>
-                        <li><a href="#blog">Turistik Bölgeler</a></li>
-                        <li><a href="#sss">Sıkça Sorulan Sorular</a></li>
+                        <li><a href="/#hizmetler">Hizmetlerimiz</a></li>
+                        <li><a href="/#filo">VIP Filomuz</a></li>
+                        <li><a href="/#blog">Turistik Bölgeler</a></li>
+                        <li><a href="/#iletisim">İletişim</a></li>
+                        <li><a href="/#sss">Sıkça Sorulan Sorular</a></li>
                     </ul>
                 </div>
                 <div class="footer-links">
@@ -1250,14 +1376,8 @@
                     <ul>
                         <li><a href="tel:+902426062548"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a></li>
                         <li><a href="mailto:operasyon@guliztransfer.com"><i class="fa-solid fa-envelope"></i> operasyon@guliztransfer.com</a></li>
-                        <li><a href="#"><i class="fa-solid fa-location-dot"></i> Gazipaşa / Antalya</a></li>
-                        <li style="margin-top: 10px;"><a href="/sayfa/hakkimizda">Hakkımızda</a></li>
-                        <li><a href="/sayfa/gizlilik">Gizlilik Sözleşmesi</a></li>
-                        <li><a href="/sayfa/mesafeli-satis">Mesafeli Satış Sözleşmesi</a></li>
-                        <li><a href="/sayfa/teslimat">Teslimat ve İade Şartları</a></li>
-                        <li><a href="/sayfa/iade-sartlari">İade Şartları</a></li>
-                        <li id="footer-dynamic-pages-placeholder" style="display:none;"></li>
-                        <ul id="footer-pages-list" style="margin-top:6px;"></ul>
+                        <li><a href="/#iletisim"><i class="fa-solid fa-location-dot"></i> Gazipaşa / Antalya</a></li>
+                        <li style="margin-top:10px;"><ul id="footer-pages-list"></ul></li>
                     </ul>
                 </div>
                 <div class="footer-links">
@@ -1301,7 +1421,6 @@
             <button onclick="toggleChat()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="chat-body" id="chatBody">
-            <div class="msg-bot">Merhaba! Antalya ve Gazipaşa VIP transferleriniz için size nasıl yardımcı olabilirim? 🚘✨</div>
         </div>
         <div class="chat-footer">
             <input type="text" id="chatInput" placeholder="Mesajınızı yazın..." onkeypress="handleKeyPress(event)">
@@ -1351,7 +1470,7 @@
         }
         var chatName = localStorage.getItem('chatName') || '';
         var chatPhone = localStorage.getItem('chatPhone') || '';
-        var chatLastId = 0;
+        var chatLastId = parseInt(localStorage.getItem('chatLastId')) || 0;
         var chatPollingTimer = null;
 
         function escapeHtml(str) {
@@ -1419,7 +1538,7 @@
         }
         var chatName = localStorage.getItem('chatName') || '';
         var chatPhone = localStorage.getItem('chatPhone') || '';
-        var chatLastId = 0;
+        var chatLastId = parseInt(localStorage.getItem('chatLastId')) || 0;
         var chatPollingTimer = null;
 
         function escapeHtml(str) {
@@ -1469,7 +1588,10 @@
                 })
             }).then(function(r) { return r.json(); }).then(function(data) {
                 if (data.success && data.message && data.message.id) {
-                    if (data.message.id > chatLastId) chatLastId = data.message.id;
+                    if (data.message.id > chatLastId) {
+                        chatLastId = data.message.id;
+                        localStorage.setItem('chatLastId', chatLastId);
+                    }
                 }
             }).catch(function(err) {
                 console.log('Mesaj gönderilemedi:', err);
@@ -1484,14 +1606,18 @@
 
         // --- CANLI DESTEK POLLING (Admin yanıtlarını al) ---
         function pollChatMessages() {
+            var chatBody = document.getElementById("chatBody");
+            if (!chatBody) return;
             fetch('/api/chat/messages?since=' + chatLastId + '&sessionId=' + encodeURIComponent(chatSessionId))
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (data.success && data.messages && data.messages.length > 0) {
-                        var chatBody = document.getElementById("chatBody");
                         var added = false;
                         data.messages.forEach(function(msg) {
-                            if (msg.id > chatLastId) chatLastId = msg.id;
+                            if (msg.id > chatLastId) {
+                                chatLastId = msg.id;
+                                localStorage.setItem('chatLastId', chatLastId);
+                            }
                             if (msg.sessionId === chatSessionId && msg.isAdmin) {
                                 chatBody.innerHTML += '<div class="msg-bot"><strong>Güliz Asistan:</strong><br>' + escapeHtml(msg.message) + '</div>';
                                 added = true;
@@ -1510,8 +1636,8 @@
 
         function startChatPolling() {
             if (chatPollingTimer) clearInterval(chatPollingTimer);
+            loadChatHistory();
             chatPollingTimer = setInterval(pollChatMessages, 3000);
-            pollChatMessages(); // hemen bir kere çek
         }
 
         function stopChatPolling() {
@@ -1519,6 +1645,39 @@
                 clearInterval(chatPollingTimer);
                 chatPollingTimer = null;
             }
+        }
+
+        function loadChatHistory() {
+            fetch('/api/chat/messages?since=0&sessionId=' + encodeURIComponent(chatSessionId))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var chatBody = document.getElementById("chatBody");
+                    chatBody.innerHTML = '';
+                    var added = false;
+                    if (data.success && data.messages && data.messages.length > 0) {
+                        data.messages.forEach(function(msg) {
+                            if (msg.id > chatLastId) {
+                                chatLastId = msg.id;
+                                localStorage.setItem('chatLastId', chatLastId);
+                            }
+                            if (msg.sessionId === chatSessionId) {
+                                if (msg.isAdmin) {
+                                    chatBody.innerHTML += '<div class="msg-bot"><strong>Güliz Asistan:</strong><br>' + escapeHtml(msg.message) + '</div>';
+                                } else {
+                                    chatBody.innerHTML += '<div class="msg-user">' + escapeHtml(msg.message) + '</div>';
+                                }
+                                added = true;
+                            }
+                        });
+                    }
+                    if (!added) {
+                        chatBody.innerHTML = '<div class="msg-bot"><strong>Güliz Asistan:</strong><br>Merhaba, ben Güliz Asistan. Gazipaşa ve Antalya havalimanlarından Alanya bölgesine VIP transferleriniz için size nasıl yardımcı olabilirim?</div>';
+                    }
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                })
+                .catch(function(err) {
+                    console.log('Geçmiş mesaj yükleme hatası:', err);
+                });
         }
 
         // --- 3 SANİYE SONRA CANLI DESTEĞİ OTOMATİK AÇ ---
@@ -1529,6 +1688,51 @@
                 playChatSound();
             }
         }, 3000);
+
+        function submitContactForm(event) {
+            event.preventDefault();
+            var btn = document.getElementById('contactSubmitBtn');
+            var successEl = document.getElementById('iletisimSuccess');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+            fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: document.getElementById('contactName').value.trim(),
+                    phone: document.getElementById('contactPhone').value.trim(),
+                    email: document.getElementById('contactEmail').value.trim(),
+                    message: document.getElementById('contactMessage').value.trim()
+                })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success) {
+                    document.getElementById('iletisimForm').reset();
+                    successEl.style.display = 'block';
+                    setTimeout(function() { successEl.style.display = 'none'; }, 5000);
+                } else {
+                    alert('Mesaj gönderilemedi: ' + (data.error || 'Bir hata oluştu.'));
+                }
+            }).catch(function(err) {
+                alert('Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.');
+                console.log('Contact form error:', err);
+            }).finally(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Mesajı Gönder';
+            });
+            return false;
+        }
+
+        function switchLanguage(lang) {
+            var currentUrl = window.location.href;
+            var baseUrl = currentUrl.replace(/\/[a-z]{2}(\/|$)/, '/');
+            if (lang === 'tr') {
+                window.location.href = baseUrl;
+            } else if (lang === 'en') {
+                window.location.href = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + 'en/';
+            } else if (lang === 'ru') {
+                window.location.href = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + 'ru/';
+            }
+        }
 
         function toggleChat() {
             var widget = document.getElementById("chatWidget");
@@ -1739,6 +1943,10 @@
 
         // Hızlı Rezervasyon butonu — rota seçim modalını göster
         function quickReservation() {
+            if (document.body.classList.contains('page-mode')) {
+                window.location.href = '/#hizmetler';
+                return;
+            }
             if (ROUTE_PRICES && ROUTE_PRICES.length > 0) {
                 renderRouteGrid();
                 document.getElementById('routeModal').classList.add('open');
@@ -1877,6 +2085,91 @@
             element.classList.add('active-thumb');
         }
 
+        // ===== FİLO — ADMİN PANELİNDEN YÖNETİLEN ARAÇLAR =====
+        var FLEET_VEHICLES = [];
+
+        function fleetResolveImg(src) {
+            if (!src) return '';
+            src = src.trim();
+            if (/^https?:\/\//i.test(src) || src.charAt(0) === '/') return src;
+            return '/' + src; // eski kayıtlar dosya adı olarak saklanmış olabilir
+        }
+
+        function fleetEscapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function fetchFleet() {
+            fetch('/api/fleet')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && Array.isArray(data.vehicles) && data.vehicles.length > 0) {
+                        FLEET_VEHICLES = data.vehicles;
+                        renderFleetSwitcher();
+                        renderFleetVehicle(0);
+                    }
+                })
+                .catch(function(err) { console.log('Filo yüklenemedi:', err); });
+        }
+
+        function renderFleetSwitcher() {
+            var switcherEl = document.getElementById('fleetSwitcher');
+            if (!switcherEl) return;
+            if (FLEET_VEHICLES.length <= 1) {
+                switcherEl.style.display = 'none';
+                switcherEl.innerHTML = '';
+                return;
+            }
+            switcherEl.style.display = 'flex';
+            switcherEl.innerHTML = FLEET_VEHICLES.map(function(v, i) {
+                return '<button type="button" class="fleet-switch-btn' + (i === 0 ? ' active' : '') + '" onclick="renderFleetVehicle(' + i + ')">' + fleetEscapeHtml(v.name) + '</button>';
+            }).join('');
+        }
+
+        function renderFleetVehicle(idx) {
+            var v = FLEET_VEHICLES[idx];
+            if (!v) return;
+
+            var btns = document.querySelectorAll('.fleet-switch-btn');
+            btns.forEach(function(b, i) { b.classList.toggle('active', i === idx); });
+
+            var gallery = (v.gallery_images || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+            if (gallery.length === 0 && v.main_image) gallery = [v.main_image];
+
+            var mainImg = document.getElementById('mainFleetImg');
+            var galleryEl = document.querySelector('.fleet-gallery');
+            var firstSrc = v.main_image ? fleetResolveImg(v.main_image) : (gallery.length ? fleetResolveImg(gallery[0]) : '');
+            if (mainImg && firstSrc) mainImg.src = firstSrc;
+            if (galleryEl && gallery.length > 0) {
+                galleryEl.innerHTML = gallery.map(function(src, i) {
+                    var resolved = fleetResolveImg(src);
+                    var isActive = resolved === firstSrc;
+                    return '<img src="' + resolved + '" class="thumb' + (isActive ? ' active-thumb' : '') + '" onclick="changeImage(this)">';
+                }).join('');
+            }
+
+            var nameEl = document.querySelector('.fleet-details h3');
+            if (nameEl) nameEl.textContent = v.name || '';
+
+            var capacityEl = document.querySelector('.fleet-details .capacity');
+            if (capacityEl) {
+                capacityEl.innerHTML =
+                    '<span><i class="fa-solid fa-users"></i> 1-' + (v.passenger_count || 6) + ' Yolcu</span>' +
+                    '<span><i class="fa-solid fa-suitcase"></i> ' + (v.luggage_count || 6) + ' Bavul</span>';
+            }
+
+            var featuresEl = document.querySelector('.fleet-details .fleet-features');
+            if (featuresEl) {
+                var features = (v.features || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+                featuresEl.innerHTML = features.map(function(f) {
+                    return '<div class="feature-item"><i class="fa-solid fa-check"></i> ' + fleetEscapeHtml(f) + '</div>';
+                }).join('');
+            }
+        }
+
         // 4. CANLI UÇUŞ TABLOSU - DUAL AIRPORT
         function switchGzpTab(tab) {
             document.getElementById('gzp-tab-gelen').classList.remove('active');
@@ -1938,6 +2231,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             renderFlights('gzp');
             renderFlights('ayt');
+            fetchFleet();
             // Reset forms to step1 on load
             goToStep('transfer', 1);
             goToStep('tahsis', 1);
@@ -2084,7 +2378,16 @@
                     details.push('İsim: ' + payload.customerName);
                     details.push('Telefon: ' + payload.customerPhone);
                     if(payload.customerEmail) details.push('E-posta: ' + payload.customerEmail);
-                    if(payload.price) details.push('Tahmini: ' + payload.price + ' ₺');
+
+                    // Kredi karti -> OdesinElements Whitelabel (sayfa icinde kart formu)
+                    if (payload.paymentMethod === 'kredi_karti' && data.session_id && data.elements_script_url) {
+                        mountOdesinElements(formType, data.session_id, data.elements_script_url, data.elements_config_url);
+                        if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
+                        return;
+                    }
+
+                    // Havale/EFT -> basari modal'ini goster
+                    details.push('Tahmini: ' + payload.price + ' ₺');
                     if(payload.notes) details.push('Not: ' + payload.notes);
 
                     if(summaryEl) {
@@ -2092,9 +2395,9 @@
                             return '<div style="padding:6px 0;border-bottom:1px solid #E2E8F0;font-size:14px;color:#1B2B4C;font-weight:500;">' + d + '</div>';
                         }).join('');
                     }
-                    // ─── Görünmez Ajan: rezervasyon başarılı ───
+                    // --- Görünmez Ajan: rezervasyon başarılı ---
                     if (typeof gulizTracker !== 'undefined') {
-                        gulizTracker.trackEvent('Rezervasyon Tamamlandı', '#' + data.reservation.id + ' | ' + payload.pickup + ' → ' + (payload.destination || payload.duration || ''), true);
+                        gulizTracker.trackEvent('Rezervasyon Tamamlandi', '#' + data.reservation.id + ' | ' + payload.pickup + ' -> ' + (payload.destination || payload.duration || ''), true);
                     }
                     document.getElementById('successModal').classList.add('open');
                 } else {
@@ -2110,6 +2413,150 @@
         }
         function closeModal() {
             document.getElementById('successModal').classList.remove('open');
+        }
+
+        // ─── OdesinElements Whitelabel: Kart formunu sayfaya göm ───
+        var odesinMountedForms = {};
+
+        function mountOdesinElements(formType, sessionId, scriptUrl, configUrl) {
+            var containerId = formType + '-odesin-container';
+            var container = document.getElementById(containerId);
+            if (!container) { alert('Ödeme formu hatası.'); return; }
+
+            // Check if already mounted
+            if (odesinMountedForms[formType]) return;
+
+            // Load the Odesin Elements SDK
+            var script = document.createElement('script');
+            script.src = scriptUrl;
+            script.onload = function() {
+                if (typeof OdesinElements === 'undefined' && typeof OdesinEmbed === 'undefined') {
+                    // Try configUrl approach if direct script didn't expose OdesinElements
+                    fetch(configUrl)
+                        .then(function(r) { return r.json(); })
+                        .then(function(cfg) {
+                            var altScript = document.createElement('script');
+                            altScript.src = cfg.script_url || cfg.elements_script_url || scriptUrl;
+                            altScript.onload = function() {
+                                mountElements(formType, sessionId, container, configUrl);
+                            };
+                            document.head.appendChild(altScript);
+                        })
+                        .catch(function() {
+                            // Final fallback: use the embed_script_url from response
+                            // For OdesinElements we need the config_url
+                            mountElementsFallback(formType, sessionId, container);
+                        });
+                    return;
+                }
+                mountElements(formType, sessionId, container, configUrl);
+            };
+            script.onerror = function() {
+                // Script load failed — try config URL to get correct script
+                fetch(configUrl)
+                    .then(function(r) { return r.json(); })
+                    .then(function(cfg) {
+                        var altScript = document.createElement('script');
+                        altScript.src = cfg.script_url || cfg.elements_script_url || scriptUrl;
+                        document.head.appendChild(altScript);
+                        altScript.onload = function() {
+                            mountElements(formType, sessionId, container, configUrl);
+                        };
+                    })
+                    .catch(function() {
+                        mountElementsFallback(formType, sessionId, container);
+                    });
+            };
+            document.head.appendChild(script);
+        }
+
+        function mountElements(formType, sessionId, container, configUrl) {
+            var elementsLib = typeof OdesinElements !== 'undefined' ? OdesinElements : (window.OdesinElements || null);
+            if (!elementsLib) {
+                mountElementsFallback(formType, sessionId, container);
+                return;
+            }
+            odesinMountedForms[formType] = true;
+
+            // Clear placeholder
+            container.innerHTML = '';
+
+            try {
+                elementsLib.mount({
+                    sessionId: sessionId,
+                    baseUrl: 'https://www.odesin.com',
+                    container: container,
+                    appearance: {
+                        primaryColor: '#1B2947',
+                        textColor: '#1E293B',
+                        mutedColor: '#94A3B8',
+                        borderRadius: '8px'
+                    },
+                    onReady: function() {
+                        console.log('[Odesin] Elements ready for ' + formType);
+                    },
+                    onComplete: function(result) {
+                        console.log('[Odesin] Payment complete:', result);
+                        // Rezervasyon basarili — success modal'ini goster
+                        showPaymentSuccess(formType, result);
+                    },
+                    onError: function(err) {
+                        console.error('[Odesin] Payment error:', err);
+                        alert('Ödeme hatası: ' + (err.message || err || 'Bilinmeyen hata'));
+                        location.reload();
+                    }
+                });
+            } catch (e) {
+                console.error('[Odesin] Mount error:', e);
+                mountElementsFallback(formType, sessionId, container);
+            }
+        }
+
+        function mountElementsFallback(formType, sessionId, container) {
+            // Fallback: iframe embed
+            var iframe = document.createElement('iframe');
+            iframe.src = 'https://www.odesin.com/api/payment/embed/' + sessionId;
+            iframe.style.width = '100%';
+            iframe.style.height = '350px';
+            iframe.style.border = 'none';
+            iframe.style.borderRadius = '8px';
+            container.innerHTML = '';
+            container.appendChild(iframe);
+            odesinMountedForms[formType] = true;
+        }
+
+        function showPaymentSuccess(formType, result) {
+            var summaryEl = document.getElementById('modalSummary');
+            var details = [];
+            var form = document.getElementById('form-' + formType);
+            var activeForm = formType === 'transfer' ? document.getElementById('form-transfer') : document.getElementById('form-tahsis');
+
+            // Read values from form
+            var pickup = document.getElementById(formType === 'transfer' ? 'pickup-input' : 'tahsis-pickup-input');
+            var dest = document.getElementById(formType === 'transfer' ? 'dest-input' : null);
+            var name = document.getElementById(formType + '-name');
+            var phone = document.getElementById(formType + '-phone');
+            var email = document.getElementById(formType + '-email');
+            var price = document.getElementById(formType === 'transfer' ? 'totalPriceDisplay' : 'vipPriceDisplay');
+
+            details.push('Ödeme Başarılı');
+            if (result && result.payment_ref) details.push('Referans: ' + result.payment_ref);
+            if (pickup && pickup.value) details.push('Alış: ' + pickup.value);
+            if (dest && dest.value) details.push('Varış: ' + dest.value);
+            if (name && name.value) details.push('İsim: ' + name.value);
+            if (phone && phone.value) details.push('Telefon: ' + phone.value);
+            if (email && email.value) details.push('E-posta: ' + email.value);
+            if (price) details.push('Tutar: ' + price.textContent + ' ₺');
+
+            if(summaryEl) {
+                summaryEl.innerHTML = details.map(function(d) {
+                    return '<div style="padding:6px 0;border-bottom:1px solid #E2E8F0;font-size:14px;color:#1B2B4C;font-weight:500;">' + d + '</div>';
+                }).join('');
+            }
+            if (typeof gulizTracker !== 'undefined') {
+                gulizTracker.trackEvent('Ödeme Tamamlandi', formType + ' | ' + (result ? result.payment_ref : ''), true);
+            }
+            document.getElementById('successModal').classList.add('open');
         }
 
         // 5b. KONUM ÇÖZÜMLEME (Geocoding API üzerinden + client-side fallback)
@@ -2713,4 +3160,66 @@
                 });
         }
         loadFooterPages();
+
+        // ===== SAYFA MODU: /sayfa/<slug> içeriğini API'den yükle =====
+        (function() {
+            if (!document.body.classList.contains('page-mode')) return;
+
+            var slug = window.location.pathname.replace(/^\/sayfa\//, '').replace(/\/$/, '');
+            var pageTitle = document.getElementById('page-title');
+            var pageSubtitle = document.getElementById('page-subtitle');
+            var pageContent = document.getElementById('page-content');
+
+            function loadFallback() {
+                pageTitle.textContent = 'Sayfa Bulunamadı';
+                pageSubtitle.textContent = 'Aradığınız sayfa mevcut değil.';
+                pageContent.innerHTML = '<p><a href="/" style="color:#E31837;font-weight:600;">Ana Sayfa\'ya dönmek için tıklayın.</a></p>';
+                document.title = 'Sayfa Bulunamadı - Güliz VIP Transfer';
+            }
+
+            function formatDate(isoStr) {
+                if (!isoStr) return '';
+                try {
+                    var d = new Date(isoStr);
+                    var months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+                    return months[d.getMonth()] + ' ' + d.getFullYear();
+                } catch(e) {
+                    return '';
+                }
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/page/' + encodeURIComponent(slug), true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        var pageData = data && data.page;
+                        if (pageData && pageData.content && pageData.content.trim().length > 0) {
+                            if (pageData.is_active === false) {
+                                loadFallback();
+                                return;
+                            }
+                            pageTitle.textContent = pageData.title || slug;
+                            pageSubtitle.textContent = pageData.subtitle || '';
+                            var contentHtml = pageData.content;
+                            if (pageData.updatedAt) {
+                                var formatted = formatDate(pageData.updatedAt);
+                                if (formatted) {
+                                    contentHtml = '<p class="last-updated">Son Güncelleme: ' + formatted + '</p>' + contentHtml;
+                                }
+                            }
+                            pageContent.innerHTML = contentHtml;
+                            document.title = (pageData.title || slug) + ' - Güliz VIP Transfer';
+                            return;
+                        }
+                    } catch(e) {}
+                }
+                loadFallback();
+            };
+            xhr.onerror = function() { loadFallback(); };
+            xhr.send();
+        })();
     </script>
+</body>
+</html>

@@ -39,14 +39,6 @@ try:
 except ImportError:
     _RESEND_AVAILABLE = False
 
-# Pillow — görsel otomatik boyutlandırma için opsiyonel, yoksa ham dosya kaydedilir
-try:
-    from PIL import Image
-    import io
-    _PIL_AVAILABLE = True
-except ImportError:
-    _PIL_AVAILABLE = False
-
 # ============================================================
 # HİZMET BÖLGESİ — Gazipaşa, Alanya, Antalya
 # ============================================================
@@ -90,11 +82,6 @@ GOOGLE_MAPS_API_KEY = "AIzaSyD-IGkbR6iyxvdeQ_Cfekjks3KOWMD7RKw"
 # Admin tarafından belirlenen km başı birim fiyat (varsayılan: 25₺)
 UNIT_PRICE = 25.0
 
-# ─── Odesin Sanal POS (Whitelabel/Elements SDK) — Kredi Kartı Ödeme Entegrasyonu ──────────
-ODESIN_API_KEY = os.environ.get("ODESIN_API_KEY", "")
-ODESIN_API_BASE = "https://www.odesin.com"
-ODESIN_CALLBACK_BASE = os.environ.get("ODESIN_CALLBACK_BASE", "https://gulizvip.com.tr")
-
 # ─── Page Content Fallback (PostgreSQL yoksa kullanılır) ─────────────────
 # Slug alias mapping — "mesafelisatis" (no hyphen) → "mesafeli-satis" (with hyphen)
 SLUG_ALIASES = {
@@ -135,41 +122,12 @@ PAGE_CONTENT = {
     }
 }
 
-# Ana sayfa slider görselleri — varsayılan 3 görsel (kalıcı: slider_images.json)
+# Ana sayfa slider görselleri — varsayılan 3 görsel
 SLIDER_IMAGES = [
     {"src": "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&w=2074&q=80", "alt": "Gazipaşa Havalimanı"},
     {"src": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?ixlib=rb-4.0.3&w=2070&q=80", "alt": "VIP Vito Lüks Transfer"},
     {"src": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&w=2073&q=80", "alt": "Alanya Sahil"},
 ]
-SLIDER_IMAGES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "slider_images.json")
-
-def load_slider_images():
-    """Önce PostgreSQL (config tablosu, key='slider_images'), yoksa slider_images.json."""
-    global SLIDER_IMAGES
-    db_data = db.get_json_config("slider_images")
-    if isinstance(db_data, list) and len(db_data) > 0:
-        SLIDER_IMAGES = db_data
-        print(f"[✓] load_slider_images() — PostgreSQL'den {len(SLIDER_IMAGES)} görsel yüklendi")
-        return
-    try:
-        if os.path.exists(SLIDER_IMAGES_FILE):
-            with open(SLIDER_IMAGES_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data.get("images"), list) and len(data["images"]) > 0:
-                    SLIDER_IMAGES = data["images"]
-                    print(f"[✓] load_slider_images() — JSON dosyasından {len(SLIDER_IMAGES)} görsel yüklendi")
-    except Exception as e:
-        print(f"[!] Slider görselleri yüklenemedi: {e}")
-
-def save_slider_images():
-    """Önce PostgreSQL'e yazmayı dener; DB yoksa/başarısızsa slider_images.json'a yazar."""
-    if db.set_json_config("slider_images", SLIDER_IMAGES):
-        return
-    try:
-        with open(SLIDER_IMAGES_FILE, "w", encoding="utf-8") as f:
-            json.dump({"images": SLIDER_IMAGES}, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"[!] Slider görselleri kaydedilemedi: {e}")
 
 # Banka hesap bilgileri — admin panelden güncellenebilir
 BANK_ACCOUNTS = {
@@ -205,8 +163,6 @@ EMAIL_TEMPLATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "
 RESERVATIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reservations.json")
 RESERVATIONS = []
 RESERVATION_ID = 1000
-PENDING_RESERVATIONS = {}  # payment_session_id -> reservation dict (ödeme onayı bekleyen)
-pending_lock = threading.Lock()
 
 # ─── Price Data (Rota Fiyatları) ────────────────────────────────────────────────
 PRICES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prices.json")
@@ -258,29 +214,20 @@ def save_page_content_to_json():
 
 
 def load_vehicles():
-    """Önce PostgreSQL (config tablosu, key='vehicles'), yoksa vehicles.json,
-    o da yoksa varsayılan demo araç."""
     global VEHICLES, VEHICLE_ID
-    db_data = db.get_json_config("vehicles")
-    if db_data is not None:
-        VEHICLES = db_data.get("vehicles", [])
-        VEHICLE_ID = db_data.get("next_id", 1)
-        print(f"[✓] load_vehicles() — PostgreSQL'den {len(VEHICLES)} araç yüklendi")
-        return
     try:
         if os.path.exists(VEHICLES_FILE):
             with open(VEHICLES_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 VEHICLES = data.get("vehicles", [])
                 VEHICLE_ID = data.get("next_id", 1)
-                print(f"[✓] load_vehicles() — JSON dosyasından {len(VEHICLES)} araç yüklendi")
+                print(f"[✓] load_vehicles() başarılı — {len(VEHICLES)} araç yüklendi")
         else:
             # Varsayılan demo araç
             VEHICLES = [
                 {
                     "id": 1,
                     "name": "Mercedes-Benz Vito VIP",
-                    "count": 3,
                     "main_image": "vitoaracimiz.jpeg",
                     "gallery_images": "vitoaracimiz.jpeg,https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&w=400&q=80,https://images.unsplash.com/photo-1552519507-da3b142c6e3d?ixlib=rb-4.0.3&w=400&q=80",
                     "passenger_count": 6,
@@ -298,66 +245,30 @@ def load_vehicles():
 
 
 def save_vehicles():
-    """Önce PostgreSQL'e yazmayı dener; DB yoksa/başarısızsa vehicles.json'a yazar."""
-    data = {"vehicles": VEHICLES, "next_id": VEHICLE_ID}
-    if db.set_json_config("vehicles", data):
-        return
     try:
         with open(VEHICLES_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            json.dump({"vehicles": VEHICLES, "next_id": VEHICLE_ID}, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"[!] Araç kaydedilemedi: {e}")
 
 
-def resize_and_save_image(file_data, filepath, max_width=1600, max_height=1200, quality=85):
-    """Pillow yüklüyse görseli orantılı şekilde küçültüp JPEG olarak kaydeder.
-    Pillow yoksa (opsiyonel bağımlılık) ham veriyi olduğu gibi kaydeder."""
-    if not _PIL_AVAILABLE:
-        with open(filepath, "wb") as f:
-            f.write(file_data)
-        return
-    try:
-        img = Image.open(io.BytesIO(file_data))
-        img = img.convert("RGB") if img.mode in ("RGBA", "P", "LA") else img.convert("RGB")
-        img.thumbnail((max_width, max_height), Image.LANCZOS)
-        img.save(filepath, "JPEG", quality=quality, optimize=True)
-    except Exception as e:
-        print(f"[!] Görsel boyutlandırılamadı, ham dosya kaydediliyor: {e}")
-        with open(filepath, "wb") as f:
-            f.write(file_data)
-
-
 def load_prices():
-    """Önce PostgreSQL (config tablosu, key='prices'), yoksa prices.json.
-    UNIT_PRICE de aynı blok içinde saklanır (önceden hiç kaydedilmiyordu)."""
-    global ROUTE_PRICES, TAHSIS_PRICES, UNIT_PRICE
-    db_data = db.get_json_config("prices")
-    if db_data is not None:
-        ROUTE_PRICES = db_data.get("route_prices", [])
-        TAHSIS_PRICES = db_data.get("tahsis_prices", {})
-        UNIT_PRICE = db_data.get("unit_price", UNIT_PRICE)
-        print(f"[✓] load_prices() — PostgreSQL'den yüklendi (birim fiyat: {UNIT_PRICE}₺)")
-        return
+    global ROUTE_PRICES, TAHSIS_PRICES
     try:
         if os.path.exists(PRICES_FILE):
             with open(PRICES_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 ROUTE_PRICES = data.get("route_prices", [])
                 TAHSIS_PRICES = data.get("tahsis_prices", {})
-                UNIT_PRICE = data.get("unit_price", UNIT_PRICE)
     except Exception as e:
         print(f"[!] Fiyat dosyası yüklenemedi: {e}")
         ROUTE_PRICES = []
         TAHSIS_PRICES = {}
 
 def save_prices():
-    """Önce PostgreSQL'e yazmayı dener; DB yoksa/başarısızsa prices.json'a yazar."""
-    data = {"route_prices": ROUTE_PRICES, "tahsis_prices": TAHSIS_PRICES, "unit_price": UNIT_PRICE}
-    if db.set_json_config("prices", data):
-        return
     try:
         with open(PRICES_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            json.dump({"route_prices": ROUTE_PRICES, "tahsis_prices": TAHSIS_PRICES}, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"[!] Fiyat kaydedilemedi: {e}")
 
@@ -392,16 +303,6 @@ def save_reservations():
         print(f"[!] Rezervasyon kaydedilemedi: {e}")
 
 WORKSPACE = os.path.dirname(os.path.abspath(__file__))
-
-# ─── Yüklemeler (Uploads) ──────────────────────────────────────────────────────
-# Railway'de bir Volume bağlanırsa RAILWAY_VOLUME_MOUNT_PATH otomatik set edilir
-# ve tüm yüklenen dosyalar orada kalıcı olarak saklanır (deploy'larda kaybolmaz).
-# Volume yoksa (örn. lokal geliştirme) WORKSPACE/uploads kullanılır.
-UPLOAD_DIR = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH") or os.path.join(WORKSPACE, "uploads")
-try:
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-except Exception as e:
-    print(f"[!] UPLOAD_DIR oluşturulamadı: {e}")
 
 # ─── Flight Data (Simulated) ──────────────────────────────────────────────────
 
@@ -535,47 +436,6 @@ def send_confirmation_email(reservation):
         return True
     except Exception as e:
         print(f"[!] E-posta gönderilemedi: {e}")
-        return False
-
-
-# ─── Odesin Sanal POS HMAC İmzalama ve Doğrulama ──────────────────────────
-
-def _odesin_sign_post(raw_body: str) -> dict:
-    """Create Odesin HMAC-SHA256 signature for POST requests.
-
-    Signature format: {unixTs}\\nPOST\\n{rawBody}
-    Returns dict with x-api-key, X-Odesin-Timestamp, X-Odesin-Signature headers.
-    """
-    ts = str(int(time.time()))
-    msg = f"{ts}\nPOST\n{raw_body}".encode("utf-8")
-    sig = hmac.new(ODESIN_API_KEY.encode("utf-8"), msg, hashlib.sha256).hexdigest()
-    return {
-        "x-api-key": ODESIN_API_KEY,
-        "x-odesin-timestamp": ts,
-        "x-odesin-signature": sig,
-    }
-
-
-def _odesin_verify_webhook(payload_body: bytes, signature_header: str, ts_header: str = "") -> bool:
-    """Verify Odesin webhook signature.
-
-    Webhook signature = HMAC-SHA256(api_key, "{ts}\\nPOST\\n{rawBody}")
-    sent as x-odesin-signature header, with timestamp in x-odesin-timestamp header.
-    """
-    if not ODESIN_API_KEY or not signature_header:
-        return False
-    ts = ts_header.strip() if ts_header else ""
-    if not ts:
-        return False
-    try:
-        msg = f"{ts}\nPOST\n".encode("utf-8") + payload_body
-        expected = hmac.new(
-            ODESIN_API_KEY.encode("utf-8"),
-            msg,
-            hashlib.sha256
-        ).hexdigest()
-        return hmac.compare_digest(expected, signature_header.strip())
-    except Exception:
         return False
 
 
@@ -832,27 +692,22 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
 
     def _send_json(self, data, status=200):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except Exception as e:
+            print(f"[send_json ERROR] {e}")
+            import traceback
+            traceback.print_exc()
 
     def _send_error(self, message, status=400):
         self._send_json({"error": message}, status)
-
-    def _send_html(self, html, status=200):
-        body = html.encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Cache-Control", "no-cache")
-        self.end_headers()
-        self.wfile.write(body)
 
     def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
@@ -887,90 +742,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _serve_upload(self, relpath):
-        """UPLOAD_DIR altındaki (slider, fleet, vb.) yüklenmiş dosyaları serve eder.
-        WORKSPACE'ten bağımsızdır — Railway Volume başka bir yola bağlıysa da çalışır."""
-        # Path traversal koruması
-        relpath = relpath.lstrip("/")
-        full_path = os.path.normpath(os.path.join(UPLOAD_DIR, relpath))
-        if not full_path.startswith(os.path.normpath(UPLOAD_DIR)):
-            self._send_error("Geçersiz yol.", 400)
-            return
-        if not os.path.exists(full_path) or os.path.isdir(full_path):
-            self._send_error("Dosya bulunamadı", 404)
-            return
-        ext = os.path.splitext(full_path)[1].lower()
-        mime = MIME_TYPES.get(ext, "application/octet-stream")
-        with open(full_path, "rb") as f:
-            data = f.read()
-        self.send_response(200)
-        self.send_header("Content-Type", mime)
-        self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "public, max-age=2592000")
-        self.end_headers()
-        self.wfile.write(data)
-
-    def _parse_multipart_upload(self):
-        """multipart/form-data body'sini ayrıştırır. 'file' alanındaki dosyayı ve
-        diğer text alanlarını döndürür: (file_data, file_filename, other_fields_dict).
-        Hata durumunda (None, None, None) döner ve kendi başına _send_error çağırmaz —
-        çağıran fonksiyon uygun hatayı üretmelidir."""
-        content_type = self.headers.get('Content-Type', '')
-        if 'multipart/form-data' not in content_type:
-            return None, None, None
-        length = int(self.headers.get('Content-Length', 0))
-        if length <= 0 or length > 15 * 1024 * 1024:
-            return None, None, None
-        raw = self.rfile.read(length)
-        boundary = content_type.split('boundary=')[1].strip()
-        if boundary.startswith('"') and boundary.endswith('"'):
-            boundary = boundary[1:-1]
-        boundary_bytes = ('--' + boundary).encode()
-        parts = raw.split(boundary_bytes)
-        file_data = None
-        file_filename = None
-        other_fields = {}
-        for part in parts:
-            if b'Content-Disposition' not in part:
-                continue
-            header_end = part.find(b'\r\n\r\n')
-            if header_end < 0:
-                continue
-            content_end = part.rfind(b'\r\n--')
-            if content_end == -1:
-                content_end = len(part)
-            if b'name="file"' in part:
-                for line in part.split(b'\r\n'):
-                    if b'filename=' in line:
-                        file_filename = line.split(b'filename=')[1].strip().strip(b'"').decode()
-                        break
-                file_data = part[header_end + 4:content_end].rstrip(b'\r\n')
-            else:
-                name_match = part.split(b'name="')
-                if len(name_match) > 1:
-                    field_name = name_match[1].split(b'"')[0].decode()
-                    field_value = part[header_end + 4:content_end].rstrip(b'\r\n').decode(errors='replace')
-                    other_fields[field_name] = field_value
-        return file_data, file_filename, other_fields
-
-    def _handle_image_upload(self, category, max_width=1600, max_height=1200, quality=85):
-        """Ortak görsel yükleme + otomatik boyutlandırma mantığı.
-        UPLOAD_DIR/<category>/ altına kaydeder, '/uploads/<category>/<dosya>' URL'i döndürür.
-        Slider, filo (fleet) ve gelecekteki tüm yükleme özellikleri bunu kullanır.
-        Başarılıysa (url, other_fields) döner, hata varsa kendi _send_error'unu çağırıp None döner."""
-        file_data, file_filename, other_fields = self._parse_multipart_upload()
-        if not file_data or not file_filename:
-            self._send_error("Dosya gönderilmedi veya çok büyük (maks. 15MB).", 400)
-            return None
-        category_dir = os.path.join(UPLOAD_DIR, category)
-        os.makedirs(category_dir, exist_ok=True)
-        ext = '.jpg' if _PIL_AVAILABLE else (os.path.splitext(file_filename)[1] or '.jpg')
-        unique_name = f"{int(time.time() * 1000)}{ext}"
-        filepath = os.path.join(category_dir, unique_name)
-        resize_and_save_image(file_data, filepath, max_width=max_width, max_height=max_height, quality=quality)
-        url = f"/uploads/{category}/{unique_name}"
-        return url, other_fields
-
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -981,565 +752,429 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
-            path, params = self._parse_path()
+            try:
+                path, params = self._parse_path()
             # ─── Railway Healthcheck ──────────────────────────────────────────
-            if path == "/_health":
-                self.send_response(200)
-                self.send_header("Content-Type", "text/plain")
-                self.send_header("Content-Length", "2")
-                self.end_headers()
-                self.wfile.write(b"OK")
-                return
-            if path == "/api/flights":
-                self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}, "updated_at": max(flight_cache["gzp"]["updated_at"] or "", flight_cache["ayt"]["updated_at"] or "")})
-                return
-            if path == "/api/maps/config":
-                self._send_json({"success": True, "apiKey": GOOGLE_MAPS_API_KEY})
-                return
-            if path == "/api/unit-price":
-                self._send_json({"success": True, "unitPrice": UNIT_PRICE})
-                return
-            if path == "/api/route-prices":
-                self._send_json({"success": True, "prices": ROUTE_PRICES})
-                return
-            if path == "/api/tahsis-prices":
-                self._send_json({"success": True, "prices": TAHSIS_PRICES})
-                return
-            if path == "/api/destinations":
-                try:
-                    limit_str = params.get("limit", "6")
-                    offset_str = params.get("offset", "0")
-                    limit = int(limit_str) if limit_str else 6
-                    offset = int(offset_str) if offset_str else 0
-                    dests = db.get_destinations(active_only=True)
-                    if dests is None:
-                        dests = []
-                    total = len(dests)
-                    paginated = dests[offset:offset + limit]
-                    self._send_json({"success": True, "destinations": paginated, "total": total})
-                except Exception as e:
-                    self._send_json({"success": True, "destinations": [], "total": 0})
-                return
-            if path == "/api/slider-images":
-                self._send_json({"success": True, "images": SLIDER_IMAGES})
-                return
-            if path == "/api/bank-accounts":
-                self._send_json({"success": True, "accounts": BANK_ACCOUNTS})
-                return
-            if path == "/api/fleet":
-                sorted_vehicles = sorted(VEHICLES, key=lambda v: v.get("order", 0))
-                self._send_json({"success": True, "vehicles": sorted_vehicles})
-                return
-            if path == "/api/maps/distance":
-                origins = params.get("origins", "")
-                destinations = params.get("destinations", "")
-                mode = params.get("mode", "driving")
-                if not origins or not destinations:
-                    self._send_error("origins ve destinations parametreleri gereklidir.")
+                if path == "/_health":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/plain")
+                    self.send_header("Content-Length", "2")
+                    self.end_headers()
+                    self.wfile.write(b"OK")
                     return
-                google_url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={urllib.parse.quote(origins)}&destinations={urllib.parse.quote(destinations)}&mode={mode}&language=tr&key={GOOGLE_MAPS_API_KEY}"
-                try:
-                    req = urllib.request.Request(google_url)
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        data = json.loads(resp.read().decode("utf-8"))
-                    self._send_json({"success": data["status"] == "OK", "data": data})
-                except Exception as e:
-                    self._send_json({"success": False, "error": str(e)}, 500)
-                return
-            if path == "/api/maps/geocode":
-                address = params.get("address", "")
-                if not address:
-                    self._send_error("address parametresi gereklidir.")
+                if path == "/api/flights":
+                    self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}, "updated_at": max(flight_cache["gzp"]["updated_at"] or "", flight_cache["ayt"]["updated_at"] or "")})
                     return
-                google_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&language=tr&key={GOOGLE_MAPS_API_KEY}"
-                try:
-                    req = urllib.request.Request(google_url)
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        data = json.loads(resp.read().decode("utf-8"))
-                    self._send_json({"success": data["status"] == "OK", "data": data})
-                except Exception as e:
-                    self._send_json({"success": False, "error": str(e)}, 500)
-                return
-            if path == "/api/admin/flights":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim. Lütfen giriş yapın.", 401)
+                if path == "/api/maps/config":
+                    self._send_json({"success": True, "apiKey": GOOGLE_MAPS_API_KEY})
                     return
-                self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}})
-                return
-            if path == "/api/admin/check":
-                user = self._authenticate()
-                if user:
-                    self._send_json({"success": True, "user": user})
-                else:
-                    self._send_json({"success": False}, 401)
-                return
-            
-            if path == "/api/admin/dashboard-stats":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                if path == "/api/unit-price":
+                    self._send_json({"success": True, "unitPrice": UNIT_PRICE})
                     return
-                total = len(RESERVATIONS)
-                pending = sum(1 for r in RESERVATIONS if r.get("status") == "pending")
-                today_str = datetime.now().strftime("%Y-%m-%d")
-                this_month_str = datetime.now().strftime("%Y-%m")
-                today_transfers = sum(
-                    1 for r in RESERVATIONS
-                    if r.get("createdAt", "").startswith(today_str)
-                    and r.get("status") in ("pending", "approved", "completed")
-                )
-                unread_chat = sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))
-                monthly_revenue = sum(
-                    (r.get("price", 0) or 0)
-                    for r in RESERVATIONS
-                    if r.get("createdAt", "").startswith(this_month_str)
-                    and r.get("status") in ("approved", "completed")
-                )
-                now_ts = time.time()
-                online_count = 0
-                with visitor_lock:
-                    for v in VISITOR_SESSIONS.values():
-                        last = v.get("lastHeartbeat", 0)
-                        if last > 0 and (now_ts - last) < VISITOR_SESSION_TIMEOUT:
-                            online_count += 1
-                recent = sorted(RESERVATIONS, key=lambda x: x.get("createdAt", ""), reverse=True)[:5]
-                self._send_json({
-                    "success": True,
-                    "totalReservations": total,
-                    "pendingReservations": pending,
-                    "todayTransfers": today_transfers,
-                    "unreadChat": unread_chat,
-                    "monthlyRevenue": monthly_revenue,
-                    "onlineVisitors": online_count,
-                    "recentReservations": recent,
-                    "updatedAt": datetime.now().isoformat()
-                })
-                return
-            
-            if path == "/api/admin/dashboard":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                if path == "/api/route-prices":
+                    self._send_json({"success": True, "prices": ROUTE_PRICES})
                     return
-                now = time.time()
-                online_count = 0
-                with visitor_lock:
-                    for v in VISITOR_SESSIONS.values():
-                        last = v.get("lastHeartbeat", 0)
-                        if last > 0 and (now - last) < VISITOR_SESSION_TIMEOUT:
-                            online_count += 1
-                pending = sum(1 for r in RESERVATIONS if r.get("status") == "pending")
-                approved = sum(1 for r in RESERVATIONS if r.get("status") == "approved")
-                completed = sum(1 for r in RESERVATIONS if r.get("status") == "completed")
-                cancelled = sum(1 for r in RESERVATIONS if r.get("status") == "cancelled")
-                unread_chat = sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))
-            
-                today_str = datetime.now().strftime("%Y-%m-%d")
-                this_month_str = datetime.now().strftime("%Y-%m")
-                daily_revenue = sum(
-                    (r.get("price", 0) or 0)
-                    for r in RESERVATIONS
-                    if r.get("createdAt", "").startswith(today_str)
-                    and r.get("status") in ("approved", "completed")
-                )
-                monthly_revenue = sum(
-                    (r.get("price", 0) or 0)
-                    for r in RESERVATIONS
-                    if r.get("createdAt", "").startswith(this_month_str)
-                    and r.get("status") in ("approved", "completed")
-                )
-                today_transfers = sum(
-                    1 for r in RESERVATIONS
-                    if r.get("createdAt", "").startswith(today_str)
-                    and r.get("status") in ("pending", "approved")
-                )
-                recent = sorted(RESERVATIONS, key=lambda x: x.get("createdAt", ""), reverse=True)[:5]
-                self._send_json({
-                    "success": True,
-                    "pending": pending,
-                    "today": today_transfers,
-                    "unreadChat": unread_chat,
-                    "monthlyRevenue": monthly_revenue,
-                    "dailyRevenue": daily_revenue,
-                    "todayTransfers": today_transfers,
-                    "recentReservations": recent,
-                    "onlineVisitors": online_count,
-                })
-                return
-            if path == "/api/admin/reservations":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                if path == "/api/tahsis-prices":
+                    self._send_json({"success": True, "prices": TAHSIS_PRICES})
                     return
-                self._send_json({"success": True, "reservations": RESERVATIONS})
-                return
-            if path == "/api/admin/fleet":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                if path == "/api/slider-images":
+                    self._send_json({"success": True, "images": SLIDER_IMAGES})
                     return
-                self._send_json({"success": True, "vehicles": VEHICLES})
-                return
-            if path == "/api/admin/telegram/config":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                if path == "/api/bank-accounts":
+                    self._send_json({"success": True, "accounts": BANK_ACCOUNTS})
                     return
-                self._send_json({"success": True, "config": {"botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "", "chatId": TELEGRAM_CHAT_ID}})
-                return
-            
-            if path == "/api/admin/radar":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                if path == "/api/fleet":
+                    sorted_vehicles = sorted(VEHICLES, key=lambda v: v.get("order", 0))
+                    self._send_json({"success": True, "vehicles": sorted_vehicles})
                     return
-                with visitor_lock:
-                    now = time.time()
-                    visitors_list = []
-                    for sid, v in VISITOR_SESSIONS.items():
-                        entry_time = v.get("entryTime", 0)
-                        last_heartbeat = v.get("lastHeartbeat", 0)
-                        elapsed = (now - entry_time) if entry_time else 0
-                        online = bool(last_heartbeat and (now - last_heartbeat) < VISITOR_SESSION_TIMEOUT)
-                        events = v.get("events", [])
-                        last_event = events[-1].get("label", "") if events else ""
-                        visitor_data = {
-                            "sessionId": sid, "ip": v.get("ip", ""),
-                            "city": v.get("city", ""), "country": v.get("country", ""),
-                            "region": v.get("region", ""), "device": v.get("device", ""),
-                            "os": v.get("os", ""), "browser": v.get("browser", ""),
-                            "currentPage": v.get("currentPage", ""), "entryPage": v.get("entryPage", ""),
-                            "referrer": v.get("referrer", ""), "entryTime": entry_time,
-                            "lastHeartbeat": last_heartbeat, "elapsed": elapsed,
-                            "elapsedFormatted": _format_duration(elapsed),
-                            "online": online, "duration": _format_duration(elapsed),
-                            "lastEvent": last_event, "events": events,
-                            "chatName": v.get("chatName", ""), "chatPhone": v.get("chatPhone", ""),
-                            "name": v.get("name", ""),
-                            "email": v.get("email", ""),
-                            "reservationId": v.get("reservationId", ""),
-                        }
-                        visitors_list.append(visitor_data)
-                    visitors_list.sort(key=lambda x: x.get("lastHeartbeat", 0), reverse=True)
-                self._send_json({"success": True, "visitors": visitors_list, "onlineCount": sum(1 for v in visitors_list if v["online"])})
-                return
-            if path == "/api/track/location":
-                ip = params.get("ip", "")
-                if not ip:
-                    self._send_error("IP parametresi gerekli.", 400)
-                    return
-                try:
-                    ip_url = f"http://ip-api.com/json/{ip}?fields=status,message,city,region,country,query,lat,lon,isp,org,as,timezone,mobile,proxy"
-                    req = urllib.request.Request(ip_url, headers={"User-Agent": "GulizVIP/1.0"})
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        geo_data = json.loads(resp.read().decode("utf-8"))
-                    self._send_json({"success": geo_data.get("status") == "success", "data": geo_data})
-                except Exception as e:
-                    self._send_json({"success": False, "error": str(e)}, 500)
-                return
-            if path == "/api/chat/messages":
-                since = params.get("since")
-                session_id = params.get("sessionId")
-                if since:
+                if path == "/api/maps/distance":
+                    origins = params.get("origins", "")
+                    destinations = params.get("destinations", "")
+                    mode = params.get("mode", "driving")
+                    if not origins or not destinations:
+                        self._send_error("origins ve destinations parametreleri gereklidir.")
+                        return
+                    google_url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={urllib.parse.quote(origins)}&destinations={urllib.parse.quote(destinations)}&mode={mode}&language=tr&key={GOOGLE_MAPS_API_KEY}"
                     try:
-                        since_id = int(since)
-                        messages = [m for m in CHAT_MESSAGES if m["id"] > since_id]
-                    except ValueError:
+                        req = urllib.request.Request(google_url)
+                        with urllib.request.urlopen(req, timeout=10) as resp:
+                            data = json.loads(resp.read().decode("utf-8"))
+                        self._send_json({"success": data["status"] == "OK", "data": data})
+                    except Exception as e:
+                        self._send_json({"success": False, "error": str(e)}, 500)
+                    return
+                if path == "/api/maps/geocode":
+                    address = params.get("address", "")
+                    if not address:
+                        self._send_error("address parametresi gereklidir.")
+                        return
+                    google_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&language=tr&key={GOOGLE_MAPS_API_KEY}"
+                    try:
+                        req = urllib.request.Request(google_url)
+                        with urllib.request.urlopen(req, timeout=10) as resp:
+                            data = json.loads(resp.read().decode("utf-8"))
+                        self._send_json({"success": data["status"] == "OK", "data": data})
+                    except Exception as e:
+                        self._send_json({"success": False, "error": str(e)}, 500)
+                    return
+                if path == "/api/admin/flights":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim. Lütfen giriş yapın.", 401)
+                        return
+                    self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}})
+                    return
+                if path == "/api/admin/check":
+                    user = self._authenticate()
+                    if user:
+                        self._send_json({"success": True, "user": user})
+                    else:
+                        self._send_json({"success": False}, 401)
+                    return
+            
+                if path == "/api/admin/dashboard-stats":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    total = len(RESERVATIONS)
+                    pending = sum(1 for r in RESERVATIONS if r.get("status") == "pending")
+                    today_str = datetime.now().strftime("%Y-%m-%d")
+                    this_month_str = datetime.now().strftime("%Y-%m")
+                    today_transfers = sum(
+                        1 for r in RESERVATIONS
+                        if r.get("createdAt", "").startswith(today_str)
+                        and r.get("status") in ("pending", "approved", "completed")
+                    )
+                    unread_chat = sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))
+                    monthly_revenue = sum(
+                        (r.get("price", 0) or 0)
+                        for r in RESERVATIONS
+                        if r.get("createdAt", "").startswith(this_month_str)
+                        and r.get("status") in ("approved", "completed")
+                    )
+                    now_ts = time.time()
+                    online_count = 0
+                    with visitor_lock:
+                        for v in VISITOR_SESSIONS.values():
+                            last = v.get("lastHeartbeat", 0)
+                            if last > 0 and (now_ts - last) < VISITOR_SESSION_TIMEOUT:
+                                online_count += 1
+                    recent = sorted(RESERVATIONS, key=lambda x: x.get("createdAt", ""), reverse=True)[:5]
+                    self._send_json({
+                        "success": True,
+                        "totalReservations": total,
+                        "pendingReservations": pending,
+                        "todayTransfers": today_transfers,
+                        "unreadChat": unread_chat,
+                        "monthlyRevenue": monthly_revenue,
+                        "onlineVisitors": online_count,
+                        "recentReservations": recent,
+                        "updatedAt": datetime.now().isoformat()
+                    })
+                    return
+            
+                if path == "/api/admin/dashboard":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    now = time.time()
+                    online_count = 0
+                    with visitor_lock:
+                        for v in VISITOR_SESSIONS.values():
+                            last = v.get("lastHeartbeat", 0)
+                            if last > 0 and (now - last) < VISITOR_SESSION_TIMEOUT:
+                                online_count += 1
+                    pending = sum(1 for r in RESERVATIONS if r.get("status") == "pending")
+                    approved = sum(1 for r in RESERVATIONS if r.get("status") == "approved")
+                    completed = sum(1 for r in RESERVATIONS if r.get("status") == "completed")
+                    cancelled = sum(1 for r in RESERVATIONS if r.get("status") == "cancelled")
+                    unread_chat = sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))
+            
+                    today_str = datetime.now().strftime("%Y-%m-%d")
+                    this_month_str = datetime.now().strftime("%Y-%m")
+                    daily_revenue = sum(
+                        (r.get("price", 0) or 0)
+                        for r in RESERVATIONS
+                        if r.get("createdAt", "").startswith(today_str)
+                        and r.get("status") in ("approved", "completed")
+                    )
+                    monthly_revenue = sum(
+                        (r.get("price", 0) or 0)
+                        for r in RESERVATIONS
+                        if r.get("createdAt", "").startswith(this_month_str)
+                        and r.get("status") in ("approved", "completed")
+                    )
+                    today_transfers = sum(
+                        1 for r in RESERVATIONS
+                        if r.get("createdAt", "").startswith(today_str)
+                        and r.get("status") in ("pending", "approved")
+                    )
+                    recent = sorted(RESERVATIONS, key=lambda x: x.get("createdAt", ""), reverse=True)[:5]
+                    self._send_json({
+                        "success": True,
+                        "pending": pending,
+                        "today": today_transfers,
+                        "unreadChat": unread_chat,
+                        "monthlyRevenue": monthly_revenue,
+                        "dailyRevenue": daily_revenue,
+                        "todayTransfers": today_transfers,
+                        "recentReservations": recent,
+                        "onlineVisitors": online_count,
+                    })
+                    return
+                if path == "/api/admin/reservations":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    self._send_json({"success": True, "reservations": RESERVATIONS})
+                    return
+                if path == "/api/admin/fleet":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    self._send_json({"success": True, "vehicles": VEHICLES})
+                    return
+                if path == "/api/admin/telegram/config":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    self._send_json({"success": True, "config": {"botToken": TELEGRAM_BOT_TOKEN[:8] + "..." if TELEGRAM_BOT_TOKEN else "", "chatId": TELEGRAM_CHAT_ID}})
+                    return
+            
+                if path == "/api/admin/radar":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    with visitor_lock:
+                        now = time.time()
+                        visitors_list = []
+                        for sid, v in VISITOR_SESSIONS.items():
+                            entry_time = v.get("entryTime", 0)
+                            last_heartbeat = v.get("lastHeartbeat", 0)
+                            elapsed = (now - entry_time) if entry_time else 0
+                            online = bool(last_heartbeat and (now - last_heartbeat) < VISITOR_SESSION_TIMEOUT)
+                            events = v.get("events", [])
+                            last_event = events[-1].get("label", "") if events else ""
+                            visitor_data = {
+                                "sessionId": sid, "ip": v.get("ip", ""),
+                                "city": v.get("city", ""), "country": v.get("country", ""),
+                                "region": v.get("region", ""), "device": v.get("device", ""),
+                                "os": v.get("os", ""), "browser": v.get("browser", ""),
+                                "currentPage": v.get("currentPage", ""), "entryPage": v.get("entryPage", ""),
+                                "referrer": v.get("referrer", ""), "entryTime": entry_time,
+                                "lastHeartbeat": last_heartbeat, "elapsed": elapsed,
+                                "elapsedFormatted": _format_duration(elapsed),
+                                "online": online, "duration": _format_duration(elapsed),
+                                "lastEvent": last_event, "events": events,
+                                "chatName": v.get("chatName", ""), "chatPhone": v.get("chatPhone", ""),
+                                "name": v.get("name", ""),
+                                "email": v.get("email", ""),
+                                "reservationId": v.get("reservationId", ""),
+                            }
+                            visitors_list.append(visitor_data)
+                        visitors_list.sort(key=lambda x: x.get("lastHeartbeat", 0), reverse=True)
+                    self._send_json({"success": True, "visitors": visitors_list, "onlineCount": sum(1 for v in visitors_list if v["online"])})
+                    return
+                if path == "/api/track/location":
+                    ip = params.get("ip", "")
+                    if not ip:
+                        self._send_error("IP parametresi gerekli.", 400)
+                        return
+                    try:
+                        ip_url = f"http://ip-api.com/json/{ip}?fields=status,message,city,region,country,query,lat,lon,isp,org,as,timezone,mobile,proxy"
+                        req = urllib.request.Request(ip_url, headers={"User-Agent": "GulizVIP/1.0"})
+                        with urllib.request.urlopen(req, timeout=10) as resp:
+                            geo_data = json.loads(resp.read().decode("utf-8"))
+                        self._send_json({"success": geo_data.get("status") == "success", "data": geo_data})
+                    except Exception as e:
+                        self._send_json({"success": False, "error": str(e)}, 500)
+                    return
+                if path == "/api/chat/messages":
+                    since = params.get("since")
+                    session_id = params.get("sessionId")
+                    if since:
+                        try:
+                            since_id = int(since)
+                            messages = [m for m in CHAT_MESSAGES if m["id"] > since_id]
+                        except ValueError:
+                            messages = CHAT_MESSAGES
+                    else:
                         messages = CHAT_MESSAGES
-                else:
-                    messages = CHAT_MESSAGES
-                if session_id:
-                    messages = [m for m in messages if m.get("sessionId") == session_id]
-                self._send_json({"success": True, "messages": messages})
-                return
-            if path == "/api/admin/chat/messages":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                    if session_id:
+                        messages = [m for m in messages if m.get("sessionId") == session_id]
+                    self._send_json({"success": True, "messages": messages})
                     return
-                self._send_json({"success": True, "messages": CHAT_MESSAGES, "unread": sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))})
-                return
-            if path == "/api/admin/chat/history":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                if path == "/api/admin/chat/messages":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    self._send_json({"success": True, "messages": CHAT_MESSAGES, "unread": sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))})
                     return
-                session_id = params.get("sessionId", "")
-                if not session_id:
-                    self._send_error("sessionId parametresi gereklidir.", 400)
+                if path == "/api/admin/chat/history":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    session_id = params.get("sessionId", "")
+                    if not session_id:
+                        self._send_error("sessionId parametresi gereklidir.", 400)
+                        return
+                    filtered = [
+                        m for m in CHAT_MESSAGES
+                        if m.get("sessionId") == session_id
+                    ]
+                    filtered.sort(key=lambda x: x.get("id", 0))
+                    self._send_json({"success": True, "messages": filtered, "sessionId": session_id})
                     return
-                filtered = [
-                    m for m in CHAT_MESSAGES
-                    if m.get("sessionId") == session_id
-                ]
-                filtered.sort(key=lambda x: x.get("id", 0))
-                self._send_json({"success": True, "messages": filtered, "sessionId": session_id})
-                return
-            if path == "/api/admin/destinations":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
+                if path == "/api/admin/destinations":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
+                    try:
+                        active_only = params.get("active_only", [None])[0] if params else None
+                        dests = db.get_destinations(active_only=(active_only == "1" or active_only == "true"))
+                        if dests is None:
+                            dests = []
+                        self._send_json({"success": True, "destinations": dests})
+                    except Exception as e:
+                        self._send_error(str(e), 500)
                     return
-                try:
-                    active_only = params.get("active_only", [None])[0] if params else None
-                    dests = db.get_destinations(active_only=(active_only == "1" or active_only == "true"))
-                    if dests is None:
-                        dests = []
-                    self._send_json({"success": True, "destinations": dests})
-                except Exception as e:
-                    self._send_error(str(e), 500)
-                return
-            if path == "/api/admin/pages":
-                user = self._authenticate()
-                if not user:
-                    self._send_error("Yetkisiz erişim.", 401)
-                    return
+                if path == "/api/admin/pages":
+                    user = self._authenticate()
+                    if not user:
+                        self._send_error("Yetkisiz erişim.", 401)
+                        return
             # Admin: tüm sayfalar (DB + fallback)
-                try:
-                    db_pages = db.get_all_pages()
-                    if db_pages:
-                        self._send_json({"success": True, "pages": db_pages})
-                        return
-                except Exception:
-                    pass
-                pages = []
-                for slug, data in PAGE_CONTENT.items():
-                    pages.append({
-                        "slug": slug,
-                        "title": data.get("title", ""),
-                        "subtitle": data.get("subtitle", ""),
-                        "is_active": data.get("is_active", True),
-                    })
-                self._send_json({"success": True, "pages": pages})
-                return
-            if path == "/api/pages":
-            # Public: tüm sayfaların listesi
-                try:
-                    db_pages = db.get_all_pages()
-                    if db_pages:
-                        self._send_json({"success": True, "pages": db_pages})
-                        return
-                except Exception:
-                    pass
-                pages = []
-                for slug, data in PAGE_CONTENT.items():
-                    pages.append({
-                        "slug": slug,
-                        "title": data.get("title", ""),
-                        "subtitle": data.get("subtitle", ""),
-                        "is_active": data.get("is_active", True),
-                    })
-                self._send_json({"success": True, "pages": pages})
-                return
-            if path == "/api/footer-pages":
-            # Public: sadece aktif sayfalar (footer için)
-                try:
-                    db_pages = db.get_all_pages()
-                    if db_pages:
-                        active = [p for p in db_pages if p.get("is_active", True)]
-                        self._send_json({"success": True, "pages": active})
-                        return
-                except Exception:
-                    pass
-                active = []
-                for slug, data in PAGE_CONTENT.items():
-                    if data.get("is_active", True):
-                        active.append({
+                    try:
+                        db_pages = db.get_all_pages()
+                        if db_pages:
+                            self._send_json({"success": True, "pages": db_pages})
+                            return
+                    except Exception:
+                        pass
+                    pages = []
+                    for slug, data in PAGE_CONTENT.items():
+                        pages.append({
                             "slug": slug,
                             "title": data.get("title", ""),
+                            "subtitle": data.get("subtitle", ""),
+                            "is_active": data.get("is_active", True),
                         })
-                self._send_json({"success": True, "pages": active})
-                return
-            if path.startswith("/api/page/"):
-                slug = path[len("/api/page/"):]
-                slug = SLUG_ALIASES.get(slug, slug)
-                if slug not in PAGE_CONTENT:
-                    self._send_error("Sayfa bulunamadı.", 404)
+                    self._send_json({"success": True, "pages": pages})
                     return
-                # Önce in-memory PAGE_CONTENT (admin panelinden en son kaydedilen)
-                page_entry = PAGE_CONTENT[slug]
-                if page_entry.get("title") and page_entry.get("content"):
-                    self._send_json({"success": True, "page": {
-                        "title": page_entry["title"],
-                        "subtitle": page_entry.get("subtitle", ""),
-                        "is_active": page_entry.get("is_active", True),
-                        "content": page_entry["content"],
-                        "updatedAt": page_entry.get("updatedAt", "")
-                    }})
+                if path == "/api/pages":
+            # Public: tüm sayfaların listesi
+                    try:
+                        db_pages = db.get_all_pages()
+                        if db_pages:
+                            self._send_json({"success": True, "pages": db_pages})
+                            return
+                    except Exception:
+                        pass
+                    pages = []
+                    for slug, data in PAGE_CONTENT.items():
+                        pages.append({
+                            "slug": slug,
+                            "title": data.get("title", ""),
+                            "subtitle": data.get("subtitle", ""),
+                            "is_active": data.get("is_active", True),
+                        })
+                    self._send_json({"success": True, "pages": pages})
                     return
-                # JSON dosyasından okumayı dene (in-memory boşsa)
-                try:
-                    if os.path.exists(PAGE_CONTENT_FILE):
-                        with open(PAGE_CONTENT_FILE, "r", encoding="utf-8") as f:
-                            json_data = json.load(f)
-                            if slug in json_data and json_data[slug].get("title") and json_data[slug].get("content"):
-                                page_entry = json_data[slug]
-                                self._send_json({"success": True, "page": {
-                                    "title": page_entry["title"],
-                                    "subtitle": page_entry.get("subtitle", ""),
-                                    "is_active": page_entry.get("is_active", True),
-                                    "content": page_entry["content"],
-                                    "updatedAt": page_entry.get("updatedAt", "")
-                                }})
-                                return
-                except Exception as e:
-                    print(f"[!] API sayfa okuma ({slug}) JSON fallback hatası: {e}")
-                # DB'den almayı dene (en son çare)
-                try:
-                    db_page = db.get_page_content(slug)
-                    if db_page and db_page.get("title") and db_page.get("content"):
-                        self._send_json({"success": True, "page": {
-                            "title": db_page["title"],
-                            "subtitle": db_page.get("subtitle", ""),
-                            "is_active": db_page.get("is_active", True),
-                            "content": db_page["content"],
-                            "updatedAt": db_page.get("updatedAt", "")
-                        }})
+                if path == "/api/footer-pages":
+            # Public: sadece aktif sayfalar (footer için)
+                    try:
+                        db_pages = db.get_all_pages()
+                        if db_pages:
+                            active = [p for p in db_pages if p.get("is_active", True)]
+                            self._send_json({"success": True, "pages": active})
+                            return
+                    except Exception:
+                        pass
+                    active = []
+                    for slug, data in PAGE_CONTENT.items():
+                        if data.get("is_active", True):
+                            active.append({
+                                "slug": slug,
+                                "title": data.get("title", ""),
+                            })
+                    self._send_json({"success": True, "pages": active})
+                    return
+                if path.startswith("/api/page/"):
+                    slug = path[len("/api/page/"):]
+                    slug = SLUG_ALIASES.get(slug, slug)
+                    if slug not in PAGE_CONTENT:
+                        self._send_error("Sayfa bulunamadı.", 404)
                         return
-                except Exception as e:
-                    print(f"[!] API sayfa okuma ({slug}) DB hatası: {e}")
-                self._send_json({"success": True, "page": PAGE_CONTENT[slug]})
-                return
-            if path.startswith("/sayfa/"):
-                self._serve_static("index.html")
-                return
-            if path == "/api/payment/return":
-                # Odesin yönlendirme sonrası — query param'ları göster
-                params = urllib.parse.parse_qs(parsed.query)
-                odesin_payment = params.get("odesin_payment", [""])[0]
-                odesin_ref = params.get("odesin_ref", [""])[0]
-                odesin_detail = params.get("odesin_detail", [""])[0]
-                odesin_hash_ok = params.get("odesin_hash_ok", [""])[0]
-                is_success = odesin_hash_ok == "1"
-                # Ödeme başarılıysa — PENDING_RESERVATIONS'da varsa kalıcı kaydet (webhook henüz gelmemiş olabilir)
-                if is_success and odesin_payment:
-                    with pending_lock:
-                        pending_entry = PENDING_RESERVATIONS.pop(odesin_payment, None)
-                    if pending_entry:
-                        reservation = pending_entry["reservation"]
-                        session_id = pending_entry.get("sessionId", "")
-                        reservation["payment_status"] = "paid"
-                        reservation["payment_ref"] = odesin_ref
-                        reservation["payment_session_id"] = odesin_payment
-                        reservation["status"] = "confirmed"
-                        # ID zaten /api/reservations'ta atandı — olduğu gibi kaydet
-                        db_id = db.save_reservation_to_db(reservation)
-                        if db_id:
-                            reservation["id"] = db_id
-                        else:
-                            RESERVATIONS.insert(0, reservation)
-                            save_reservations()
-                        print(f"[✓] [return] Rezervasyon #{reservation['id']} kaydedildi (webhook öncesi).")
-                        # Telegram bildirimi
-                        tip_etiket = "🚗 Transfer" if reservation["type"] == "transfer" else "👑 Şoförlü Günlük VIP"
-                        telegram_rez = (
-                            f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
-                            f"📋 <b>Tür:</b> {tip_etiket}\n"
-                            f"👤 <b>İsim:</b> {reservation['customerName']}\n"
-                            f"📞 <b>Telefon:</b> {reservation['customerPhone']}\n"
-                            f"📍 <b>Alış:</b> {reservation['pickup']}\n"
-                            f"🏁 <b>Varış:</b> {reservation['destination']}\n"
-                            f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
-                            f"👥 <b>Kişi:</b> {reservation['passengers']}\n"
-                            f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
-                            f"🕐 <b>Oluşturulma:</b> {reservation['createdAt']}"
-                        )
-                        if reservation.get("flightNumber"):
-                            telegram_rez += f"\n✈️ <b>Uçuş:</b> {reservation['flightNumber']}"
-                        send_telegram(telegram_rez)
-                        try:
-                            send_confirmation_email(reservation)
-                        except Exception as e:
-                            print(f"[!] E-posta gönderme hatası: {e}")
-                        if session_id:
-                            with visitor_lock:
-                                if session_id in VISITOR_SESSIONS:
-                                    name_parts = reservation.get("customerName", "").split()
-                                    short_name = name_parts[0] + " " + (name_parts[1][0] + "." if len(name_parts) > 1 else "") if name_parts else reservation.get("customerName", "")
-                                    email_val = reservation.get("customerEmail", "")
-                                    display_name = f"{short_name} ({email_val})" if email_val else short_name
-                                    VISITOR_SESSIONS[session_id]["name"] = display_name
-                                    VISITOR_SESSIONS[session_id]["email"] = email_val
-                                    VISITOR_SESSIONS[session_id]["reservationId"] = str(reservation["id"])
-                    else:
-                        # Webhook zaten gelmiş ve kaydetmiş olabilir — mevcut kaydı güncelle
-                        for r in RESERVATIONS:
-                            if r.get("payment_session_id") == odesin_payment or r.get("payment_ref") == odesin_ref:
-                                if is_success:
-                                    r["payment_status"] = "paid"
-                                    r["status"] = "confirmed"
-                                    r["payment_ref"] = odesin_ref
-                                else:
-                                    r["payment_status"] = "failed"
-                                save_reservations()
-                                try:
-                                    db.save_reservation_to_db(r)
-                                except Exception:
-                                    pass
-                                break
-                # Basit bir HTML sonuç sayfası göster
-                if is_success:
-                    html = (
-                        "<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'>"
-                        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-                        "<title>Ödeme Başarılı — Güliz VIP</title>"
-                        "<style>body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0fdf4}"
-                        ".card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1);max-width:420px}"
-                        ".icon{font-size:64px;color:#22c55e;margin-bottom:16px}"
-                        "h1{color:#166534;margin:0 0 8px 0}"
-                        "p{color:#475569;margin:0 0 24px 0;line-height:1.6}"
-                        ".btn{display:inline-block;background:#1B2B4C;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600}"
-                        "</style></head><body><div class='card'>"
-                        "<div class='icon'>&#10003;</div>"
-                        "<h1>Ödeme Başarılı!</h1>"
-                        "<p>Rezervasyonunuz onaylandı.<br>Detaylar e-posta adresinize gönderilecektir.</p>"
-                        "<a href='/' class='btn'>Ana Sayfaya Dön</a>"
-                        f"<p style='margin-top:16px;font-size:13px;color:#94a3b8'>Referans: {odesin_ref}</p>"
-                        "</div></body></html>"
-                    )
+            # DB'den almayı dene, yoksa fallback kullan
+                    try:
+                        db_page = db.get_page_content(slug)
+                        if db_page and db_page.get("title") and db_page.get("content"):
+                            self._send_json({"success": True, "page": {
+                                "title": db_page["title"],
+                                "subtitle": db_page.get("subtitle", ""),
+                                "is_active": db_page.get("is_active", True),
+                                "content": db_page["content"],
+                                "updatedAt": db_page.get("updatedAt", "")
+                            }})
+                            return
+                    except Exception as e:
+                        print(f"[!] API sayfa okuma ({slug}) DB hatası: {e}")
+            # JSON dosyasından okumayı dene (PostgreSQL yoksa veya boş döndüyse)
+                    try:
+                        if os.path.exists(PAGE_CONTENT_FILE):
+                            with open(PAGE_CONTENT_FILE, "r", encoding="utf-8") as f:
+                                json_data = json.load(f)
+                                if slug in json_data and json_data[slug].get("title") and json_data[slug].get("content"):
+                                    page_entry = json_data[slug]
+                                    self._send_json({"success": True, "page": {
+                                        "title": page_entry["title"],
+                                        "subtitle": page_entry.get("subtitle", ""),
+                                        "is_active": page_entry.get("is_active", True),
+                                        "content": page_entry["content"],
+                                        "updatedAt": page_entry.get("updatedAt", "")
+                                    }})
+                                    return
+                    except Exception as e:
+                        print(f"[!] API sayfa okuma ({slug}) JSON fallback hatası: {e}")
+                    self._send_json({"success": True, "page": PAGE_CONTENT[slug]})
+                    return
+                if path.startswith("/sayfa/"):
+                    self._serve_static("page.html")
+                    return
+                if path == "/" or path == "":
+                    self._serve_static("index.html")
+                elif path.startswith("/"):
+                    self._serve_static(path.lstrip("/"))
                 else:
-                    html = (
-                        "<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'>"
-                        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-                        "<title>Ödeme Başarısız — Güliz VIP</title>"
-                        "<style>body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fef2f2}"
-                        ".card{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1);max-width:420px}"
-                        ".icon{font-size:64px;color:#ef4444;margin-bottom:16px}"
-                        "h1{color:#991b1b;margin:0 0 8px 0}"
-                        "p{color:#475569;margin:0 0 24px 0;line-height:1.6}"
-                        ".btn{display:inline-block;background:#1B2B4C;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600}"
-                        "</style></head><body><div class='card'>"
-                        "<div class='icon'>&#10007;</div>"
-                        "<h1>Ödeme Başarısız</h1>"
-                        "<p>Ödeme işlemi tamamlanamadı.<br>Lütfen tekrar deneyin veya banka havalesi kullanın.</p>"
-                        "<a href='/' class='btn'>Ana Sayfaya Dön</a>"
-                        f"<p style='margin-top:16px;font-size:13px;color:#94a3b8'>{odesin_detail}</p>"
-                        "</div></body></html>"
-                    )
-                self._send_html(html)
-                return
-            if path == "/" or path == "":
-                self._serve_static("index.html")
-            elif path.startswith("/uploads/"):
-                self._serve_upload(path[len("/uploads/"):])
-            elif path.startswith("/"):
-                self._serve_static(path.lstrip("/"))
-            else:
-                self._send_error("Bulunamadı", 404)
+                    self._send_error("Bulunamadı", 404)
             
-            
+            except Exception as e:
+                print(f"[do_GET CRASH] path={getattr(self, "path", "?")} error={e}")
+                import traceback
+                traceback.print_exc()
+                try:
+                    self._send_error("Sunucu hatasi", 500)
+                except:
+                    pass
         except Exception as e:
-            import traceback, sys
-            path = self.path if hasattr(self, "path") else "?"
-            print(f"[do_GET CRASH] path={path} error={e}", flush=True)
+            p = getattr(self, "path", "?")
+            print(f"[do_GET CRASH] path={p} error={e}")
+            import traceback
             traceback.print_exc()
             try:
                 self._send_error("Sunucu hatasi", 500)
-            except Exception:
+            except:
                 pass
     def do_POST(self):
-        global RESERVATION_ID
         path, _ = self._parse_path()
         if path == "/api/admin/login":
             try:
@@ -1559,184 +1194,63 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             if not user:
                 self._send_error("Yetkisiz erişim.", 401)
                 return
-            result = self._handle_image_upload("slider", max_width=1920, max_height=1080, quality=85)
-            if result is None:
-                return  # _handle_image_upload zaten hatayı gönderdi
-            url, fields = result
-            alt_text = (fields.get("alt") or "").strip() or "Slider Görseli"
-            global SLIDER_IMAGES
-            img_entry = {"src": url, "alt": alt_text}
-            SLIDER_IMAGES.append(img_entry)
-            save_slider_images()
-            self._send_json({"success": True, "image": img_entry, "images": SLIDER_IMAGES})
-            return
-        if path == "/api/admin/fleet/upload":
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
+            content_type = self.headers.get('Content-Type', '')
+            if 'multipart/form-data' not in content_type:
+                self._send_error("multipart/form-data gerekli.", 400)
                 return
-            result = self._handle_image_upload("fleet", max_width=1600, max_height=1200, quality=85)
-            if result is None:
-                return  # _handle_image_upload zaten hatayı gönderdi
-            url, _fields = result
-            self._send_json({"success": True, "url": url, "resized": _PIL_AVAILABLE})
-            return
-        if path == "/api/payment/create-session":
-            try:
-                body = json.loads(self._read_body())
-                if not ODESIN_API_KEY:
-                    self._send_error("Ödeme sistemi yapılandırılmamış.", 503)
-                    return
-                amount = body.get("amount", 0)
-                if not amount or amount < 100:
-                    self._send_error("Geçersiz tutar.", 400)
-                    return
-                return_url = body.get("return_url", ODESIN_CALLBACK_BASE + "/api/payment/return")
-                callback_url = body.get("callback_url", ODESIN_CALLBACK_BASE + "/api/payment/webhook")
-                customer_name = body.get("customer_name", "")
-                customer_email = body.get("customer_email", "")
-                customer_phone = body.get("customer_phone", "")
-                description = body.get("description", "Güliz VIP Transfer Rezervasyonu")
-                payload = json.dumps({
-                    "mode": "card_whitelabel",
-                    "amount": int(amount),
-                    "return_url": return_url,
-                    "callback_url": callback_url,
-                    "customer_name": customer_name,
-                    "customer_email": customer_email,
-                    "customer_phone": customer_phone,
-                    "description": description,
-                })
-                headers = _odesin_sign_post(payload)
-                headers["Content-Type"] = "application/json"
-                req = urllib.request.Request(
-                    ODESIN_API_BASE + "/api/payment/create-session",
-                    data=payload.encode("utf-8"),
-                    headers=headers,
-                    method="POST"
-                )
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    result = json.loads(resp.read().decode("utf-8"))
-                if result.get("status") == "success":
-                    self._send_json({
-                        "success": True,
-                        "session_id": result.get("session_id", ""),
-                        "elements_script_url": result.get("elements_script_url", ""),
-                        "elements_config_url": result.get("elements_config_url", ""),
-                        "embed_script_url": result.get("embed_script_url", ""),
-                        "checkout_url": result.get("checkout_url", ""),
-                        "payment_id": result.get("payment_id", ""),
-                        "reference_code": result.get("reference_code", ""),
-                    })
-                else:
-                    self._send_error(result.get("message", "Ödeme oturumu oluşturulamadı."), 502)
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except urllib.error.HTTPError as e:
-                err_body = e.read().decode("utf-8", errors="replace")[:500]
-                self._send_error(f"Odesin API hatası: {err_body}", 502)
-            except Exception as e:
-                self._send_error(f"Ödeme sistemi hatası: {str(e)}", 502)
-            return
-        if path == "/api/payment/webhook":
-            try:
-                raw_body = self._read_body().encode("utf-8")
-                sig = self.headers.get("x-odesin-signature", "")
-                ts = self.headers.get("x-odesin-timestamp", "")
-                if not _odesin_verify_webhook(raw_body, sig, ts):
-                    self._send_error("Geçersiz webhook imzası.", 401)
-                    print(f"[!] Odesin webhook: imza doğrulaması BAŞARISIZ")
-                    return
-                event = json.loads(raw_body.decode("utf-8"))
-                event_type = event.get("type", "")
-                data = event.get("data", {})
-                payment_id = data.get("payment_id", "") or event.get("payment_id", "")
-                payment_ref = data.get("payment_ref", "") or event.get("payment_ref", "")
-                print(f"[✓] Odesin webhook: {event_type} | payment_id={payment_id} ref={payment_ref}")
-                if event_type == "payment.approved":
-                    # Bekleme havuzundan rezervasyonu al ve kalıcı olarak kaydet
-                    with pending_lock:
-                        pending_entry = PENDING_RESERVATIONS.pop(payment_id, None)
-                    if pending_entry:
-                        reservation = pending_entry["reservation"]
-                        session_id = pending_entry.get("sessionId", "")
-                        reservation["payment_status"] = "paid"
-                        reservation["payment_ref"] = payment_ref
-                        reservation["payment_session_id"] = payment_id
-                        reservation["status"] = "confirmed"
-                        reservation["id"] = RESERVATION_ID
-                        db_id = db.save_reservation_to_db(reservation)
-                        if db_id:
-                            reservation["id"] = db_id
-                            RESERVATION_ID = db_id + 1
-                        else:
-                            RESERVATIONS.insert(0, reservation)
-                            RESERVATION_ID += 1
-                            save_reservations()
-                        print(f"[✓] Rezervasyon #{reservation['id']} ödemesi onaylandı ve kaydedildi.")
-                        # Telegram bildirimi
-                        tip_etiket = "🚗 Transfer" if reservation["type"] == "transfer" else "👑 Şoförlü Günlük VIP"
-                        telegram_rez = (
-                            f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
-                            f"📋 <b>Tür:</b> {tip_etiket}\n"
-                            f"👤 <b>İsim:</b> {reservation['customerName']}\n"
-                            f"📞 <b>Telefon:</b> {reservation['customerPhone']}\n"
-                            f"📍 <b>Alış:</b> {reservation['pickup']}\n"
-                            f"🏁 <b>Varış:</b> {reservation['destination']}\n"
-                            f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
-                            f"👥 <b>Kişi:</b> {reservation['passengers']}\n"
-                            f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
-                            f"🕐 <b>Oluşturulma:</b> {reservation['createdAt']}"
-                        )
-                        if reservation.get("flightNumber"):
-                            telegram_rez += f"\n✈️ <b>Uçuş:</b> {reservation['flightNumber']}"
-                        send_telegram(telegram_rez)
-                        # E-posta bildirimi
-                        try:
-                            send_confirmation_email(reservation)
-                        except Exception as e:
-                            print(f"[!] E-posta gönderme hatası: {e}")
-                        # Identity matching
-                        if session_id:
-                            with visitor_lock:
-                                if session_id in VISITOR_SESSIONS:
-                                    name_parts = reservation.get("customerName", "").split()
-                                    short_name = name_parts[0] + " " + (name_parts[1][0] + "." if len(name_parts) > 1 else "") if name_parts else reservation.get("customerName", "")
-                                    email_val = reservation.get("customerEmail", "")
-                                    display_name = f"{short_name} ({email_val})" if email_val else short_name
-                                    VISITOR_SESSIONS[session_id]["name"] = display_name
-                                    VISITOR_SESSIONS[session_id]["email"] = email_val
-                                    VISITOR_SESSIONS[session_id]["reservationId"] = str(reservation["id"])
-                                    print(f"[tracking] Identity matched: session {session_id} → {display_name}")
-                    else:
-                        # Rezervasyon daha önce başka kanaldan kaydedilmiş olabilir — mevcut akış
-                        for r in RESERVATIONS:
-                            if r.get("payment_session_id") == payment_id or r.get("payment_ref") == payment_ref:
-                                r["payment_status"] = "paid"
-                                r["payment_ref"] = payment_ref
-                                r["status"] = "confirmed"
-                                print(f"[✓] Rezervasyon #{r['id']} ödemesi onaylandı (mevcut kayıt).")
-                                save_reservations()
-                                break
-                elif event_type == "payment.rejected":
-                    with pending_lock:
-                        PENDING_RESERVATIONS.pop(payment_id, None)
-                    for r in RESERVATIONS:
-                        if r.get("payment_session_id") == payment_id or r.get("payment_ref") == payment_ref:
-                            r["payment_status"] = "failed"
-                            print(f"[!] Rezervasyon #{r['id']} ödemesi reddedildi.")
-                            save_reservations()
+            length = int(self.headers.get('Content-Length', 0))
+            raw = self.rfile.read(length)
+            boundary = content_type.split('boundary=')[1].strip()
+            if boundary.startswith('"') and boundary.endswith('"'):
+                boundary = boundary[1:-1]
+            boundary_bytes = ('--' + boundary).encode()
+            parts = raw.split(boundary_bytes)
+            file_data = None
+            file_filename = None
+            alt_text = 'Slider Görseli'
+            for part in parts:
+                if b'Content-Disposition' not in part:
+                    continue
+                if b'name="file"' in part:
+                    for line in part.split(b'\r\n'):
+                        if b'filename=' in line:
+                            fn = line.split(b'filename=')[1].strip().strip(b'"').decode()
+                            file_filename = fn
                             break
-                self._send_json({"success": True})
-            except json.JSONDecodeError:
-                self._send_error("Geçersiz JSON.", 400)
-            except Exception as e:
-                print(f"[!] Odesin webhook hatası: {e}")
-                self._send_error(str(e), 500)
+                    header_end = part.find(b'\r\n\r\n')
+                    if header_end > 0:
+                        content_end = part.rfind(b'\r\n--')
+                        if content_end == -1:
+                            content_end = len(part)
+                        file_data = part[header_end + 4:content_end].rstrip(b'\r\n')
+                elif b'name="alt"' in part:
+                    header_end = part.find(b'\r\n\r\n')
+                    if header_end > 0:
+                        content_end = part.rfind(b'\r\n--')
+                        if content_end == -1:
+                            content_end = len(part)
+                        val = part[header_end + 4:content_end].strip().decode()
+                        if val:
+                            alt_text = val
+            if not file_data or not file_filename:
+                self._send_error("Dosya gönderilmedi.", 400)
+                return
+            slider_dir = os.path.join(WORKSPACE, 'slider')
+            os.makedirs(slider_dir, exist_ok=True)
+            ext = os.path.splitext(file_filename)[1] or '.jpg'
+            unique_name = f"{int(time.time() * 1000)}{ext}"
+            filepath = os.path.join(slider_dir, unique_name)
+            with open(filepath, 'wb') as f:
+                f.write(file_data)
+            global SLIDER_IMAGES
+            img_entry = {"src": f"/slider/{unique_name}", "alt": alt_text}
+            SLIDER_IMAGES.append(img_entry)
+            self._send_json({"success": True, "image": img_entry, "images": SLIDER_IMAGES})
             return
         if path == "/api/reservations":
             try:
                 body = json.loads(self._read_body())
+                global RESERVATION_ID
                 reservation = {
                     "id": RESERVATION_ID,
                     "type": body.get("type", "transfer"),
@@ -1754,9 +1268,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "price": body.get("price", 0),
                     "paymentMethod": body.get("paymentMethod", "havale"),
                     "status": "pending",
-                    "payment_session_id": "",
-                    "payment_ref": "",
-                    "payment_status": "pending",
                     "createdAt": datetime.now().isoformat()
                 }
                 if not reservation["customerName"] or not reservation["pickup"]:
@@ -1771,66 +1282,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not dest_ok:
                     self._send_error("Üzgünüz, bu varış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.", 400)
                     return
-                # ─── ÖDEME ÖNCELİKLİ AKIŞ ───
-                # Kredi kartı: rezervasyonu hemen kaydetme, önce ödemeyi bekle
-                if reservation["paymentMethod"] == "kredi_karti" and ODESIN_API_KEY:
-                    try:
-                        price_kurus = int(float(reservation.get("price", 0)) * 100)
-                        if price_kurus < 100:
-                            self._send_error("Geçersiz tutar.", 400)
-                            return
-                        odesin_payload = json.dumps({
-                            "mode": "card_whitelabel",
-                            "amount": price_kurus,
-                            "return_url": ODESIN_CALLBACK_BASE + "/api/payment/return",
-                            "callback_url": ODESIN_CALLBACK_BASE + "/api/payment/webhook",
-                            "customer_name": reservation["customerName"],
-                            "customer_email": reservation.get("customerEmail", ""),
-                            "customer_phone": reservation.get("customerPhone", ""),
-                            "description": f"Güliz VIP Rezervasyon #{reservation['id']}",
-                        })
-                        headers = _odesin_sign_post(odesin_payload)
-                        headers["Content-Type"] = "application/json"
-                        req = urllib.request.Request(
-                            ODESIN_API_BASE + "/api/payment/create-session",
-                            data=odesin_payload.encode("utf-8"),
-                            headers=headers,
-                            method="POST"
-                        )
-                        with urllib.request.urlopen(req, timeout=30) as resp:
-                            odesin_result = json.loads(resp.read().decode("utf-8"))
-                        if odesin_result.get("status") != "success":
-                            self._send_error(odesin_result.get("message", "Ödeme oturumu oluşturulamadı."), 502)
-                            return
-                        payment_session_id = odesin_result.get("session_id", "") or odesin_result.get("payment_id", "")
-                        elements_script_url = odesin_result.get("elements_script_url", "")
-                        elements_config_url = odesin_result.get("elements_config_url", "")
-                        reservation_id = RESERVATION_ID
-                        RESERVATION_ID += 1
-                        # Geçici olarak bekleme havuzuna koy — ödeme onaylanınca kalıcı olarak kaydedilecek
-                        with pending_lock:
-                            PENDING_RESERVATIONS[payment_session_id] = {
-                                "reservation": reservation,
-                                "sessionId": body.get("sessionId", ""),
-                                "createdAt": datetime.now().isoformat()
-                            }
-                        print(f"[✓] Ödeme bekleniyor: session={payment_session_id}, tutar={price_kurus}kurus")
-                        self._send_json({
-                            "success": True,
-                            "reservation": reservation,
-                            "session_id": payment_session_id,
-                            "elements_script_url": elements_script_url,
-                            "elements_config_url": elements_config_url,
-                        })
-                        return  # Rezervasyon kalıcı kaydedilmedi — webhook bekleniyor
-                    except urllib.error.HTTPError as e:
-                        err_body = e.read().decode("utf-8", errors="replace")[:500]
-                        self._send_error(f"Ödeme sistemi hatası: {err_body}", 502)
-                        return
-                    except Exception as e:
-                        self._send_error(f"Ödeme sistemi hatası: {str(e)}", 502)
-                        return
-                # ─── Havale/EFT — direkt kaydet ───
                 db_id = db.save_reservation_to_db(reservation)
                 if db_id:
                     reservation["id"] = db_id
@@ -1839,11 +1290,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     RESERVATIONS.insert(0, reservation)
                     RESERVATION_ID += 1
                     save_reservations()
-                self._send_json({
-                    "success": True,
-                    "reservation": reservation,
-                    "checkout_url": None
-                })
+                self._send_json({"success": True, "reservation": reservation})
                 tip_etiket = "🚗 Transfer" if reservation["type"] == "transfer" else "👑 Şoförlü Günlük VIP"
                 telegram_rez = (
                     f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
@@ -2226,7 +1673,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
                 global UNIT_PRICE
                 UNIT_PRICE = price
-                save_prices()
                 self._send_json({"success": True, "unitPrice": UNIT_PRICE})
             except (ValueError, TypeError):
                 self._send_error("Geçersiz fiyat.", 400)
@@ -2305,7 +1751,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         self._send_error("Görsel URL'si gerekli.", 400)
                         return
                     SLIDER_IMAGES.append({"src": image["src"], "alt": image.get("alt", "Slider Görseli")})
-                    save_slider_images()
                     self._send_json({"success": True, "images": SLIDER_IMAGES})
                 elif action == "delete":
                     index = body.get("index")
@@ -2313,7 +1758,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         self._send_error("Geçersiz index.", 400)
                         return
                     SLIDER_IMAGES.pop(index)
-                    save_slider_images()
                     self._send_json({"success": True, "images": SLIDER_IMAGES})
                 elif action == "reorder":
                     from_index = body.get("fromIndex")
@@ -2324,7 +1768,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     if 0 <= from_index < len(SLIDER_IMAGES) and 0 <= to_index < len(SLIDER_IMAGES):
                         item = SLIDER_IMAGES.pop(from_index)
                         SLIDER_IMAGES.insert(to_index, item)
-                        save_slider_images()
                         self._send_json({"success": True, "images": SLIDER_IMAGES})
                     else:
                         self._send_error("Geçersiz index aralığı.", 400)
@@ -2338,7 +1781,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         self._send_error("Görsel URL'si gerekli.", 400)
                         return
                     SLIDER_IMAGES[index] = {"src": image["src"], "alt": image.get("alt", "Slider Görseli")}
-                    save_slider_images()
                     self._send_json({"success": True, "images": SLIDER_IMAGES})
                 else:
                     self._send_error("Geçersiz aksiyon.", 400)
@@ -2528,75 +1970,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._send_error(str(e), 500)
             return
-        if path == "/api/admin/fleet":
-            user = self._authenticate()
-            if not user:
-                self._send_error("Yetkisiz erişim.", 401)
-                return
-            try:
-                body = json.loads(self._read_body())
-                action = body.get("action", "")
-                global VEHICLES, VEHICLE_ID
-                if action == "add":
-                    vehicle = {
-                        "id": VEHICLE_ID,
-                        "name": body.get("name", ""),
-                        "count": int(body.get("count", 1)),
-                        "main_image": body.get("main_image", ""),
-                        "gallery_images": body.get("gallery_images", ""),
-                        "passenger_count": int(body.get("passenger_count", 6)),
-                        "luggage_count": int(body.get("luggage_count", 6)),
-                        "features": body.get("features", ""),
-                        "order": len(VEHICLES)
-                    }
-                    if not vehicle["name"]:
-                        self._send_error("Araç adı gerekli.", 400)
-                        return
-                    VEHICLE_ID += 1
-                    VEHICLES.append(vehicle)
-                    save_vehicles()
-                    self._send_json({"success": True, "vehicle": vehicle, "vehicles": VEHICLES})
-                elif action == "update":
-                    vid = body.get("id")
-                    for v in VEHICLES:
-                        if v["id"] == vid:
-                            if "name" in body: v["name"] = body["name"]
-                            if "count" in body: v["count"] = int(body["count"])
-                            if "main_image" in body: v["main_image"] = body["main_image"]
-                            if "gallery_images" in body: v["gallery_images"] = body["gallery_images"]
-                            if "passenger_count" in body: v["passenger_count"] = int(body["passenger_count"])
-                            if "luggage_count" in body: v["luggage_count"] = int(body["luggage_count"])
-                            if "features" in body: v["features"] = body["features"]
-                            if "order" in body: v["order"] = int(body["order"])
-                            save_vehicles()
-                            self._send_json({"success": True, "vehicle": v, "vehicles": VEHICLES})
-                            return
-                    self._send_error("Araç bulunamadı.", 404)
-                elif action == "delete":
-                    vid = body.get("id")
-                    VEHICLES = [v for v in VEHICLES if v["id"] != vid]
-                    save_vehicles()
-                    self._send_json({"success": True, "vehicles": VEHICLES})
-                elif action == "reorder":
-                    from_idx = body.get("fromIndex")
-                    to_idx = body.get("toIndex")
-                    if from_idx is None or to_idx is None:
-                        self._send_error("fromIndex ve toIndex gerekli.", 400)
-                        return
-                    if 0 <= from_idx < len(VEHICLES) and 0 <= to_idx < len(VEHICLES):
-                        item = VEHICLES.pop(from_idx)
-                        VEHICLES.insert(to_idx, item)
-                        save_vehicles()
-                        self._send_json({"success": True, "vehicles": VEHICLES})
-                    else:
-                        self._send_error("Geçersiz index aralığı.", 400)
-                else:
-                    self._send_error("Geçersiz aksiyon.", 400)
-            except (json.JSONDecodeError, ValueError, TypeError) as e:
-                self._send_error(str(e), 400)
-            except Exception as e:
-                self._send_error(str(e), 500)
-            return
         if path == "/api/admin/destinations":
             user = self._authenticate()
             if not user:
@@ -2616,9 +1989,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     if not dest_id:
                         self._send_error("Destinasyon ID gerekli.", 400)
                         return
-                    result = db.update_destination(dest_id, body)
+                    result = db.save_destination(body)
                     if result:
-                        self._send_json({"success": True, "destination": db.get_destination(dest_id)})
+                        self._send_json({"success": True, "destination": result})
                     else:
                         self._send_error("Destinasyon güncellenemedi.", 500)
                 elif action == "delete":
@@ -2642,23 +2015,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
 
 # ─── Main ────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    db.init_db()  # DATABASE_URL varsa gerekli tabloları/config'i oluşturur; yoksa sessizce atlar
-    load_prices()
-    load_vehicles()
-    load_slider_images()
-    try:
-        server = http.server.HTTPServer((HOST, PORT), GulizHandler)
-        print(f"[v] Guliz VIP Backend running on http://{HOST}:{PORT}")
+    server = http.server.HTTPServer((HOST, PORT), GulizHandler)
+    print(f"[v] Guliz VIP Backend running on http://{HOST}:{PORT}")
 
-        refresh_flights()
-        scheduler = threading.Thread(target=scheduler_loop, daemon=True)
-        scheduler.start()
-
-        visitor_cleanup = threading.Thread(target=visitor_cleanup_loop, daemon=True)
-        visitor_cleanup.start()
-
-        server.serve_forever()
-    except Exception as e:
-        print(f"[!] __main__ CRASH: {e}", flush=True)
-        traceback.print_exc()
-        sys.exit(1)
+    refresh_flights()
+    scheduler = threading.Thread(target=schedu

@@ -1,3 +1,4 @@
 # Python stdlib — no external dependencies required
 psycopg2-binary>=2.9
 resend
+Pillow>=10.0

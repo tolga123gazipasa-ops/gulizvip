@@ -4,8 +4,12 @@ __pycache__/
 *.bak
 *.log
 reservations.json
+slider_images.json
 .DS_Store
 .vscode/
 temp_*.py
 *.truncated
 sunucu baslat.txt
+uploads/
+slider/
+fleet/

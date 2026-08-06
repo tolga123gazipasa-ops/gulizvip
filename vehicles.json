@@ -1,0 +1,16 @@
+{
+  "vehicles": [
+    {
+      "id": 1,
+      "name": "Mercedes-Benz Vito VIP",
+      "count": 3,
+      "main_image": "vitoaracimiz.jpeg",
+      "gallery_images": "vitoaracimiz.jpeg,https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&w=400&q=80,https://images.unsplash.com/photo-1552519507-da3b142c6e3d?ixlib=rb-4.0.3&w=400&q=80",
+      "passenger_count": 6,
+      "luggage_count": 6,
+      "features": "Hakiki Deri Koltuklar,Ücretsiz Hızlı Wi-Fi,VIP İkram ve İçecekler,Klima / İklimlendirme,Bebek Koltuğu (Talep Üzerine),Araçta Kredi Kartı Geçerli",
+      "order": 0
+    }
+  ],
+  "next_id": 2
+}
