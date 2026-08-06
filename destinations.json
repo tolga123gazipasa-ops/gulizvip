@@ -5,72 +5,78 @@
       "name": "Gazipaşa Delik Deniz & Kral Koyu",
       "description": "Gazipaşa'nın en özel koylarından Delik Deniz ve Kral Koyu, kayalık formasyonları ve turkuaz berraklığındaki suyuyla doğa tutkunlarının gözdesi. Gazipaşa Havalimanı'na (GZP) yalnızca dakikalar mesafesindeki bu saklı cennete Güliz VIP ile konforlu ve hızlı transfer sağlıyoruz.",
       "imageUrl": "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800&q=80",
+      "galleryImages": "https://images.unsplash.com/photo-1601581875309-fafbf2d3ed3a?w=800&q=80,https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=800&q=80,https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=800&q=80,https://images.unsplash.com/photo-1590523277543-a94d2e4eb00b?w=800&q=80",
       "slug": "gazipasa-delik-deniz-kral-koyu",
       "sortOrder": 1,
       "isActive": true,
       "airport": "GZP",
       "createdAt": "2026-08-06T00:00:00",
-      "updatedAt": "2026-08-06T17:31:53.760483"
+      "updatedAt": "2026-08-06T00:00:00"
     },
     {
       "id": 2,
       "name": "Gazipaşa Koru Plajı & Doğal Havuzlar",
       "description": "Sık çam ormanlarının denizle buluştuğu Koru Plajı ve çevresindeki doğal kaya havuzları, sakinliği ve el değmemiş doğasıyla öne çıkıyor. Gazipaşa Havalimanı (GZP) çıkışlı VIP transferlerimizle bu huzurlu köşeye güvenli ve dakik ulaşım sunuyoruz.",
       "imageUrl": "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80",
+      "galleryImages": "https://images.unsplash.com/photo-1440581572325-0bea30075d9d?w=800&q=80,https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&q=80,https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=800&q=80,https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=800&q=80",
       "slug": "gazipasa-koru-plaji-dogal-havuzlar",
       "sortOrder": 2,
       "isActive": true,
       "airport": "GZP",
       "createdAt": "2026-08-06T00:00:00",
-      "updatedAt": "2026-08-06T17:31:53.810029"
+      "updatedAt": "2026-08-06T00:00:00"
     },
     {
       "id": 3,
       "name": "Alanya Kalesi & Kleopatra Plajı",
       "description": "Bizans döneminden kalma tarihi Alanya Kalesi ve dünyaca ünlü altın kumlu Kleopatra Plajı, Alanya'nın simgesi haline gelmiş iki eşsiz durak. Gazipaşa Havalimanı'ndan (GZP) 40 dakikada, Antalya Havalimanı'ndan (AYT) ise Güliz VIP konforuyla bu tarihi ve doğal mirasa ulaşabilirsiniz.",
       "imageUrl": "https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=800&q=80",
+      "galleryImages": "https://images.unsplash.com/photo-1558370781-d6196949e317?w=800&q=80,https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=800&q=80,https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&q=80,https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=800&q=80",
       "slug": "alanya-kalesi-kleopatra-plaji",
       "sortOrder": 3,
       "isActive": true,
       "airport": "both",
       "createdAt": "2026-08-06T00:00:00",
-      "updatedAt": "2026-08-06T17:31:53.858230"
+      "updatedAt": "2026-08-06T00:00:00"
     },
     {
       "id": 4,
       "name": "Side Antik Kenti & Manavgat",
       "description": "Apollon Tapınağı ve antik tiyatrosuyla ünlü Side ile hemen yanı başındaki Manavgat Şelalesi, tarih ve doğayı tek rotada buluşturuyor. Antalya Havalimanı'ndan (AYT) doğrudan, Gazipaşa Havalimanı'ndan (GZP) da Güliz VIP ile konforlu transfer imkanı sunuyoruz.",
-      "imageUrl": "https://images.unsplash.com/photo-1590129892140-01e15fe07ce1?w=800&q=80",
+      "imageUrl": "https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=800&q=80",
+      "galleryImages": "https://images.unsplash.com/photo-1558370781-d6196949e317?w=800&q=80,https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=800&q=80,https://images.unsplash.com/photo-1553342385-111fd6bc6ab3?w=800&q=80,https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=800&q=80",
       "slug": "side-antik-kenti-manavgat",
       "sortOrder": 4,
       "isActive": true,
       "airport": "both",
       "createdAt": "2026-08-06T00:00:00",
-      "updatedAt": "2026-08-06T17:31:53.906892"
+      "updatedAt": "2026-08-06T00:00:00"
     },
     {
       "id": 5,
       "name": "Belek Lüks Golf & Resort Otelleri",
       "description": "Dünya standartlarında golf sahaları ve 5 yıldızlı lüks resort otelleriyle Belek, Akdeniz'in en prestijli tatil destinasyonlarından biri. Antalya Havalimanı'ndan (AYT) Belek'teki otelinize VIP Vito ile şık, sessiz ve konforlu bir transfer deneyimi yaşatıyoruz.",
       "imageUrl": "https://images.unsplash.com/photo-1587922546307-776227941871?w=800&q=80",
+      "galleryImages": "https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800&q=80,https://images.unsplash.com/photo-1544984243-ec57ea16fe25?w=800&q=80,https://images.unsplash.com/photo-1528909514045-2fa4ac7a08ba?w=800&q=80,https://images.unsplash.com/photo-1590523277543-a94d2e4eb00b?w=800&q=80",
       "slug": "belek-luks-golf-resort-otelleri",
       "sortOrder": 5,
       "isActive": true,
       "airport": "AYT",
       "createdAt": "2026-08-06T00:00:00",
-      "updatedAt": "2026-08-06T17:31:53.955761"
+      "updatedAt": "2026-08-06T00:00:00"
     },
     {
       "id": 6,
       "name": "Kemer Marina & Göynük Kanyonu",
       "description": "Lüks yatların demirlediği şık Kemer Marina ile doğa tutkunlarının favorisi Göynük Kanyonu, Kemer'in hem sofistike hem vahşi doğa yüzünü yansıtıyor. Antalya Havalimanı'ndan (AYT) Kemer'e Güliz VIP güvencesiyle zamanında ve konforlu ulaşım sağlıyoruz.",
-      "imageUrl": "https://images.unsplash.com/photo-1569517282132-25d22f4573e6?w=800&q=80",
+      "imageUrl": "https://images.unsplash.com/photo-1553342385-111fd6bc6ab3?w=800&q=80",
+      "galleryImages": "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&q=80,https://images.unsplash.com/photo-1440581572325-0bea30075d9d?w=800&q=80,https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&q=80,https://images.unsplash.com/photo-1601581875309-fafbf2d3ed3a?w=800&q=80",
       "slug": "kemer-marina-goynuk-kanyonu",
       "sortOrder": 6,
       "isActive": true,
       "airport": "AYT",
       "createdAt": "2026-08-06T00:00:00",
-      "updatedAt": "2026-08-06T17:31:54.001821"
+      "updatedAt": "2026-08-06T00:00:00"
     }
   ]
 }

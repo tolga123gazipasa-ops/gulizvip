@@ -25,6 +25,7 @@ SEED_DESTINATIONS = [
         "sortOrder": 1,
         "isActive": True,
         "imageUrl": "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800&q=80",
+        "galleryImages": "https://images.unsplash.com/photo-1601581875309-fafbf2d3ed3a?w=800&q=80,https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=800&q=80,https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=800&q=80,https://images.unsplash.com/photo-1590523277543-a94d2e4eb00b?w=800&q=80",
         "description": "Gazipaşa'nın en özel koylarından Delik Deniz ve Kral Koyu, kayalık formasyonları ve turkuaz berraklığındaki suyuyla doğa tutkunlarının gözdesi. Gazipaşa Havalimanı'na (GZP) yalnızca dakikalar mesafesindeki bu saklı cennete Güliz VIP ile konforlu ve hızlı transfer sağlıyoruz.",
     },
     {
@@ -34,6 +35,7 @@ SEED_DESTINATIONS = [
         "sortOrder": 2,
         "isActive": True,
         "imageUrl": "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=80",
+        "galleryImages": "https://images.unsplash.com/photo-1440581572325-0bea30075d9d?w=800&q=80,https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&q=80,https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=800&q=80,https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=800&q=80",
         "description": "Sık çam ormanlarının denizle buluştuğu Koru Plajı ve çevresindeki doğal kaya havuzları, sakinliği ve el değmemiş doğasıyla öne çıkıyor. Gazipaşa Havalimanı (GZP) çıkışlı VIP transferlerimizle bu huzurlu köşeye güvenli ve dakik ulaşım sunuyoruz.",
     },
     {
@@ -43,6 +45,7 @@ SEED_DESTINATIONS = [
         "sortOrder": 3,
         "isActive": True,
         "imageUrl": "https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=800&q=80",
+        "galleryImages": "https://images.unsplash.com/photo-1558370781-d6196949e317?w=800&q=80,https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=800&q=80,https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&q=80,https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=800&q=80",
         "description": "Bizans döneminden kalma tarihi Alanya Kalesi ve dünyaca ünlü altın kumlu Kleopatra Plajı, Alanya'nın simgesi haline gelmiş iki eşsiz durak. Gazipaşa Havalimanı'ndan (GZP) 40 dakikada, Antalya Havalimanı'ndan (AYT) ise Güliz VIP konforuyla bu tarihi ve doğal mirasa ulaşabilirsiniz.",
     },
     {
@@ -51,7 +54,8 @@ SEED_DESTINATIONS = [
         "airport": "both",
         "sortOrder": 4,
         "isActive": True,
-        "imageUrl": "https://images.unsplash.com/photo-1590129892140-01e15fe07ce1?w=800&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=800&q=80",
+        "galleryImages": "https://images.unsplash.com/photo-1558370781-d6196949e317?w=800&q=80,https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=800&q=80,https://images.unsplash.com/photo-1553342385-111fd6bc6ab3?w=800&q=80,https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=800&q=80",
         "description": "Apollon Tapınağı ve antik tiyatrosuyla ünlü Side ile hemen yanı başındaki Manavgat Şelalesi, tarih ve doğayı tek rotada buluşturuyor. Antalya Havalimanı'ndan (AYT) doğrudan, Gazipaşa Havalimanı'ndan (GZP) da Güliz VIP ile konforlu transfer imkanı sunuyoruz.",
     },
     {
@@ -61,6 +65,7 @@ SEED_DESTINATIONS = [
         "sortOrder": 5,
         "isActive": True,
         "imageUrl": "https://images.unsplash.com/photo-1587922546307-776227941871?w=800&q=80",
+        "galleryImages": "https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800&q=80,https://images.unsplash.com/photo-1544984243-ec57ea16fe25?w=800&q=80,https://images.unsplash.com/photo-1528909514045-2fa4ac7a08ba?w=800&q=80,https://images.unsplash.com/photo-1590523277543-a94d2e4eb00b?w=800&q=80",
         "description": "Dünya standartlarında golf sahaları ve 5 yıldızlı lüks resort otelleriyle Belek, Akdeniz'in en prestijli tatil destinasyonlarından biri. Antalya Havalimanı'ndan (AYT) Belek'teki otelinize VIP Vito ile şık, sessiz ve konforlu bir transfer deneyimi yaşatıyoruz.",
     },
     {
@@ -69,7 +74,8 @@ SEED_DESTINATIONS = [
         "airport": "AYT",
         "sortOrder": 6,
         "isActive": True,
-        "imageUrl": "https://images.unsplash.com/photo-1569517282132-25d22f4573e6?w=800&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1553342385-111fd6bc6ab3?w=800&q=80",
+        "galleryImages": "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&q=80,https://images.unsplash.com/photo-1440581572325-0bea30075d9d?w=800&q=80,https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&q=80,https://images.unsplash.com/photo-1601581875309-fafbf2d3ed3a?w=800&q=80",
         "description": "Lüks yatların demirlediği şık Kemer Marina ile doğa tutkunlarının favorisi Göynük Kanyonu, Kemer'in hem sofistike hem vahşi doğa yüzünü yansıtıyor. Antalya Havalimanı'ndan (AYT) Kemer'e Güliz VIP güvencesiyle zamanında ve konforlu ulaşım sağlıyoruz.",
     },
 ]

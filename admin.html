@@ -803,8 +803,17 @@
                         </div>
                         <div id="dest-image-preview" style="margin-top:8px;"></div>
                         <p style="font-size:12px;color:var(--text-gray);margin-top:4px;">
-                            <i class="fa-solid fa-circle-info"></i> Yüklenen görsel otomatik olarak sitedeki gösterim alanına (16:9) kusursuz kırpılır ve boyutlandırılır.
+                            <i class="fa-solid fa-circle-info"></i> Yüklenen görsel otomatik olarak sitedeki gösterim alanına (16:9) kusursuz kırpılır ve boyutlandırılır. Bu, detay ekranında büyük gösterilen ana vitrin görselidir.
                         </p>
+                    </div>
+                    <div class="form-group">
+                        <label>Galeri Resimleri (bölge detayına tıklayınca gösterilir)</label>
+                        <textarea id="dest-gallery" rows="2" placeholder="Görsel URL'lerini virgülle ayırın, veya Yükle ile ekleyin" oninput="renderDestGalleryPreview()" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+                        <div style="margin-top:8px;">
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('dest-gallery-file').click()">Galeriye Resim Yükle</button>
+                            <input type="file" id="dest-gallery-file" accept="image/*" style="display:none" onchange="uploadDestinationGalleryImage(this)" multiple>
+                        </div>
+                        <div id="dest-gallery-preview" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"></div>
                     </div>
                     <div class="form-group">
                         <label>Slug (URL dostu ad)</label>
@@ -3205,6 +3214,71 @@
         .finally(function() { input.value = ''; });
     }
 
+    function renderDestGalleryPreview() {
+        var raw = document.getElementById('dest-gallery').value.trim();
+        var preview = document.getElementById('dest-gallery-preview');
+        if (!raw) { preview.innerHTML = ''; return; }
+        var urls = raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        preview.innerHTML = urls.map(function(u, i) {
+            return '<div style="position:relative;display:inline-block;">' +
+                '<img src="' + escapeHtml(u) + '" style="width:90px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">' +
+                '<button type="button" onclick="removeDestGalleryImage(' + i + ')" title="Kaldır" style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:2px solid #fff;cursor:pointer;font-size:12px;line-height:1;padding:0;">×</button>' +
+                '</div>';
+        }).join('');
+    }
+
+    function removeDestGalleryImage(index) {
+        var textarea = document.getElementById('dest-gallery');
+        var urls = textarea.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        urls.splice(index, 1);
+        textarea.value = urls.join(',');
+        renderDestGalleryPreview();
+    }
+
+    function uploadDestinationGalleryImage(input) {
+        var files = input.files;
+        if (!files || files.length === 0) return;
+        var token = getToken();
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        function uploadOne(file) {
+            var formData = new FormData();
+            formData.append('file', file);
+            return fetch('/api/admin/destinations/upload', {
+                method: 'POST',
+                headers: {'Authorization': 'Bearer ' + token},
+                body: formData
+            }).then(function(r) { return r.json(); });
+        }
+
+        showDestFormStatus('Galeri görselleri yükleniyor...', 'info');
+        var fileArr = Array.prototype.slice.call(files);
+        var chain = Promise.resolve();
+        var uploadedUrls = [];
+        fileArr.forEach(function(file) {
+            chain = chain.then(function() {
+                return uploadOne(file).then(function(data) {
+                    if (data.success && data.url) {
+                        uploadedUrls.push(data.url);
+                    }
+                });
+            });
+        });
+        chain.then(function() {
+            var textarea = document.getElementById('dest-gallery');
+            var existing = textarea.value.trim();
+            var combined = existing ? existing.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+            combined = combined.concat(uploadedUrls);
+            textarea.value = combined.join(',');
+            renderDestGalleryPreview();
+            document.getElementById('destination-form-status').style.display = 'none';
+        })
+        .catch(function() {
+            showDestFormStatus('Galeri görselleri yüklenirken sunucu hatası oluştu.', 'error');
+        })
+        .finally(function() { input.value = ''; });
+    }
+
     function showDestinationForm(destId) {
         var form = document.getElementById('destination-form');
         var titleEl = document.getElementById('destination-form-title');
@@ -3217,11 +3291,13 @@
             document.getElementById('dest-name').value = '';
             document.getElementById('dest-description').value = '';
             document.getElementById('dest-image-url').value = '';
+            document.getElementById('dest-gallery').value = '';
             document.getElementById('dest-slug').value = '';
             document.getElementById('dest-sort-order').value = '0';
             document.getElementById('dest-airport').value = 'GZP';
             document.getElementById('dest-is-active').checked = true;
             renderDestImagePreview();
+            renderDestGalleryPreview();
             document.getElementById('destination-form-status').style.display = 'none';
             return;
         }
@@ -3248,11 +3324,13 @@
             document.getElementById('dest-name').value = dest.name;
             document.getElementById('dest-description').value = dest.description || '';
             document.getElementById('dest-image-url').value = dest.imageUrl || '';
+            document.getElementById('dest-gallery').value = dest.galleryImages || '';
             document.getElementById('dest-slug').value = dest.slug || '';
             document.getElementById('dest-sort-order').value = dest.sortOrder || 0;
             document.getElementById('dest-airport').value = dest.airport || 'GZP';
             document.getElementById('dest-is-active').checked = dest.isActive;
             renderDestImagePreview();
+            renderDestGalleryPreview();
             document.getElementById('destination-form-status').style.display = 'none';
         })
         .catch(function() {});
@@ -3293,6 +3371,7 @@
             name: name,
             description: document.getElementById('dest-description').value.trim(),
             imageUrl: imageUrl,
+            galleryImages: document.getElementById('dest-gallery').value.trim(),
             slug: slug,
             sortOrder: parseInt(document.getElementById('dest-sort-order').value) || 0,
             airport: document.getElementById('dest-airport').value || 'GZP',

@@ -233,6 +233,9 @@
         var destinationsOffset = 0;
         var destinationsTotal = 0;
         var DESTINATIONS_LIMIT = 6;
+        var DESTINATIONS_BY_ID = {};
+        var DEST_FALLBACK_IMG = 'https://images.unsplash.com/photo-1554223090-bc1f04afcc51?ixlib=rb-4.0.3&w=600&q=80';
+        var DEST_AIRPORT_BADGE = { GZP: 'Gazipaşa (GZP)', AYT: 'Antalya (AYT)', both: 'GZP + AYT' };
 
         function loadDestinations(reset) {
             if (reset) { destinationsOffset = 0; }
@@ -243,18 +246,20 @@
                         destinationsTotal = data.total || data.destinations.length;
                         var grid = document.getElementById('destinations-grid');
                         if (reset) { grid.innerHTML = ''; }
-                        var DEST_AIRPORT_BADGE = { GZP: 'Gazipaşa (GZP)', AYT: 'Antalya (AYT)', both: 'GZP + AYT' };
                         data.destinations.forEach(function(d) {
-                            var imgUrl = d.imageUrl || 'https://images.unsplash.com/photo-1554223090-bc1f04afcc51?ixlib=rb-4.0.3&w=600&q=80';
+                            DESTINATIONS_BY_ID[d.id] = d;
+                            var imgUrl = d.imageUrl || DEST_FALLBACK_IMG;
                             var desc = d.description || '';
                             if (desc.length > 120) desc = desc.substring(0, 120) + '...';
                             var badgeText = DEST_AIRPORT_BADGE[d.airport] || 'GZP + AYT';
                             var card = document.createElement('div');
                             card.className = 'blog-card';
+                            card.style.cursor = 'pointer';
+                            card.onclick = function() { openDestinationModal(d.id); };
                             card.innerHTML = '<div style="position:relative;">' +
-                                '<img src="' + escapeHtml(imgUrl) + '" alt="' + escapeHtml(d.name) + ' VIP Transfer" loading="lazy" onerror="this.src=\'https://images.unsplash.com/photo-1554223090-bc1f04afcc51?ixlib=rb-4.0.3&w=600&q=80\'">' +
+                                '<img src="' + escapeHtml(imgUrl) + '" alt="' + escapeHtml(d.name) + ' VIP Transfer" loading="lazy" onerror="this.src=\'' + DEST_FALLBACK_IMG + '\'">' +
                                 '<span style="position:absolute;top:12px;right:12px;background:rgba(27,43,76,0.88);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.3px;"><i class="fa-solid fa-plane-departure" style="margin-right:4px;"></i>' + escapeHtml(badgeText) + '</span>' +
-                                '</div><div class="blog-content"><h3>' + escapeHtml(d.name) + '</h3><p>' + escapeHtml(desc) + '</p></div>';
+                                '</div><div class="blog-content"><h3>' + escapeHtml(d.name) + '</h3><p>' + escapeHtml(desc) + '</p><span class="dest-detail-link">Detayları Gör <i class="fa-solid fa-arrow-right"></i></span></div>';
                             grid.appendChild(card);
                         });
                         var btn = document.getElementById('loadMoreDestBtn');
@@ -273,6 +278,59 @@
         function loadMoreDestinations() {
             destinationsOffset += DESTINATIONS_LIMIT;
             loadDestinations(false);
+        }
+
+        function openDestinationModal(id) {
+            var d = DESTINATIONS_BY_ID[id];
+            if (!d) return;
+            var mainImg = d.imageUrl || DEST_FALLBACK_IMG;
+            var galleryUrls = (d.galleryImages || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+            var allImages = [mainImg].concat(galleryUrls);
+
+            document.getElementById('destModalTitle').textContent = d.name;
+            document.getElementById('destModalBadge').innerHTML = '<i class="fa-solid fa-plane-departure" style="margin-right:4px;"></i>' + (DEST_AIRPORT_BADGE[d.airport] || 'GZP + AYT');
+            document.getElementById('destModalDescription').textContent = d.description || '';
+            var mainImgEl = document.getElementById('destModalMainImg');
+            mainImgEl.src = mainImg;
+            mainImgEl.onerror = function() { this.src = DEST_FALLBACK_IMG; };
+
+            var thumbsEl = document.getElementById('destModalThumbs');
+            if (allImages.length > 1) {
+                thumbsEl.style.display = 'flex';
+                thumbsEl.innerHTML = allImages.map(function(url, i) {
+                    return '<img src="' + escapeHtml(url) + '" class="dest-modal-thumb' + (i === 0 ? ' active' : '') + '" onclick="setDestModalMainImg(this, \'' + escapeHtml(url).replace(/'/g, "\\'") + '\')" onerror="this.style.display=\'none\'">';
+                }).join('');
+            } else {
+                thumbsEl.style.display = 'none';
+                thumbsEl.innerHTML = '';
+            }
+
+            document.getElementById('destModalOverlay').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function setDestModalMainImg(thumbEl, url) {
+            document.getElementById('destModalMainImg').src = url;
+            var thumbs = document.querySelectorAll('.dest-modal-thumb');
+            thumbs.forEach(function(t) { t.classList.remove('active'); });
+            thumbEl.classList.add('active');
+        }
+
+        function closeDestinationModal() {
+            document.getElementById('destModalOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var overlay = document.getElementById('destModalOverlay');
+                if (overlay && overlay.classList.contains('open')) { closeDestinationModal(); }
+            }
+        });
+
+        function destModalReserve() {
+            closeDestinationModal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // Rota fiyatlarını admin panelinden dinamik çek
@@ -642,6 +700,26 @@
         .modal-box p { color: var(--text-gray); font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
         .modal-close { background: var(--primary-navy); color: var(--pure-white); padding: 14px 30px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; transition: var(--transition); }
         .modal-close:hover { background: var(--primary-red); }
+
+        /* BÖLGE DETAY MODALI */
+        .dest-detail-link { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--primary-red); }
+        .dest-modal-box { background: var(--pure-white); border-radius: 16px; max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; text-align: left; box-shadow: var(--shadow-strong); animation: modalIn 0.3s ease; position: relative; }
+        .dest-modal-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 50%; background: rgba(15,23,42,0.55); color: #fff; border: none; font-size: 18px; cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+        .dest-modal-close:hover { background: var(--primary-red); }
+        .dest-modal-main-img { width: 100%; height: 280px; object-fit: cover; border-radius: 16px 16px 0 0; display: block; }
+        .dest-modal-thumbs { display: none; gap: 8px; padding: 12px 24px 0; flex-wrap: wrap; }
+        .dest-modal-thumb { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; cursor: pointer; opacity: 0.65; border: 2px solid transparent; transition: var(--transition); }
+        .dest-modal-thumb:hover, .dest-modal-thumb.active { opacity: 1; border-color: var(--primary-red); }
+        .dest-modal-body { padding: 20px 24px 28px; }
+        .dest-modal-badge { display: inline-block; background: #FFF5F5; color: var(--primary-red); font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; margin-bottom: 12px; }
+        .dest-modal-body h3 { font-size: 22px; font-weight: 800; color: var(--primary-navy); margin-bottom: 12px; }
+        .dest-modal-body p { color: var(--text-gray); font-size: 14px; line-height: 1.7; margin-bottom: 24px; }
+        .dest-modal-cta { background: var(--primary-red); color: var(--pure-white); border: none; padding: 14px 30px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: var(--transition); width: 100%; }
+        .dest-modal-cta:hover { background: var(--primary-navy); }
+        @media (max-width: 600px) {
+            .dest-modal-main-img { height: 200px; }
+            .dest-modal-body { padding: 16px 18px 22px; }
+        }
 
         /* ROTA SEÇİM MODALI */
         .route-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; max-height: 320px; overflow-y: auto; }
@@ -1396,6 +1474,21 @@
         <div class="chat-footer">
             <input type="text" id="chatInput" placeholder="Mesajınızı yazın..." onkeypress="handleKeyPress(event)">
             <button onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- BÖLGE DETAY MODALI -->
+    <div class="modal-overlay" id="destModalOverlay" onclick="if(event.target===this) closeDestinationModal();">
+        <div class="dest-modal-box">
+            <button class="dest-modal-close" onclick="closeDestinationModal()">&times;</button>
+            <img id="destModalMainImg" class="dest-modal-main-img" src="" alt="">
+            <div id="destModalThumbs" class="dest-modal-thumbs"></div>
+            <div class="dest-modal-body">
+                <span id="destModalBadge" class="dest-modal-badge"></span>
+                <h3 id="destModalTitle"></h3>
+                <p id="destModalDescription"></p>
+                <button class="dest-modal-cta" onclick="destModalReserve()"><i class="fa-solid fa-calendar-check" style="margin-right:8px;"></i>Bu Bölgeye Rezervasyon Yap</button>
+            </div>
         </div>
     </div>
 

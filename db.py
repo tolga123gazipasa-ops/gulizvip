@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS destinations (
     name VARCHAR(200) NOT NULL,
     description TEXT DEFAULT '',
     image_url VARCHAR(500) DEFAULT '',
+    gallery_images TEXT DEFAULT '',
     slug VARCHAR(200) DEFAULT '',
     sort_order INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
@@ -96,6 +97,7 @@ def init_db():
                 cur.execute(CREATE_TABLES_SQL)
                 # Mevcut tablolarda eksik olabilecek yeni kolonlar için güvenli migration
                 cur.execute("ALTER TABLE destinations ADD COLUMN IF NOT EXISTS airport VARCHAR(20) DEFAULT 'both';")
+                cur.execute("ALTER TABLE destinations ADD COLUMN IF NOT EXISTS gallery_images TEXT DEFAULT '';")
         conn.close()
         print("[✓] PostgreSQL tabloları hazır.")
         return True
@@ -618,6 +620,7 @@ def get_destinations(active_only=True):
                 "sortOrder": row["sort_order"],
                 "isActive": row["is_active"],
                 "airport": row.get("airport") or "both",
+                "galleryImages": row.get("gallery_images") or "",
                 "createdAt": row["created_at"].isoformat() if row["created_at"] else "",
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             })
@@ -654,6 +657,7 @@ def get_destination(dest_id):
                 "sortOrder": row["sort_order"],
                 "isActive": row["is_active"],
                 "airport": row.get("airport") or "both",
+                "galleryImages": row.get("gallery_images") or "",
                 "createdAt": row["created_at"].isoformat() if row["created_at"] else "",
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             }
@@ -680,6 +684,7 @@ def save_destination(data):
             "sortOrder": data.get("sortOrder", 0),
             "isActive": data.get("isActive", True),
             "airport": data.get("airport", "both"),
+            "galleryImages": data.get("galleryImages", ""),
             "createdAt": now,
             "updatedAt": now,
         }
@@ -694,8 +699,8 @@ def save_destination(data):
         with conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute("""
-                    INSERT INTO destinations (name, description, image_url, slug, sort_order, is_active, airport)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO destinations (name, description, image_url, slug, sort_order, is_active, airport, gallery_images)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     data.get("name", ""),
@@ -705,6 +710,7 @@ def save_destination(data):
                     data.get("sortOrder", 0),
                     data.get("isActive", True),
                     data.get("airport", "both"),
+                    data.get("galleryImages", ""),
                 ))
                 new_id = cur.fetchone()["id"]
         conn.close()
@@ -721,7 +727,7 @@ def update_destination(dest_id, data):
         updated = False
         for d in items:
             if d.get("id") == dest_id:
-                for key in ("name", "description", "imageUrl", "slug", "sortOrder", "isActive", "airport"):
+                for key in ("name", "description", "imageUrl", "slug", "sortOrder", "isActive", "airport", "galleryImages"):
                     if key in data:
                         d[key] = data[key]
                 d["updatedAt"] = datetime.utcnow().isoformat()
@@ -742,6 +748,7 @@ def update_destination(dest_id, data):
             "sortOrder": "sort_order",
             "isActive": "is_active",
             "airport": "airport",
+            "galleryImages": "gallery_images",
         }
         set_parts = []
         values = []
