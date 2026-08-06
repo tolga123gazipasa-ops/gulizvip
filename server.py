@@ -1432,6 +1432,19 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             url, _fields = result
             self._send_json({"success": True, "url": url, "resized": _PIL_AVAILABLE})
             return
+        if path == "/api/admin/destinations/upload":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            # index.html'de "Popüler Turistik Bölgeler" kartları 16:9 oranında (width:100%, height:200px
+            # masaüstünde) gösteriliyor — bölge görselleri bu orana ortalanarak kırpılıp kaydediliyor.
+            result = self._handle_image_upload("destinations", max_width=1600, max_height=900, quality=88, crop_ratio=(16, 9))
+            if result is None:
+                return
+            url, _fields = result
+            self._send_json({"success": True, "url": url, "resized": _PIL_AVAILABLE})
+            return
         if path == "/api/reservations":
             try:
                 body = json.loads(self._read_body())

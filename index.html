@@ -4,15 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>Gazipaşa VIP Vito Kiralama & Havalimanı Transfer | Güliz Transfer</title>
-    <meta name="description" content="Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı (AYT) VIP Vito kiralama, şoförlü lüks transfer hizmetleri. Alanya, Mahmutlar, Avsallar bölgelerine 7/24 premium ulaşım.">
-    <meta name="keywords" content="Gazipaşa Havalimanı transfer, Gazipaşa VIP vito kiralama, Alanya VIP transfer, şoförlü araç kiralama Antalya, Mahmutlar transfer, Oba, Avsallar lüks ulaşım, Güliz Transfer, Gazipaşa havaş alternatif">
-    <meta name="author" content="Güliz Lojistik">
+    <title>Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP Transfer</title>
+    <meta name="description" content="Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP transfer hizmeti sunuyoruz.">
+    <meta name="keywords" content="Gazipaşa Havalimanı transfer, Antalya Havalimanı transfer, GZP VIP transfer, AYT VIP transfer, Alanya VIP transfer, Side transfer, Manavgat transfer, Belek transfer, Kemer transfer, Mahmutlar transfer, Okurcalar transfer, şoförlü araç kiralama Antalya, Güliz VIP Transfer">
+    <meta name="author" content="Güliz VIP Transfer">
     <meta name="robots" content="index, follow">
-    
-    <meta property="og:title" content="Güliz Transfer | Premium VIP Havalimanı Ulaşımı">
-    <meta property="og:description" content="Gazipaşa ve Antalya havalimanlarında kesintisiz VIP Vito kiralama ve şoförlü transfer ayrıcalığı.">
+    <link rel="canonical" href="https://gulizvip.com.tr/">
+
+    <meta property="og:title" content="Gazipaşa & Antalya Havalimanı VIP Transfer Hizmetleri | Güliz VIP">
+    <meta property="og:description" content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından; Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 kesintisiz VIP Vito transfer ayrıcalığı.">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gulizvip.com.tr/">
+    <meta property="og:image" content="https://gulizvip.com.tr/vitoaracimiz.jpeg">
+    <meta property="og:locale" content="tr_TR">
+    <meta property="og:site_name" content="Güliz VIP Transfer">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP">
+    <meta name="twitter:description" content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından Alanya, Side, Manavgat, Belek ve Kemer'e 7/24 VIP transfer.">
+    <meta name="twitter:image" content="https://gulizvip.com.tr/vitoaracimiz.jpeg">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TravelAgency",
+      "name": "Güliz VIP Transfer",
+      "url": "https://gulizvip.com.tr/",
+      "image": "https://gulizvip.com.tr/vitoaracimiz.jpeg",
+      "logo": "https://gulizvip.com.tr/logo.png",
+      "telephone": "+90-242-606-25-48",
+      "priceRange": "₺₺₺",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Gazipaşa",
+        "addressRegion": "Antalya",
+        "addressCountry": "TR"
+      },
+      "areaServed": [
+        { "@type": "City", "name": "Gazipaşa" },
+        { "@type": "City", "name": "Alanya" },
+        { "@type": "City", "name": "Antalya" },
+        { "@type": "City", "name": "Side" },
+        { "@type": "City", "name": "Manavgat" },
+        { "@type": "City", "name": "Belek" },
+        { "@type": "City", "name": "Kemer" },
+        { "@type": "Place", "name": "Mahmutlar" },
+        { "@type": "Place", "name": "Okurcalar" }
+      ],
+      "makesOffer": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "Gazipaşa Havalimanı (GZP) VIP Transfer",
+            "areaServed": "Alanya ve çevresi"
+          }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "Antalya Havalimanı (AYT) VIP Transfer",
+            "areaServed": "Antalya, Side, Manavgat, Belek, Kemer"
+          }
+        }
+      ],
+      "sameAs": []
+    }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -184,13 +243,18 @@
                         destinationsTotal = data.total || data.destinations.length;
                         var grid = document.getElementById('destinations-grid');
                         if (reset) { grid.innerHTML = ''; }
+                        var DEST_AIRPORT_BADGE = { GZP: 'Gazipaşa (GZP)', AYT: 'Antalya (AYT)', both: 'GZP + AYT' };
                         data.destinations.forEach(function(d) {
                             var imgUrl = d.imageUrl || 'https://images.unsplash.com/photo-1554223090-bc1f04afcc51?ixlib=rb-4.0.3&w=600&q=80';
                             var desc = d.description || '';
                             if (desc.length > 120) desc = desc.substring(0, 120) + '...';
+                            var badgeText = DEST_AIRPORT_BADGE[d.airport] || 'GZP + AYT';
                             var card = document.createElement('div');
                             card.className = 'blog-card';
-                            card.innerHTML = '<img src="' + escapeHtml(imgUrl) + '" alt="' + escapeHtml(d.name) + '" loading="lazy" onerror="this.src=\'https://images.unsplash.com/photo-1554223090-bc1f04afcc51?ixlib=rb-4.0.3&w=600&q=80\'"><div class="blog-content"><h3>' + escapeHtml(d.name) + '</h3><p>' + escapeHtml(desc) + '</p></div>';
+                            card.innerHTML = '<div style="position:relative;">' +
+                                '<img src="' + escapeHtml(imgUrl) + '" alt="' + escapeHtml(d.name) + ' VIP Transfer" loading="lazy" onerror="this.src=\'https://images.unsplash.com/photo-1554223090-bc1f04afcc51?ixlib=rb-4.0.3&w=600&q=80\'">' +
+                                '<span style="position:absolute;top:12px;right:12px;background:rgba(27,43,76,0.88);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.3px;"><i class="fa-solid fa-plane-departure" style="margin-right:4px;"></i>' + escapeHtml(badgeText) + '</span>' +
+                                '</div><div class="blog-content"><h3>' + escapeHtml(d.name) + '</h3><p>' + escapeHtml(desc) + '</p></div>';
                             grid.appendChild(card);
                         });
                         var btn = document.getElementById('loadMoreDestBtn');
@@ -1039,8 +1103,8 @@
     <section class="blog-section homepage-section" id="blog">
         <div class="container">
             <div class="section-title">
-                <h2>Popüler Turistik Bölgeler</h2>
-                <p>Gazipaşa Havalimanı'ndan Alanya'nın her noktasına doğrudan VIP ulaşım ayrıcalığı.</p>
+                <h2>Gazipaşa &amp; Antalya Havalimanı VIP Transfer Hizmetleri</h2>
+                <p>Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP ulaşım hizmeti sunuyoruz.</p>
             </div>
             <div class="blog-grid" id="destinations-grid">
                 <div style="grid-column:1/-1;text-align:center;padding:40px;color:#94A3B8;">

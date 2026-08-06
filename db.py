@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS destinations (
     slug VARCHAR(200) DEFAULT '',
     sort_order INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
+    airport VARCHAR(20) DEFAULT 'both',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -93,6 +94,8 @@ def init_db():
         with conn:
             with conn.cursor() as cur:
                 cur.execute(CREATE_TABLES_SQL)
+                # Mevcut tablolarda eksik olabilecek yeni kolonlar için güvenli migration
+                cur.execute("ALTER TABLE destinations ADD COLUMN IF NOT EXISTS airport VARCHAR(20) DEFAULT 'both';")
         conn.close()
         print("[✓] PostgreSQL tabloları hazır.")
         return True
@@ -614,6 +617,7 @@ def get_destinations(active_only=True):
                 "slug": row["slug"],
                 "sortOrder": row["sort_order"],
                 "isActive": row["is_active"],
+                "airport": row.get("airport") or "both",
                 "createdAt": row["created_at"].isoformat() if row["created_at"] else "",
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             })
@@ -649,6 +653,7 @@ def get_destination(dest_id):
                 "slug": row["slug"],
                 "sortOrder": row["sort_order"],
                 "isActive": row["is_active"],
+                "airport": row.get("airport") or "both",
                 "createdAt": row["created_at"].isoformat() if row["created_at"] else "",
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             }
@@ -674,6 +679,7 @@ def save_destination(data):
             "slug": data.get("slug", ""),
             "sortOrder": data.get("sortOrder", 0),
             "isActive": data.get("isActive", True),
+            "airport": data.get("airport", "both"),
             "createdAt": now,
             "updatedAt": now,
         }
@@ -688,8 +694,8 @@ def save_destination(data):
         with conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute("""
-                    INSERT INTO destinations (name, description, image_url, slug, sort_order, is_active)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO destinations (name, description, image_url, slug, sort_order, is_active, airport)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     data.get("name", ""),
@@ -698,6 +704,7 @@ def save_destination(data):
                     data.get("slug", ""),
                     data.get("sortOrder", 0),
                     data.get("isActive", True),
+                    data.get("airport", "both"),
                 ))
                 new_id = cur.fetchone()["id"]
         conn.close()
@@ -714,7 +721,7 @@ def update_destination(dest_id, data):
         updated = False
         for d in items:
             if d.get("id") == dest_id:
-                for key in ("name", "description", "imageUrl", "slug", "sortOrder", "isActive"):
+                for key in ("name", "description", "imageUrl", "slug", "sortOrder", "isActive", "airport"):
                     if key in data:
                         d[key] = data[key]
                 d["updatedAt"] = datetime.utcnow().isoformat()
@@ -734,6 +741,7 @@ def update_destination(dest_id, data):
             "slug": "slug",
             "sortOrder": "sort_order",
             "isActive": "is_active",
+            "airport": "airport",
         }
         set_parts = []
         values = []

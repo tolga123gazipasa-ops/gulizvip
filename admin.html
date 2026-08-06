@@ -750,11 +750,11 @@
                     </div>
                     <p style="font-size:13px;color:var(--text-gray);margin:0 0 16px;">
                         Ana sayfada "Popüler Turistik Bölgeler" bölümünde gösterilen destinasyonları yönetin.
-                        Görsel olarak <strong>Resim URL</strong> kullanılır — dosya yükleme desteklenmez.
+                        Her bölgeyi hangi havalimanından hizmet verildiğini belirterek (Gazipaşa / Antalya / İkisi de) ekleyin — bu, SEO ve arama görünürlüğü için önemlidir.
                     </p>
                     <table class="data-table">
                         <thead>
-                            <tr><th>ID</th><th>Görsel</th><th>Bölge Adı</th><th>Açıklama</th><th>Sıra</th><th>Durum</th><th>İşlem</th></tr>
+                            <tr><th>ID</th><th>Görsel</th><th>Bölge Adı</th><th>Havalimanı</th><th>Açıklama</th><th>Sıra</th><th>Durum</th><th>İşlem</th></tr>
                         </thead>
                         <tbody id="destinations-admin-tbody">
                             <tr><td colspan="7" style="text-align:center;color:var(--text-gray);">Yükleniyor...</td></tr>
@@ -780,14 +780,30 @@
                         </div>
                     </div>
                     <div class="form-group">
+                        <label>Havalimanı <span style="color:var(--primary-red);">*</span></label>
+                        <select id="dest-airport" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:14px;">
+                            <option value="GZP">Gazipaşa Havalimanı (GZP)</option>
+                            <option value="AYT">Antalya Havalimanı (AYT)</option>
+                            <option value="both">İkisi de (GZP + AYT)</option>
+                        </select>
+                        <p style="font-size:12px;color:var(--text-gray);margin-top:4px;">
+                            <i class="fa-solid fa-circle-info"></i> Bu bölgeye hangi havalimanından transfer yapıldığını belirtir, SEO ve filtreleme için kullanılır.
+                        </p>
+                    </div>
+                    <div class="form-group">
                         <label>Açıklama</label>
                         <textarea id="dest-description" rows="3" placeholder="Kısa açıklama metni..." style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;"></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Resim URL <span style="color:var(--primary-red);">*</span></label>
-                        <input type="text" id="dest-image-url" placeholder="https://images.unsplash.com/photo-... veya benzer bir görsel linki">
+                        <label>Görsel</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="dest-image-url" placeholder="https://images.unsplash.com/photo-... veya Yükle ile dosya seçin" style="flex:1;" oninput="renderDestImagePreview()">
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('dest-image-file').click()">Yükle</button>
+                            <input type="file" id="dest-image-file" accept="image/*" style="display:none" onchange="uploadDestinationImage(this)">
+                        </div>
+                        <div id="dest-image-preview" style="margin-top:8px;"></div>
                         <p style="font-size:12px;color:var(--text-gray);margin-top:4px;">
-                            <i class="fa-solid fa-circle-info"></i> Railway sunucusunda dosya yükleme kalıcı olmadığı için görsel URL'si girilmelidir.
+                            <i class="fa-solid fa-circle-info"></i> Yüklenen görsel otomatik olarak sitedeki gösterim alanına (16:9) kusursuz kırpılır ve boyutlandırılır.
                         </p>
                     </div>
                     <div class="form-group">
@@ -3098,11 +3114,13 @@
         }
     }
 
+    var DEST_AIRPORT_LABELS = { GZP: 'Gazipaşa (GZP)', AYT: 'Antalya (AYT)', both: 'İkisi de' };
+
     function renderDestinations(destinations) {
         var tbody = document.getElementById('destinations-admin-tbody');
         if (!tbody) return;
         if (!destinations || destinations.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-gray);">Henüz destinasyon eklenmemiş.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-gray);">Henüz destinasyon eklenmemiş.</td></tr>';
             return;
         }
         var html = '';
@@ -3114,10 +3132,12 @@
             var statusHtml = d.isActive
                 ? '<span style="color:#155724;background:#d4edda;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Aktif</span>'
                 : '<span style="color:#721c24;background:#f8d7da;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Pasif</span>';
+            var airportHtml = '<span style="color:#1B2B4C;background:#e8edf7;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">' + (DEST_AIRPORT_LABELS[d.airport] || 'İkisi de') + '</span>';
             html += '<tr>'
                 + '<td>' + d.id + '</td>'
                 + '<td>' + imgHtml + '</td>'
                 + '<td><strong>' + escapeHtml(d.name) + '</strong></td>'
+                + '<td>' + airportHtml + '</td>'
                 + '<td style="max-width:250px;white-space:normal;font-size:13px;color:var(--text-gray);">' + escapeHtml((d.description || '').substring(0, 80)) + '</td>'
                 + '<td>' + d.sortOrder + '</td>'
                 + '<td>' + statusHtml + '</td>'
@@ -3127,6 +3147,53 @@
                 + '</td></tr>';
         }
         tbody.innerHTML = html;
+    }
+
+    function renderDestImagePreview() {
+        var url = document.getElementById('dest-image-url').value.trim();
+        var preview = document.getElementById('dest-image-preview');
+        preview.innerHTML = url
+            ? '<div style="position:relative;display:inline-block;">' +
+              '<img src="' + escapeHtml(url) + '" style="width:140px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">' +
+              '<button type="button" onclick="removeDestImage()" title="Kaldır" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:#dc2626;color:#fff;border:2px solid #fff;cursor:pointer;font-size:13px;line-height:1;padding:0;">×</button>' +
+              '</div>'
+            : '';
+    }
+
+    function removeDestImage() {
+        document.getElementById('dest-image-url').value = '';
+        renderDestImagePreview();
+    }
+
+    function uploadDestinationImage(input) {
+        var files = input.files;
+        if (!files || files.length === 0) return;
+        var token = getToken();
+        if (!token) { alert('Oturum süreniz dolmuş.'); return; }
+
+        var formData = new FormData();
+        formData.append('file', files[0]);
+
+        showDestFormStatus('Görsel yükleniyor...', 'info');
+        fetch('/api/admin/destinations/upload', {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + token},
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success && data.url) {
+                document.getElementById('dest-image-url').value = data.url;
+                renderDestImagePreview();
+                document.getElementById('destination-form-status').style.display = 'none';
+            } else {
+                showDestFormStatus('Görsel yüklenemedi: ' + (data.error || 'Bilinmeyen hata'), 'error');
+            }
+        })
+        .catch(function() {
+            showDestFormStatus('Görsel yüklenirken sunucu hatası oluştu.', 'error');
+        })
+        .finally(function() { input.value = ''; });
     }
 
     function showDestinationForm(destId) {
@@ -3143,7 +3210,9 @@
             document.getElementById('dest-image-url').value = '';
             document.getElementById('dest-slug').value = '';
             document.getElementById('dest-sort-order').value = '0';
+            document.getElementById('dest-airport').value = 'GZP';
             document.getElementById('dest-is-active').checked = true;
+            renderDestImagePreview();
             document.getElementById('destination-form-status').style.display = 'none';
             return;
         }
@@ -3172,7 +3241,9 @@
             document.getElementById('dest-image-url').value = dest.imageUrl || '';
             document.getElementById('dest-slug').value = dest.slug || '';
             document.getElementById('dest-sort-order').value = dest.sortOrder || 0;
+            document.getElementById('dest-airport').value = dest.airport || 'GZP';
             document.getElementById('dest-is-active').checked = dest.isActive;
+            renderDestImagePreview();
             document.getElementById('destination-form-status').style.display = 'none';
         })
         .catch(function() {});
@@ -3215,6 +3286,7 @@
             imageUrl: imageUrl,
             slug: slug,
             sortOrder: parseInt(document.getElementById('dest-sort-order').value) || 0,
+            airport: document.getElementById('dest-airport').value || 'GZP',
             isActive: document.getElementById('dest-is-active').checked
         };
 
