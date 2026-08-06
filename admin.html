@@ -394,6 +394,21 @@
             font-size: 14px;
         }
         .dashboard-radar-empty i { font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.4; }
+
+        /* Araç Takvimi (Fleet Calendar) */
+        .cal-legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+        .cal-hour-header { display: flex; margin-left: 150px; border-bottom: 2px solid var(--border-color); min-width: 1080px; }
+        .cal-hour-header .cal-hour-cell { flex: 1; font-size: 11px; color: var(--text-gray); text-align: center; padding: 4px 0; border-left: 1px solid #F1F5F9; }
+        .cal-row { display: flex; align-items: stretch; border-bottom: 1px solid #F1F5F9; min-width: 1230px; }
+        .cal-row-label { width: 150px; flex-shrink: 0; padding: 10px 12px; font-size: 13px; font-weight: 600; color: var(--admin-text); display: flex; align-items: center; gap: 6px; }
+        .cal-row-label small { display: block; font-weight: 400; color: var(--text-gray); font-size: 11px; }
+        .cal-row-track { position: relative; flex: 1; min-width: 1080px; height: 46px; background: repeating-linear-gradient(to right, #F8FAFC 0, #F8FAFC calc(100%/18 - 1px), #F1F5F9 calc(100%/18 - 1px), #F1F5F9 calc(100%/18)); cursor: pointer; margin: 4px 0; border-radius: 6px; overflow: hidden; }
+        .cal-segment { position: absolute; top: 3px; bottom: 3px; border-radius: 5px; font-size: 11px; color: #fff; padding: 3px 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+        .cal-segment.reservation { background: var(--primary-red); }
+        .cal-segment.reservation.buffer-part { opacity: 0.55; }
+        .cal-segment.block { background: #94A3B8; }
+        .cal-segment:hover { filter: brightness(1.08); z-index: 5; }
+        #calendar-unassigned strong { color: var(--primary-red); }
     </style>
 </head>
 <body>
@@ -435,6 +450,7 @@
             <a class="menu-item" onclick="switchTab('view-bank-accounts', this)"><i class="fa-solid fa-building-columns"></i> Banka Hesapları</a>
             <a class="menu-item" onclick="switchTab('view-fleet', this)"><i class="fa-solid fa-image"></i> Filo & Görseller</a>
             <a class="menu-item" onclick="switchTab('view-destinations', this)"><i class="fa-solid fa-location-dot"></i> Destinasyon Yönetimi</a>
+            <a class="menu-item" onclick="switchTab('view-calendar', this)"><i class="fa-solid fa-calendar-days"></i> Araç Takvimi</a>
             <a class="menu-item" onclick="switchTab('view-flights', this)"><i class="fa-solid fa-plane"></i> Canlı Uçuşlar (GZP)</a>
             <a class="menu-item" onclick="switchTab('view-flights-ayt', this)"><i class="fa-solid fa-plane"></i> Canlı Uçuşlar (AYT)</a>
             <a class="menu-item" onclick="switchTab('view-chat', this)"><i class="fa-solid fa-comment-dots"></i> Canlı Destek</a>
@@ -836,6 +852,118 @@
                 </div>
             </div>
 
+            <div id="view-calendar" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-calendar-days"></i> Araç Takvimi</h3>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <button class="btn-secondary" onclick="shiftCalendarDate(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                            <input type="date" id="calendar-date" onchange="loadCalendarView()" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;">
+                            <button class="btn-secondary" onclick="shiftCalendarDate(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                            <button class="btn-secondary" onclick="toggleVehicleUnitsPanel()"><i class="fa-solid fa-van-shuttle"></i> Araçları Yönet</button>
+                        </div>
+                    </div>
+                    <p style="font-size:13px;color:var(--text-gray);margin:0 0 14px;">
+                        Boş (yeşil) bir zamana tıklayarak o araca manuel rezervasyon ekleyebilir veya zamanı kapatabilirsiniz.
+                        Kırmızı bloklar rezervasyonu, gri bloklar manuel kapatmaları gösterir — tıklayınca detay/silme seçeneği açılır.
+                    </p>
+                    <div style="display:flex;gap:18px;margin-bottom:16px;font-size:12px;color:var(--text-gray);align-items:center;">
+                        <span><span class="cal-legend-dot" style="background:#10B981;"></span> Müsait</span>
+                        <span><span class="cal-legend-dot" style="background:var(--primary-red);"></span> Transfer Var</span>
+                        <span><span class="cal-legend-dot" style="background:#94A3B8;"></span> Manuel Kapalı</span>
+                    </div>
+
+                    <div id="calendar-empty-state" style="display:none;text-align:center;padding:50px 20px;color:var(--text-gray);">
+                        <i class="fa-solid fa-van-shuttle" style="font-size:32px;margin-bottom:12px;display:block;"></i>
+                        Henüz takvim için araç birimi tanımlanmamış.
+                        <br><button class="btn-primary" style="margin-top:14px;" onclick="autoGenerateVehicleUnits()"><i class="fa-solid fa-wand-magic-sparkles"></i> Filodan Otomatik Oluştur</button>
+                    </div>
+
+                    <div id="calendar-unassigned" style="display:none;background:#FFF5F5;border:1px solid #FED7D7;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;"></div>
+
+                    <div id="calendar-grid-wrapper" style="overflow-x:auto;">
+                        <div id="calendar-hour-header" class="cal-hour-header"></div>
+                        <div id="calendar-rows"></div>
+                    </div>
+                </div>
+
+                <!-- Araç Birimi Yönetimi -->
+                <div id="vehicle-units-panel" class="panel-section" style="display:none;">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-van-shuttle"></i> Takvim Araçları</h3>
+                        <button class="btn-secondary" onclick="toggleVehicleUnitsPanel()">Kapat</button>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>ID</th><th>Ad</th><th>Bağlı Araç Türü</th><th>Plaka</th><th>Durum</th><th>İşlem</th></tr></thead>
+                        <tbody id="vehicle-units-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-gray);">Yükleniyor...</td></tr></tbody>
+                    </table>
+                    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size:12px;">Ad</label>
+                            <input type="text" id="vu-name" placeholder="Örn: Vito 1" style="width:160px;padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size:12px;">Plaka (opsiyonel)</label>
+                            <input type="text" id="vu-plate" placeholder="07 XX 123" style="width:120px;padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size:12px;">Bağlı Araç Türü (opsiyonel)</label>
+                            <select id="vu-vehicle-type" style="width:200px;padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"><option value="">—</option></select>
+                        </div>
+                        <button class="btn-primary" onclick="addVehicleUnit()"><i class="fa-solid fa-plus"></i> Ekle</button>
+                        <button class="btn-secondary" onclick="autoGenerateVehicleUnits()"><i class="fa-solid fa-wand-magic-sparkles"></i> Filodan Otomatik Oluştur</button>
+                    </div>
+                    <div id="vu-status" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13px;font-weight:600;"></div>
+                </div>
+
+                <!-- Hızlı İşlem: Zaman Kapat / Rezervasyon Ekle -->
+                <div id="cal-quick-panel" class="panel-section" style="display:none;">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-bolt"></i> Hızlı İşlem — <span id="cal-quick-context" style="color:var(--text-gray);font-weight:600;font-size:14px;"></span></h3>
+                        <button class="btn-secondary" onclick="hideQuickPanel()">Kapat</button>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-bottom:18px;">
+                        <button class="btn-secondary" id="cal-quick-tab-reservation" onclick="switchQuickTab('reservation')">Rezervasyon Ekle</button>
+                        <button class="btn-secondary" id="cal-quick-tab-block" onclick="switchQuickTab('block')">Zamanı Kapat</button>
+                    </div>
+
+                    <div id="cal-reservation-form">
+                        <input type="hidden" id="cr-vehicle-id">
+                        <div class="form-row">
+                            <div class="form-group"><label>Müşteri Adı *</label><input type="text" id="cr-name" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Telefon</label><input type="text" id="cr-phone" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Alış Noktası</label><input type="text" id="cr-pickup" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Varış Noktası</label><input type="text" id="cr-destination" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Tarih</label><input type="date" id="cr-date" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Saat</label><input type="time" id="cr-time" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Tahmini Süre (dk)</label><input type="number" id="cr-duration" value="60" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Fiyat (₺)</label><input type="number" id="cr-price" value="0" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Tampon Süre (dk)</label><input type="number" id="cr-buffer" value="45" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                        </div>
+                        <div class="form-group"><label>Not</label><textarea id="cr-notes" rows="2" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;width:100%;"></textarea></div>
+                        <button class="btn-primary" style="margin-top:10px;" onclick="submitQuickReservation()"><i class="fa-solid fa-floppy-disk"></i> Rezervasyon Ekle</button>
+                    </div>
+
+                    <div id="cal-block-form" style="display:none;">
+                        <input type="hidden" id="cb-vehicle-id">
+                        <div class="form-row">
+                            <div class="form-group"><label>Tarih</label><input type="date" id="cb-date" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Başlangıç</label><input type="time" id="cb-start" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group"><label>Bitiş</label><input type="time" id="cb-end" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                        </div>
+                        <div class="form-group"><label>Sebep</label><input type="text" id="cb-reason" placeholder="Örn: Bakım, Şahsi Kullanım" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;width:100%;"></div>
+                        <button class="btn-primary" style="margin-top:10px;" onclick="submitCalendarBlock()"><i class="fa-solid fa-lock"></i> Zamanı Kapat</button>
+                    </div>
+                    <div id="cal-quick-status" style="display:none;padding:10px 14px;border-radius:8px;margin-top:14px;font-size:13px;font-weight:600;"></div>
+                </div>
+            </div>
+
             <div id="view-flights" class="panel-view">
                 <div class="panel-section">
                     <div class="section-header">
@@ -1109,6 +1237,16 @@
         if (tabId === 'view-fleet') {
             loadFleet();
         }
+
+        // Destinasyon sekmesi: bölge listesini yenile
+        if (tabId === 'view-destinations') {
+            loadDestinations();
+        }
+
+        // Araç Takvimi sekmesi: takvim görünümünü yenile
+        if (tabId === 'view-calendar') {
+            loadCalendarView();
+        }
     }
 </script>
 
@@ -1286,6 +1424,8 @@
                     loadBankAccounts();
                     loadTelegramConfig();
                     adminLoadPrices();
+                    loadFleet();
+                    loadDestinations();
                     setInterval(loadDashboard, 30000);
                     setInterval(loadAdminFlights, 120000);
                     setInterval(loadAytFlights, 120000);
@@ -2026,12 +2166,15 @@
         var el = document.getElementById('reservation-detail-modal');
         if(el) el.remove();
 
-        fetch('/api/admin/reservations', {
-            method: 'GET',
-            headers: {'Authorization': 'Bearer ' + getToken()}
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
+        var token = getToken();
+        Promise.all([
+            fetch('/api/admin/reservations', { method: 'GET', headers: {'Authorization': 'Bearer ' + token} }).then(function(r){ return r.json(); }),
+            fetch('/api/admin/vehicle-units', { method: 'GET', headers: {'Authorization': 'Bearer ' + token} }).then(function(r){ return r.json(); }).catch(function(){ return {success:false}; })
+        ])
+        .then(function(results) {
+            var data = results[0];
+            var unitsData = results[1];
+            var vehicleUnits = (unitsData && unitsData.success) ? unitsData.units : [];
             if(!data.success) return;
             var r = null;
             for(var i = 0; i < data.reservations.length; i++) {
@@ -2063,6 +2206,11 @@
                 '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Yolcu</label><input id="edit-passengers" type="number" value="' + (r.passengers || 1) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
                 (r.type === 'tahsis' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Süre (saat)</label><input id="edit-duration" type="number" value="' + (r.duration || 4) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' : '') +
                 '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tutar (₺)</label><input id="edit-price" type="number" value="' + (r.price || 0) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Araç Ata (Takvim)</label><select id="edit-vehicle-unit" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;">' +
+                '<option value="">— Atanmadı —</option>' +
+                vehicleUnits.map(function(u) { return '<option value="' + u.id + '"' + (r.vehicleUnitId === u.id ? ' selected' : '') + '>' + escapeHtml(u.name) + '</option>'; }).join('') +
+                '</select></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tampon Süre (dk)</label><input id="edit-buffer" type="number" value="' + (r.bufferMinutes != null ? r.bufferMinutes : 45) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
                 '<div style="grid-column:1/-1;"><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Notlar</label><textarea id="edit-notes" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;min-height:60px;resize:vertical;">' + escapeHtml(r.notes || '') + '</textarea></div>' +
                 '</div>' +
                 '<div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">' +
@@ -2103,6 +2251,12 @@
 
         var durEl = document.getElementById('edit-duration');
         if(durEl) payload.duration = parseInt(durEl.value) || 4;
+
+        var vuEl = document.getElementById('edit-vehicle-unit');
+        if(vuEl) payload.vehicleUnitId = vuEl.value ? parseInt(vuEl.value) : null;
+
+        var bufEl = document.getElementById('edit-buffer');
+        if(bufEl) payload.bufferMinutes = parseInt(bufEl.value) || 45;
 
         fetch('/api/admin/reservations', {
             method: 'PUT',
@@ -3499,6 +3653,444 @@
             statusEl.style.background = '#f0f4ff';
             statusEl.style.color = '#1B2B4C';
             statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + message;
+        }
+    }
+
+    // ─── ARAÇ TAKVİMİ (Fleet Calendar - FAZ 1) ────────────────────
+
+    var CAL_VEHICLE_UNITS = [];
+    var CAL_RESERVATIONS = [];
+    var CAL_BLOCKS = [];
+    var CAL_DAY_START_MIN = 360;   // 06:00
+    var CAL_DAY_END_MIN = 1440;    // 24:00
+    var CAL_DAY_SPAN = CAL_DAY_END_MIN - CAL_DAY_START_MIN; // 1080 dk
+
+    function todayStr() {
+        var d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function getCalendarDate() {
+        var el = document.getElementById('calendar-date');
+        if (!el) return todayStr();
+        if (!el.value) el.value = todayStr();
+        return el.value;
+    }
+
+    function shiftCalendarDate(days) {
+        var el = document.getElementById('calendar-date');
+        var cur = getCalendarDate();
+        var parts = cur.split('-').map(Number);
+        var d = new Date(parts[0], parts[1] - 1, parts[2]);
+        d.setDate(d.getDate() + days);
+        el.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        loadCalendarView();
+    }
+
+    function timeToMinutes(t) {
+        if (!t) return 0;
+        var p = t.split(':').map(Number);
+        return (p[0] || 0) * 60 + (p[1] || 0);
+    }
+
+    function minutesToTime(m) {
+        m = ((m % 1440) + 1440) % 1440;
+        var h = Math.floor(m / 60), mm = m % 60;
+        return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    }
+
+    async function loadCalendarView() {
+        var token = getToken();
+        if (!token) return;
+        var date = getCalendarDate();
+        try {
+            var res = await fetch('/api/admin/calendar?date=' + encodeURIComponent(date), {
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            var data = await res.json();
+            if (!data.success) return;
+            CAL_VEHICLE_UNITS = data.vehicleUnits || [];
+            CAL_RESERVATIONS = data.reservations || [];
+            CAL_BLOCKS = data.blocks || [];
+
+            var emptyState = document.getElementById('calendar-empty-state');
+            var wrapper = document.getElementById('calendar-grid-wrapper');
+            if (CAL_VEHICLE_UNITS.length === 0) {
+                emptyState.style.display = 'block';
+                wrapper.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                wrapper.style.display = 'block';
+                renderCalendarGrid();
+            }
+            renderUnassignedBar();
+        } catch(e) {
+            console.error('Takvim yüklenemedi:', e);
+        }
+    }
+
+    function renderUnassignedBar() {
+        var bar = document.getElementById('calendar-unassigned');
+        var unassigned = CAL_RESERVATIONS.filter(function(r) { return !r.vehicleUnitId; });
+        if (unassigned.length === 0) {
+            bar.style.display = 'none';
+            bar.innerHTML = '';
+            return;
+        }
+        var html = '<strong><i class="fa-solid fa-triangle-exclamation"></i> ' + unassigned.length + ' rezervasyon araç ataması bekliyor:</strong> ';
+        html += unassigned.map(function(r) {
+            return '<a href="javascript:void(0)" onclick="openReservationDetail(' + r.id + ')" style="color:#B91C1C;text-decoration:underline;margin-right:10px;">' +
+                escapeHtml(r.customerName || 'İsimsiz') + ' (' + (r.time || '') + ')</a>';
+        }).join('');
+        bar.innerHTML = html;
+        bar.style.display = 'block';
+    }
+
+    function renderCalendarGrid() {
+        var header = document.getElementById('calendar-hour-header');
+        var rows = document.getElementById('calendar-rows');
+        var hourHtml = '';
+        for (var h = 6; h < 24; h++) {
+            hourHtml += '<div class="cal-hour-cell">' + String(h).padStart(2, '0') + ':00</div>';
+        }
+        header.innerHTML = hourHtml;
+
+        var units = CAL_VEHICLE_UNITS.slice().sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) || a.id - b.id; });
+        var rowsHtml = '';
+        for (var i = 0; i < units.length; i++) {
+            var u = units[i];
+            var segHtml = '';
+
+            var uReservations = CAL_RESERVATIONS.filter(function(r) { return r.vehicleUnitId === u.id; });
+            for (var j = 0; j < uReservations.length; j++) {
+                var r = uReservations[j];
+                var start = timeToMinutes(r.time);
+                var coreEnd = timeToMinutes(r.endTime || r.time);
+                var bufferEnd = timeToMinutes(r.blockedUntil || r.endTime || r.time);
+                segHtml += calSegmentDiv(start, coreEnd, 'reservation', escapeHtml(r.customerName || 'Rezervasyon'), 'openReservationDetail(' + r.id + ')');
+                if (bufferEnd > coreEnd) {
+                    segHtml += calSegmentDiv(coreEnd, bufferEnd, 'reservation buffer-part', 'tampon', 'openReservationDetail(' + r.id + ')');
+                }
+            }
+
+            var uBlocks = CAL_BLOCKS.filter(function(b) { return b.vehicleUnitId === u.id; });
+            for (var k = 0; k < uBlocks.length; k++) {
+                var b = uBlocks[k];
+                segHtml += calSegmentDiv(timeToMinutes(b.startTime), timeToMinutes(b.endTime), 'block', escapeHtml(b.reason || 'Kapalı'), 'openBlockDetail(' + b.id + ')');
+            }
+
+            rowsHtml += '<div class="cal-row">' +
+                '<div class="cal-row-label">' + escapeHtml(u.name) + (u.plateNumber ? '<small>' + escapeHtml(u.plateNumber) + '</small>' : '') + '</div>' +
+                '<div class="cal-row-track" onclick="handleTrackClick(event, ' + u.id + ', \'' + escapeHtml(u.name).replace(/'/g, "\\'") + '\')">' + segHtml + '</div>' +
+                '</div>';
+        }
+        rows.innerHTML = rowsHtml;
+    }
+
+    function calSegmentDiv(startMin, endMin, cls, label, onclickAttr) {
+        startMin = Math.max(startMin, CAL_DAY_START_MIN);
+        endMin = Math.min(Math.max(endMin, startMin + 5), CAL_DAY_END_MIN);
+        var leftPct = ((startMin - CAL_DAY_START_MIN) / CAL_DAY_SPAN) * 100;
+        var widthPct = ((endMin - startMin) / CAL_DAY_SPAN) * 100;
+        return '<div class="cal-segment ' + cls + '" style="left:' + leftPct + '%;width:' + widthPct + '%;" ' +
+            'onclick="event.stopPropagation();' + onclickAttr + '" title="' + label + '">' + label + '</div>';
+    }
+
+    function handleTrackClick(evt, vehicleUnitId, unitName) {
+        var rect = evt.currentTarget.getBoundingClientRect();
+        var ratio = (evt.clientX - rect.left) / rect.width;
+        var rawMin = CAL_DAY_START_MIN + ratio * CAL_DAY_SPAN;
+        var snapped = Math.round(rawMin / 15) * 15;
+        openQuickPanel(vehicleUnitId, unitName, minutesToTime(snapped));
+    }
+
+    function openQuickPanel(vehicleUnitId, unitName, time) {
+        var date = getCalendarDate();
+        document.getElementById('cal-quick-context').textContent = unitName + ' — ' + date + ' ' + time;
+        document.getElementById('cr-vehicle-id').value = vehicleUnitId;
+        document.getElementById('cr-date').value = date;
+        document.getElementById('cr-time').value = time;
+        document.getElementById('cb-vehicle-id').value = vehicleUnitId;
+        document.getElementById('cb-date').value = date;
+        document.getElementById('cb-start').value = time;
+        document.getElementById('cb-end').value = minutesToTime(timeToMinutes(time) + 60);
+        document.getElementById('cal-quick-panel').style.display = 'block';
+        switchQuickTab('reservation');
+        document.getElementById('cal-quick-panel').scrollIntoView({behavior: 'smooth', block: 'center'});
+    }
+
+    function hideQuickPanel() {
+        document.getElementById('cal-quick-panel').style.display = 'none';
+    }
+
+    function switchQuickTab(tab) {
+        var resForm = document.getElementById('cal-reservation-form');
+        var blockForm = document.getElementById('cal-block-form');
+        var resTab = document.getElementById('cal-quick-tab-reservation');
+        var blockTab = document.getElementById('cal-quick-tab-block');
+        if (tab === 'reservation') {
+            resForm.style.display = 'block';
+            blockForm.style.display = 'none';
+            resTab.style.background = 'var(--primary)';
+            resTab.style.color = '#fff';
+            blockTab.style.background = '';
+            blockTab.style.color = '';
+        } else {
+            resForm.style.display = 'none';
+            blockForm.style.display = 'block';
+            blockTab.style.background = 'var(--primary)';
+            blockTab.style.color = '#fff';
+            resTab.style.background = '';
+            resTab.style.color = '';
+        }
+    }
+
+    function showCalQuickStatus(msg, type) {
+        var el = document.getElementById('cal-quick-status');
+        el.style.display = 'block';
+        if (type === 'success') { el.style.background = '#d4edda'; el.style.color = '#155724'; }
+        else if (type === 'error') { el.style.background = '#f8d7da'; el.style.color = '#721c24'; }
+        else { el.style.background = '#f0f4ff'; el.style.color = '#1B2B4C'; }
+        el.innerHTML = msg;
+    }
+
+    async function submitQuickReservation() {
+        var token = getToken();
+        var name = document.getElementById('cr-name').value.trim();
+        if (!name) { showCalQuickStatus('Müşteri adı zorunlu.', 'error'); return; }
+        var payload = {
+            vehicleUnitId: parseInt(document.getElementById('cr-vehicle-id').value),
+            customerName: name,
+            customerPhone: document.getElementById('cr-phone').value.trim(),
+            pickup: document.getElementById('cr-pickup').value.trim(),
+            destination: document.getElementById('cr-destination').value.trim(),
+            date: document.getElementById('cr-date').value,
+            time: document.getElementById('cr-time').value,
+            estimatedDurationMinutes: parseInt(document.getElementById('cr-duration').value) || 60,
+            price: parseFloat(document.getElementById('cr-price').value) || 0,
+            bufferMinutes: parseInt(document.getElementById('cr-buffer').value) || 45,
+            notes: document.getElementById('cr-notes').value.trim()
+        };
+        showCalQuickStatus('Kaydediliyor...', 'info');
+        try {
+            var res = await fetch('/api/admin/calendar/quick-reservation', {
+                method: 'POST',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            var data = await res.json();
+            if (data.success) {
+                showCalQuickStatus('Rezervasyon eklendi.', 'success');
+                setTimeout(function() { hideQuickPanel(); loadCalendarView(); }, 700);
+            } else {
+                showCalQuickStatus('Hata: ' + (data.error || 'Kaydedilemedi'), 'error');
+            }
+        } catch(e) {
+            showCalQuickStatus('Sunucu hatası!', 'error');
+        }
+    }
+
+    async function submitCalendarBlock() {
+        var token = getToken();
+        var payload = {
+            action: 'add',
+            vehicleUnitId: parseInt(document.getElementById('cb-vehicle-id').value),
+            date: document.getElementById('cb-date').value,
+            startTime: document.getElementById('cb-start').value,
+            endTime: document.getElementById('cb-end').value,
+            reason: document.getElementById('cb-reason').value.trim() || 'Bakım / Şahsi Kullanım'
+        };
+        showCalQuickStatus('Kaydediliyor...', 'info');
+        try {
+            var res = await fetch('/api/admin/calendar/block', {
+                method: 'PUT',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            var data = await res.json();
+            if (data.success) {
+                showCalQuickStatus('Zaman kapatıldı.', 'success');
+                setTimeout(function() { hideQuickPanel(); loadCalendarView(); }, 700);
+            } else {
+                showCalQuickStatus('Hata: ' + (data.error || 'Kaydedilemedi'), 'error');
+            }
+        } catch(e) {
+            showCalQuickStatus('Sunucu hatası!', 'error');
+        }
+    }
+
+    function openReservationDetail(resId) {
+        adminEditReservation(resId);
+    }
+
+    function openBlockDetail(blockId) {
+        var b = CAL_BLOCKS.find(function(x) { return x.id === blockId; });
+        var label = b ? (b.reason + ' (' + b.startTime + '–' + b.endTime + ')') : ('Blok #' + blockId);
+        if (confirm('"' + label + '" kapatmasını silmek istiyor musunuz?')) {
+            deleteCalendarBlock(blockId);
+        }
+    }
+
+    async function deleteCalendarBlock(blockId) {
+        var token = getToken();
+        try {
+            var res = await fetch('/api/admin/calendar/block', {
+                method: 'PUT',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'delete', id: blockId })
+            });
+            var data = await res.json();
+            if (data.success) loadCalendarView();
+            else alert('Silinemedi: ' + (data.error || 'Bilinmeyen hata'));
+        } catch(e) {
+            alert('Sunucu hatası!');
+        }
+    }
+
+    // ─── Araç Birimleri (Takvim Araçları) Yönetimi ───────────────
+
+    function toggleVehicleUnitsPanel() {
+        var panel = document.getElementById('vehicle-units-panel');
+        var showing = panel.style.display !== 'none';
+        panel.style.display = showing ? 'none' : 'block';
+        if (!showing) loadVehicleUnitsPanelData();
+    }
+
+    async function loadVehicleUnitsPanelData() {
+        var token = getToken();
+        try {
+            var results = await Promise.all([
+                fetch('/api/admin/vehicle-units', { headers: {'Authorization': 'Bearer ' + token} }).then(function(r){ return r.json(); }),
+                fetch('/api/admin/fleet', { headers: {'Authorization': 'Bearer ' + token} }).then(function(r){ return r.json(); }).catch(function(){ return {success:false}; })
+            ]);
+            var unitsData = results[0], fleetData = results[1];
+            if (unitsData.success) renderVehicleUnitsTable(unitsData.units);
+            if (fleetData.success && Array.isArray(fleetData.vehicles)) {
+                var sel = document.getElementById('vu-vehicle-type');
+                var opts = '<option value="">—</option>';
+                fleetData.vehicles.forEach(function(v) {
+                    opts += '<option value="' + v.id + '">' + escapeHtml(v.name) + '</option>';
+                });
+                sel.innerHTML = opts;
+            }
+        } catch(e) {
+            console.error('Araç birimleri yüklenemedi:', e);
+        }
+    }
+
+    function renderVehicleUnitsTable(units) {
+        var tbody = document.getElementById('vehicle-units-tbody');
+        if (!units || units.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-gray);">Henüz araç birimi yok.</td></tr>';
+            return;
+        }
+        var html = '';
+        units.sort(function(a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0) || a.id - b.id; }).forEach(function(u) {
+            var statusHtml = u.isActive
+                ? '<span onclick="toggleVehicleUnitActive(' + u.id + ', true)" style="cursor:pointer;color:#155724;background:#d4edda;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Aktif</span>'
+                : '<span onclick="toggleVehicleUnitActive(' + u.id + ', false)" style="cursor:pointer;color:#721c24;background:#f8d7da;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">Pasif</span>';
+            html += '<tr>' +
+                '<td>' + u.id + '</td>' +
+                '<td><strong>' + escapeHtml(u.name) + '</strong></td>' +
+                '<td>' + escapeHtml(u.vehicleId ? String(u.vehicleId) : '—') + '</td>' +
+                '<td>' + escapeHtml(u.plateNumber || '—') + '</td>' +
+                '<td>' + statusHtml + '</td>' +
+                '<td><button class="btn-secondary" onclick="deleteVehicleUnit(' + u.id + ')" style="padding:4px 10px;font-size:12px;color:var(--primary-red);"><i class="fa-solid fa-trash"></i></button></td>' +
+                '</tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    function showVuStatus(msg, type) {
+        var el = document.getElementById('vu-status');
+        el.style.display = 'block';
+        if (type === 'success') { el.style.background = '#d4edda'; el.style.color = '#155724'; }
+        else if (type === 'error') { el.style.background = '#f8d7da'; el.style.color = '#721c24'; }
+        else { el.style.background = '#f0f4ff'; el.style.color = '#1B2B4C'; }
+        el.innerHTML = msg;
+    }
+
+    async function addVehicleUnit() {
+        var token = getToken();
+        var name = document.getElementById('vu-name').value.trim();
+        if (!name) { showVuStatus('Araç adı zorunlu.', 'error'); return; }
+        var payload = {
+            action: 'add',
+            name: name,
+            plateNumber: document.getElementById('vu-plate').value.trim(),
+            vehicleId: document.getElementById('vu-vehicle-type').value || null
+        };
+        try {
+            var res = await fetch('/api/admin/vehicle-units', {
+                method: 'PUT',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            var data = await res.json();
+            if (data.success) {
+                showVuStatus('Araç eklendi.', 'success');
+                document.getElementById('vu-name').value = '';
+                document.getElementById('vu-plate').value = '';
+                loadVehicleUnitsPanelData();
+                loadCalendarView();
+            } else {
+                showVuStatus('Hata: ' + (data.error || 'Eklenemedi'), 'error');
+            }
+        } catch(e) {
+            showVuStatus('Sunucu hatası!', 'error');
+        }
+    }
+
+    async function toggleVehicleUnitActive(id, current) {
+        var token = getToken();
+        try {
+            var res = await fetch('/api/admin/vehicle-units', {
+                method: 'PUT',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'update', id: id, isActive: !current })
+            });
+            var data = await res.json();
+            if (data.success) { loadVehicleUnitsPanelData(); loadCalendarView(); }
+        } catch(e) {}
+    }
+
+    async function deleteVehicleUnit(id) {
+        if (!confirm('Bu araç birimini silmek istediğinize emin misiniz?')) return;
+        var token = getToken();
+        try {
+            var res = await fetch('/api/admin/vehicle-units', {
+                method: 'PUT',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'delete', id: id })
+            });
+            var data = await res.json();
+            if (data.success) { loadVehicleUnitsPanelData(); loadCalendarView(); }
+            else alert('Silinemedi: ' + (data.error || 'Bilinmeyen hata'));
+        } catch(e) {
+            alert('Sunucu hatası!');
+        }
+    }
+
+    async function autoGenerateVehicleUnits() {
+        var token = getToken();
+        showVuStatus('Filodan araç birimleri oluşturuluyor...', 'info');
+        try {
+            var res = await fetch('/api/admin/vehicle-units', {
+                method: 'PUT',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'auto_generate', count: 1 })
+            });
+            var data = await res.json();
+            if (data.success) {
+                showVuStatus('Araç birimleri oluşturuldu.', 'success');
+                document.getElementById('vehicle-units-panel').style.display = 'block';
+                loadVehicleUnitsPanelData();
+                loadCalendarView();
+            } else {
+                showVuStatus('Hata: ' + (data.error || 'Oluşturulamadı'), 'error');
+            }
+        } catch(e) {
+            showVuStatus('Sunucu hatası!', 'error');
         }
     }
 

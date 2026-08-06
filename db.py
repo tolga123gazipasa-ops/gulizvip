@@ -98,6 +98,17 @@ def init_db():
                 # Mevcut tablolarda eksik olabilecek yeni kolonlar için güvenli migration
                 cur.execute("ALTER TABLE destinations ADD COLUMN IF NOT EXISTS airport VARCHAR(20) DEFAULT 'both';")
                 cur.execute("ALTER TABLE destinations ADD COLUMN IF NOT EXISTS gallery_images TEXT DEFAULT '';")
+                # Araç Takvim ve Filo Yönetim Modülü (FAZ 1) — reservations tablosuna
+                # takvim/harita alanları. Hepsi nullable/varsayılanlı, mevcut kayıtları bozmaz.
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS vehicle_unit_id INTEGER;")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS buffer_minutes INTEGER DEFAULT 45;")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS estimated_duration_minutes INTEGER;")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS pickup_lat DECIMAL(10,7);")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS pickup_lng DECIMAL(10,7);")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS dropoff_lat DECIMAL(10,7);")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS dropoff_lng DECIMAL(10,7);")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS distance_km DECIMAL(6,2);")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS is_manual BOOLEAN DEFAULT FALSE;")
         conn.close()
         print("[✓] PostgreSQL tabloları hazır.")
         return True
@@ -141,6 +152,15 @@ def load_reservations_from_db():
                 "paymentMethod": row.get("payment_method", ""),
                 "paymentStatus": row.get("payment_status", "pending"),
                 "status": row["status"],
+                "vehicleUnitId": row.get("vehicle_unit_id"),
+                "bufferMinutes": row.get("buffer_minutes") if row.get("buffer_minutes") is not None else 45,
+                "estimatedDurationMinutes": row.get("estimated_duration_minutes"),
+                "pickupLat": float(row["pickup_lat"]) if row.get("pickup_lat") is not None else None,
+                "pickupLng": float(row["pickup_lng"]) if row.get("pickup_lng") is not None else None,
+                "dropoffLat": float(row["dropoff_lat"]) if row.get("dropoff_lat") is not None else None,
+                "dropoffLng": float(row["dropoff_lng"]) if row.get("dropoff_lng") is not None else None,
+                "distanceKm": float(row["distance_km"]) if row.get("distance_km") is not None else None,
+                "isManual": row.get("is_manual", False),
                 "createdAt": row["created_at"].isoformat() if row["created_at"] else "",
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             })
@@ -164,8 +184,11 @@ def save_reservation_to_db(reservation):
                     INSERT INTO reservations
                         (type, customer_name, customer_phone, customer_email, pickup, destination,
                          flight_number, date, time, passengers, duration, notes, price,
-                         payment_method, payment_status, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                         payment_method, payment_status, status,
+                         vehicle_unit_id, buffer_minutes, estimated_duration_minutes,
+                         pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, distance_km, is_manual)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     reservation.get("type", "transfer"),
@@ -184,6 +207,15 @@ def save_reservation_to_db(reservation):
                     reservation.get("paymentMethod", ""),
                     reservation.get("paymentStatus", "pending"),
                     reservation.get("status", "pending"),
+                    reservation.get("vehicleUnitId"),
+                    reservation.get("bufferMinutes", 45),
+                    reservation.get("estimatedDurationMinutes"),
+                    reservation.get("pickupLat"),
+                    reservation.get("pickupLng"),
+                    reservation.get("dropoffLat"),
+                    reservation.get("dropoffLng"),
+                    reservation.get("distanceKm"),
+                    reservation.get("isManual", False),
                 ))
                 new_id = cur.fetchone()["id"]
         conn.close()
@@ -284,6 +316,15 @@ def update_reservation_in_db(res_id, fields):
             "status": "status",
             "paymentMethod": "payment_method",
             "paymentStatus": "payment_status",
+            "vehicleUnitId": "vehicle_unit_id",
+            "bufferMinutes": "buffer_minutes",
+            "estimatedDurationMinutes": "estimated_duration_minutes",
+            "pickupLat": "pickup_lat",
+            "pickupLng": "pickup_lng",
+            "dropoffLat": "dropoff_lat",
+            "dropoffLng": "dropoff_lng",
+            "distanceKm": "distance_km",
+            "isManual": "is_manual",
         }
         set_parts = []
         values = []

@@ -305,6 +305,113 @@ def save_vehicles():
         print(f"[!] Araç kaydedilemedi: {e}")
 
 
+# ─── Araç Takvim ve Filo Yönetim Modülü (FAZ 1) ────────────────────────────────
+# VEHICLE_UNITS: takvimde tek tek planlanabilen somut araç birimleri (örn. "Vito 1",
+# "Vito 2") — vehicles.json'daki araç TÜRLERİNDEN (count alanlı) farklıdır, admin
+# panelinden mevcut filodan otomatik türetilebilir veya elle eklenebilir.
+VEHICLE_UNITS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vehicle_units.json")
+VEHICLE_UNITS = []
+
+# CALENDAR_BLOCKS: admin'in "Bakım", "Şahsi Kullanım" vb. sebeplerle manuel olarak
+# kapattığı zaman aralıkları (gerçek bir müşteri rezervasyonu değildir).
+CALENDAR_BLOCKS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "calendar_blocks.json")
+CALENDAR_BLOCKS = []
+
+
+def load_vehicle_units():
+    """Önce PostgreSQL (config tablosu, key='vehicle_units'), yoksa vehicle_units.json,
+    o da yoksa boş liste (admin panelinden 'Filodan Otomatik Oluştur' ile başlatılır)."""
+    global VEHICLE_UNITS
+    db_data = db.get_json_config("vehicle_units")
+    if db_data is not None:
+        VEHICLE_UNITS = db_data.get("units", [])
+        print(f"[✓] load_vehicle_units() — PostgreSQL'den {len(VEHICLE_UNITS)} araç birimi yüklendi")
+        return
+    try:
+        if os.path.exists(VEHICLE_UNITS_FILE):
+            with open(VEHICLE_UNITS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                VEHICLE_UNITS = data.get("units", [])
+                print(f"[✓] load_vehicle_units() — JSON dosyasından {len(VEHICLE_UNITS)} araç birimi yüklendi")
+        else:
+            VEHICLE_UNITS = []
+    except Exception as e:
+        print(f"[!] Araç birimleri yüklenemedi: {e}")
+        VEHICLE_UNITS = []
+
+
+def save_vehicle_units():
+    """Önce PostgreSQL'e yazmayı dener; DB yoksa/başarısızsa vehicle_units.json'a yazar."""
+    data = {"units": VEHICLE_UNITS}
+    if db.set_json_config("vehicle_units", data):
+        return
+    try:
+        with open(VEHICLE_UNITS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[!] Araç birimleri kaydedilemedi: {e}")
+
+
+def load_calendar_blocks():
+    """Önce PostgreSQL (config tablosu, key='calendar_blocks'), yoksa calendar_blocks.json."""
+    global CALENDAR_BLOCKS
+    db_data = db.get_json_config("calendar_blocks")
+    if db_data is not None:
+        CALENDAR_BLOCKS = db_data.get("blocks", [])
+        print(f"[✓] load_calendar_blocks() — PostgreSQL'den {len(CALENDAR_BLOCKS)} blok yüklendi")
+        return
+    try:
+        if os.path.exists(CALENDAR_BLOCKS_FILE):
+            with open(CALENDAR_BLOCKS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                CALENDAR_BLOCKS = data.get("blocks", [])
+                print(f"[✓] load_calendar_blocks() — JSON dosyasından {len(CALENDAR_BLOCKS)} blok yüklendi")
+        else:
+            CALENDAR_BLOCKS = []
+    except Exception as e:
+        print(f"[!] Takvim blokları yüklenemedi: {e}")
+        CALENDAR_BLOCKS = []
+
+
+def save_calendar_blocks():
+    """Önce PostgreSQL'e yazmayı dener; DB yoksa/başarısızsa calendar_blocks.json'a yazar."""
+    data = {"blocks": CALENDAR_BLOCKS}
+    if db.set_json_config("calendar_blocks", data):
+        return
+    try:
+        with open(CALENDAR_BLOCKS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[!] Takvim blokları kaydedilemedi: {e}")
+
+
+# Tahsis süre anahtarlarının dakika karşılığı (takvimde bloke süresi hesaplamak için)
+TAHSIS_DURATION_MINUTES = {"4hours": 240, "8hours": 480, "12hours": 720, "24hours": 1440}
+DEFAULT_TRANSFER_DURATION_MINUTES = 60  # Faz 2'de Google Maps'ten gelen gerçek süreyle değişecek
+
+
+def _reservation_duration_minutes(r):
+    """Bir rezervasyonun aracı ne kadar süre meşgul edeceğini (dakika) hesaplar."""
+    if r.get("estimatedDurationMinutes"):
+        try:
+            return int(r["estimatedDurationMinutes"])
+        except (ValueError, TypeError):
+            pass
+    if r.get("type") == "tahsis":
+        return TAHSIS_DURATION_MINUTES.get(r.get("duration", ""), 480)
+    return DEFAULT_TRANSFER_DURATION_MINUTES
+
+
+def _add_minutes_to_time(time_str, minutes):
+    """'HH:MM' formatındaki saate dakika ekler, yine 'HH:MM' döndürür."""
+    try:
+        h, m = map(int, time_str.split(":")[:2])
+        total = (h * 60 + m + int(minutes)) % (24 * 60)
+        return f"{total // 60:02d}:{total % 60:02d}"
+    except Exception:
+        return time_str
+
+
 def resize_and_save_image(file_data, filepath, max_width=1600, max_height=1200, quality=85, crop_ratio=None):
     """Pillow yüklüyse görseli boyutlandırıp JPEG olarak kaydeder.
     crop_ratio verilirse (örn. (3, 2)) görsel önce bu en-boy oranına ortalanarak kırpılır
@@ -1144,6 +1251,56 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
                 self._send_json({"success": True, "vehicles": VEHICLES})
                 return
+            if path == "/api/admin/vehicle-units":
+                user = self._authenticate()
+                if not user:
+                    self._send_error("Yetkisiz erişim.", 401)
+                    return
+                units = sorted(VEHICLE_UNITS, key=lambda u: (u.get("sortOrder", 0), u.get("id", 0)))
+                self._send_json({"success": True, "units": units})
+                return
+            if path == "/api/admin/calendar":
+                user = self._authenticate()
+                if not user:
+                    self._send_error("Yetkisiz erişim.", 401)
+                    return
+                date_str = params.get("date", "") or datetime.now().strftime("%Y-%m-%d")
+                day_reservations = []
+                for r in RESERVATIONS:
+                    if r.get("date") == date_str and r.get("status") != "cancelled":
+                        dur = _reservation_duration_minutes(r)
+                        buf = r.get("bufferMinutes", 45)
+                        if buf is None:
+                            buf = 45
+                        start_time = r.get("time", "00:00")
+                        day_reservations.append({
+                            "id": r.get("id"),
+                            "customerName": r.get("customerName", ""),
+                            "customerPhone": r.get("customerPhone", ""),
+                            "pickup": r.get("pickup", ""),
+                            "destination": r.get("destination", ""),
+                            "type": r.get("type", "transfer"),
+                            "time": start_time,
+                            "endTime": _add_minutes_to_time(start_time, dur),
+                            "blockedUntil": _add_minutes_to_time(start_time, dur + buf),
+                            "vehicleUnitId": r.get("vehicleUnitId"),
+                            "status": r.get("status", "pending"),
+                            "isManual": r.get("isManual", False),
+                            "price": r.get("price", 0),
+                        })
+                day_blocks = [b for b in CALENDAR_BLOCKS if b.get("date") == date_str]
+                active_units = sorted(
+                    [u for u in VEHICLE_UNITS if u.get("isActive", True)],
+                    key=lambda u: (u.get("sortOrder", 0), u.get("id", 0))
+                )
+                self._send_json({
+                    "success": True,
+                    "date": date_str,
+                    "vehicleUnits": active_units,
+                    "reservations": day_reservations,
+                    "blocks": day_blocks,
+                })
+                return
             if path == "/api/admin/telegram/config":
                 user = self._authenticate()
                 if not user:
@@ -1387,7 +1544,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except Exception:
                 pass
     def do_POST(self):
-        global RESERVATION_ID
+        global RESERVATION_ID, RESERVATIONS
         path, _ = self._parse_path()
         if path == "/api/admin/login":
             try:
@@ -1444,6 +1601,68 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             url, _fields = result
             self._send_json({"success": True, "url": url, "resized": _PIL_AVAILABLE})
+            return
+        if path == "/api/admin/calendar/quick-reservation":
+            # Patron/operasyon ekibi tarafından takvim üzerinden elle girilen rezervasyon
+            # (örn. telefonla gelen özel talep). Herhangi bir hizmet bölgesi kısıtlaması
+            # UYGULANMAZ — "TAMAMEN MANUEL MÜDAHALE" yetkisi bu uçtan geçer.
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            global RESERVATION_ID
+            try:
+                body = json.loads(self._read_body())
+                if not body.get("customerName") or not body.get("date") or not body.get("time"):
+                    self._send_error("Müşteri adı, tarih ve saat zorunludur.", 400)
+                    return
+                reservation = {
+                    "id": RESERVATION_ID,
+                    "type": body.get("type", "transfer"),
+                    "customerName": body.get("customerName", ""),
+                    "customerPhone": body.get("customerPhone", ""),
+                    "customerEmail": body.get("customerEmail", ""),
+                    "pickup": body.get("pickup", ""),
+                    "destination": body.get("destination", ""),
+                    "flightNumber": body.get("flightNumber", ""),
+                    "date": body.get("date", ""),
+                    "time": body.get("time", ""),
+                    "passengers": body.get("passengers", 1),
+                    "duration": body.get("duration", ""),
+                    "notes": body.get("notes", ""),
+                    "price": body.get("price", 0),
+                    "paymentMethod": body.get("paymentMethod", "havale"),
+                    "status": body.get("status", "confirmed"),
+                    "vehicleUnitId": body.get("vehicleUnitId"),
+                    "bufferMinutes": body.get("bufferMinutes", 45),
+                    "estimatedDurationMinutes": body.get("estimatedDurationMinutes"),
+                    "isManual": True,
+                    "createdAt": datetime.now().isoformat(),
+                }
+                db_id = db.save_reservation_to_db(reservation)
+                if db_id:
+                    reservation["id"] = db_id
+                    RESERVATION_ID = db_id + 1
+                else:
+                    RESERVATIONS.insert(0, reservation)
+                    RESERVATION_ID += 1
+                    save_reservations()
+                self._send_json({"success": True, "reservation": reservation})
+                telegram_msg = (
+                    f"📌 <b>Manuel Rezervasyon Eklendi #{reservation['id']}</b>\n"
+                    f"👤 <b>İsim:</b> {reservation['customerName']}\n"
+                    f"📞 <b>Telefon:</b> {reservation['customerPhone']}\n"
+                    f"📍 <b>Alış:</b> {reservation['pickup']}\n"
+                    f"🏁 <b>Varış:</b> {reservation['destination']}\n"
+                    f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
+                    f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
+                    f"🚐 <b>Takvimden admin tarafından girildi.</b>"
+                )
+                send_telegram(telegram_msg)
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
             return
         if path == "/api/reservations":
             try:
@@ -1841,6 +2060,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
         self._send_error("Bulunamadı", 404)
 
     def do_PUT(self):
+        global RESERVATIONS
         path, _ = self._parse_path()
         if path == "/api/admin/flights":
             user = self._authenticate()
@@ -2008,23 +2228,45 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             try:
                 body = json.loads(self._read_body())
                 action = body.get("action", "")
-                if action == "update":
+                if action == "update" or action == "edit":
+                    # Not: admin.html 'edit' gönderir; 'update' de geriye dönük uyumluluk için kabul edilir.
                     res_id = body.get("id")
                     if res_id is None:
                         self._send_error("Rezervasyon ID gerekli.", 400)
                         return
-                    global RESERVATIONS
                     for r in RESERVATIONS:
                         if r.get("id") == res_id:
-                            for key in ("status", "customer_name", "customer_phone", "customer_email",
-                                        "pickup", "destination", "flight_number", "date", "time",
-                                        "passengers", "notes", "price", "payment_method", "payment_status"):
+                            # Not: alan adları reservation dict'iyle aynı (camelCase) olmalı —
+                            # önceki snake_case liste hiçbir zaman eşleşmiyordu (sessiz bug, düzeltildi).
+                            for key in ("status", "customerName", "customerPhone", "customerEmail",
+                                        "pickup", "destination", "flightNumber", "date", "time",
+                                        "passengers", "notes", "price", "paymentMethod", "paymentStatus",
+                                        "vehicleUnitId", "bufferMinutes", "estimatedDurationMinutes",
+                                        "distanceKm", "isManual"):
                                 if key in body:
                                     r[key] = body[key]
                             save_reservations()
-                            # DB'ye de kaydet
+                            # DB'ye de kaydet — INSERT değil UPDATE (tekrar eden kayıt oluşmasın diye)
                             try:
-                                db.save_reservation_to_db(r)
+                                db.update_reservation_in_db(res_id, body)
+                            except Exception:
+                                pass
+                            self._send_json({"success": True, "reservation": r})
+                            return
+                    self._send_error("Rezervasyon bulunamadı.", 404)
+                elif action == "update-status":
+                    # Onayla / Tamamla / İptal Et butonları bu action'ı gönderir.
+                    res_id = body.get("id")
+                    new_status = body.get("status")
+                    if res_id is None or not new_status:
+                        self._send_error("Rezervasyon ID ve durum gerekli.", 400)
+                        return
+                    for r in RESERVATIONS:
+                        if r.get("id") == res_id:
+                            r["status"] = new_status
+                            save_reservations()
+                            try:
+                                db.update_reservation_status_in_db(res_id, new_status)
                             except Exception:
                                 pass
                             self._send_json({"success": True, "reservation": r})
@@ -2250,6 +2492,121 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._send_error(str(e), 500)
             return
+        if path == "/api/admin/vehicle-units":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                action = body.get("action", "")
+                global VEHICLE_UNITS
+                if action == "add":
+                    next_id = (max((u.get("id", 0) for u in VEHICLE_UNITS), default=0)) + 1
+                    unit = {
+                        "id": next_id,
+                        "name": body.get("name", ""),
+                        "vehicleId": body.get("vehicleId"),
+                        "plateNumber": body.get("plateNumber", ""),
+                        "isActive": body.get("isActive", True),
+                        "sortOrder": body.get("sortOrder", next_id),
+                    }
+                    if not unit["name"]:
+                        self._send_error("Araç birimi adı gerekli.", 400)
+                        return
+                    VEHICLE_UNITS.append(unit)
+                    save_vehicle_units()
+                    self._send_json({"success": True, "unit": unit, "units": VEHICLE_UNITS})
+                elif action == "update":
+                    uid = body.get("id")
+                    for u in VEHICLE_UNITS:
+                        if u.get("id") == uid:
+                            for key in ("name", "vehicleId", "plateNumber", "isActive", "sortOrder"):
+                                if key in body:
+                                    u[key] = body[key]
+                            save_vehicle_units()
+                            self._send_json({"success": True, "unit": u, "units": VEHICLE_UNITS})
+                            return
+                    self._send_error("Araç birimi bulunamadı.", 404)
+                elif action == "delete":
+                    uid = body.get("id")
+                    VEHICLE_UNITS = [u for u in VEHICLE_UNITS if u.get("id") != uid]
+                    save_vehicle_units()
+                    self._send_json({"success": True, "units": VEHICLE_UNITS})
+                elif action == "auto_generate":
+                    # Mevcut filodaki (vehicles.json/DB) her araç TÜRÜ için, "count" adedince
+                    # numaralı birim oluşturur (örn. count:3 → "Vito 1", "Vito 2", "Vito 3").
+                    # Zaten birimi olan araç türleri için sadece eksik olan sayıda ekler — güvenle
+                    # tekrar çalıştırılabilir.
+                    existing_by_vehicle = {}
+                    for u in VEHICLE_UNITS:
+                        vid = u.get("vehicleId")
+                        existing_by_vehicle[vid] = existing_by_vehicle.get(vid, 0) + 1
+                    next_id = (max((u.get("id", 0) for u in VEHICLE_UNITS), default=0)) + 1
+                    created = []
+                    for v in VEHICLES:
+                        vid = v.get("id")
+                        already = existing_by_vehicle.get(vid, 0)
+                        total_count = int(v.get("count", 1))
+                        for i in range(already + 1, total_count + 1):
+                            unit = {
+                                "id": next_id,
+                                "name": f"{v.get('name', 'Araç')} {i}",
+                                "vehicleId": vid,
+                                "plateNumber": "",
+                                "isActive": True,
+                                "sortOrder": next_id,
+                            }
+                            VEHICLE_UNITS.append(unit)
+                            created.append(unit)
+                            next_id += 1
+                    save_vehicle_units()
+                    self._send_json({"success": True, "created": created, "units": VEHICLE_UNITS})
+                else:
+                    self._send_error("Geçersiz aksiyon.", 400)
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                self._send_error(str(e), 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
+            return
+        if path == "/api/admin/calendar/block":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                action = body.get("action", "")
+                global CALENDAR_BLOCKS
+                if action == "add":
+                    if not body.get("vehicleUnitId") or not body.get("date") or not body.get("startTime") or not body.get("endTime"):
+                        self._send_error("Araç, tarih, başlangıç ve bitiş saati gerekli.", 400)
+                        return
+                    next_id = (max((b.get("id", 0) for b in CALENDAR_BLOCKS), default=0)) + 1
+                    block = {
+                        "id": next_id,
+                        "vehicleUnitId": body.get("vehicleUnitId"),
+                        "date": body.get("date", ""),
+                        "startTime": body.get("startTime", ""),
+                        "endTime": body.get("endTime", ""),
+                        "reason": body.get("reason", "Bakım / Şahsi Kullanım"),
+                        "createdAt": datetime.now().isoformat(),
+                    }
+                    CALENDAR_BLOCKS.append(block)
+                    save_calendar_blocks()
+                    self._send_json({"success": True, "block": block})
+                elif action == "delete":
+                    bid = body.get("id")
+                    CALENDAR_BLOCKS = [b for b in CALENDAR_BLOCKS if b.get("id") != bid]
+                    save_calendar_blocks()
+                    self._send_json({"success": True})
+                else:
+                    self._send_error("Geçersiz aksiyon.", 400)
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                self._send_error(str(e), 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
+            return
         if path == "/api/admin/destinations":
             user = self._authenticate()
             if not user:
@@ -2299,6 +2656,8 @@ if __name__ == "__main__":
     load_prices()
     load_vehicles()
     load_slider_images()
+    load_vehicle_units()
+    load_calendar_blocks()
     try:
         server = http.server.HTTPServer((HOST, PORT), GulizHandler)
         print(f"[v] Guliz VIP Backend running on http://{HOST}:{PORT}")
