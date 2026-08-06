@@ -764,6 +764,64 @@ CHAT_ID = 1
 CONTACT_MESSAGES = []
 CONTACT_ID = 1
 
+# ─── Dashboard Bildirimleri (ör. ödeme başarılı) ────────────────────────────────
+DASHBOARD_NOTIFICATIONS = []
+DASHBOARD_NOTIFICATION_ID = 1
+dashboard_notif_lock = threading.Lock()
+
+
+def _push_dashboard_notification(message, ntype="info", reservation_id=None):
+    global DASHBOARD_NOTIFICATION_ID
+    with dashboard_notif_lock:
+        notif = {
+            "id": DASHBOARD_NOTIFICATION_ID,
+            "type": ntype,
+            "message": message,
+            "reservationId": reservation_id,
+            "read": False,
+            "createdAt": datetime.now().isoformat(),
+        }
+        DASHBOARD_NOTIFICATIONS.insert(0, notif)
+        del DASHBOARD_NOTIFICATIONS[50:]  # yalnızca son 50 bildirimi tut
+        DASHBOARD_NOTIFICATION_ID += 1
+    return notif
+
+# ─── Ödeme (Dövizli Ödeme Linki) — Provider-agnostic altyapı ──────────────────────
+# NOT: Tolga, Stripe/PayTR arasında henüz karar vermedi. Bu bölüm gerçek bir ödeme
+# sağlayıcısına BAĞLI DEĞİLDİR — sadece altyapıyı hazırlar. Provider seçilince:
+#   1) PAYMENT_PROVIDER = "stripe" veya "paytr" yapılır (env var ile de ayarlanabilir)
+#   2) İlgili STRIPE_SECRET_KEY / PAYTR_MERCHANT_* env var'ları eklenir
+#   3) _generate_payment_link() içindeki "manual" dalının yanına gerçek SDK/HTTP
+#      çağrısı eklenir (örn. stripe.checkout.Session.create(...))
+#   4) /api/webhooks/stripe veya /api/webhooks/paytr imza doğrulamasını gerçek
+#      secret ile yapacak şekilde güncellenir (şu an sadece iskelet/log var)
+PAYMENT_PROVIDER = os.environ.get("PAYMENT_PROVIDER", "manual")  # "stripe" | "paytr" | "manual"
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+PAYTR_MERCHANT_ID = os.environ.get("PAYTR_MERCHANT_ID", "")
+PAYTR_MERCHANT_KEY = os.environ.get("PAYTR_MERCHANT_KEY", "")
+PAYTR_MERCHANT_SALT = os.environ.get("PAYTR_MERCHANT_SALT", "")
+
+
+def _generate_payment_link(reservation, amount, currency, provider):
+    """Rezervasyon için ödeme linki üretir. Provider henüz seçilmediği için şu an
+    yalnızca izlenebilir bir 'manual' referans linki üretir (gerçek ödeme akışı yok).
+    Stripe/PayTR seçildiğinde buraya gerçek checkout session/link oluşturma kodu eklenir."""
+    ref = uuid.uuid4().hex[:12]
+    if provider == "stripe" and STRIPE_SECRET_KEY:
+        # TODO: stripe.checkout.Session.create(...) ile gerçek link üret.
+        # Şimdilik anahtar tanımlı değilse manuel moda düşer.
+        pass
+    elif provider == "paytr" and PAYTR_MERCHANT_ID:
+        # TODO: PayTR "Ödeme Linki" API'siyle gerçek link üret.
+        pass
+    # Manuel/placeholder mod: operasyon ekibinin müşteriye ilettiği izlenebilir bir
+    # referans linki — gerçek ödeme sayfasına yönlendirmez, sadece altyapıyı hazırlar.
+    base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+    url = f"{base_url}/odeme/{ref}?rez={reservation.get('id')}&tutar={amount}&para={currency}"
+    return {"url": url, "intentId": f"manual_{ref}", "provider": provider}
+
+
 # ─── Telegram Bot ─────────────────────────────────────────────────────────────────
 def send_telegram(message):
     global TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
@@ -1475,6 +1533,43 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
                 self._send_json({"success": True, "reservations": RESERVATIONS})
                 return
+            if path == "/api/admin/customers/search":
+                # VIP Müşteri CRM Hafızası — manuel rezervasyon girerken isim/telefon autocomplete
+                user = self._authenticate()
+                if not user:
+                    self._send_error("Yetkisiz erişim.", 401)
+                    return
+                q = params.get("q", "")
+                results = db.search_customers(q, limit=8)
+                if results is None:
+                    # DB yok/erişilemiyor — RESERVATIONS üzerinden basit bir fallback türet
+                    seen = {}
+                    for r in RESERVATIONS:
+                        phone = (r.get("customerPhone") or "").strip()
+                        if not phone:
+                            continue
+                        if q and q.lower() not in phone.lower() and q.lower() not in (r.get("customerName", "").lower()):
+                            continue
+                        entry = seen.setdefault(phone, {
+                            "id": None, "name": r.get("customerName", ""), "phone": phone,
+                            "email": r.get("customerEmail", ""), "notes": "", "totalBookings": 0,
+                            "totalSpent": 0, "isVip": False,
+                        })
+                        entry["totalBookings"] += 1
+                        try:
+                            entry["totalSpent"] += float(r.get("price") or 0)
+                        except (TypeError, ValueError):
+                            pass
+                    results = list(seen.values())[:8]
+                self._send_json({"success": True, "customers": results})
+                return
+            if path == "/api/admin/notifications":
+                user = self._authenticate()
+                if not user:
+                    self._send_error("Yetkisiz erişim.", 401)
+                    return
+                self._send_json({"success": True, "notifications": DASHBOARD_NOTIFICATIONS})
+                return
             if path == "/api/admin/fleet":
                 user = self._authenticate()
                 if not user:
@@ -1518,6 +1613,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             "status": r.get("status", "pending"),
                             "isManual": r.get("isManual", False),
                             "price": r.get("price", 0),
+                            "paymentStatus": r.get("paymentStatus", "pending"),
                             "pickupLat": r.get("pickupLat"),
                             "pickupLng": r.get("pickupLng"),
                             "dropoffLat": r.get("dropoffLat"),
@@ -1916,6 +2012,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "bufferMinutes": body.get("bufferMinutes", 45),
                     "estimatedDurationMinutes": body.get("estimatedDurationMinutes"),
                     "isManual": True,
+                    "currency": body.get("currency", "TRY"),
+                    "paymentStatus": body.get("paymentStatus", "pending"),
+                    "paymentLink": "",
+                    "stripePaymentIntentId": "",
                     "createdAt": datetime.now().isoformat(),
                 }
 
@@ -1931,6 +2031,18 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     val = _to_float(body.get(src_key))
                     if val is not None:
                         reservation[dst_key] = val
+
+                # VIP CRM: telefon numarasına göre müşteriyi bul/oluştur ve rezervasyona bağla
+                try:
+                    customer = db.find_or_create_customer(
+                        reservation.get("customerPhone", ""),
+                        reservation.get("customerName", ""),
+                        reservation.get("customerEmail", "")
+                    )
+                    if customer:
+                        reservation["customerId"] = customer["id"]
+                except Exception as e:
+                    print(f"[!] Müşteri eşleştirme hatası (manuel rezervasyon): {e}")
 
                 db_id = db.save_reservation_to_db(reservation)
                 if db_id:
@@ -1981,6 +2093,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "payment_session_id": "",
                     "payment_ref": "",
                     "payment_status": "pending",
+                    "currency": body.get("currency", "TRY"),
+                    "paymentStatus": "pending",
+                    "paymentLink": "",
+                    "stripePaymentIntentId": "",
                     "createdAt": datetime.now().isoformat()
                 }
 
@@ -2026,6 +2142,19 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     reservation["bufferMinutes"] = 45
                     if not reservation.get("estimatedDurationMinutes"):
                         reservation["estimatedDurationMinutes"] = auto_dur
+
+                # VIP CRM: telefon numarasına göre müşteriyi bul/oluştur ve rezervasyona bağla
+                try:
+                    customer = db.find_or_create_customer(
+                        reservation.get("customerPhone", ""),
+                        reservation.get("customerName", ""),
+                        reservation.get("customerEmail", "")
+                    )
+                    if customer:
+                        reservation["customerId"] = customer["id"]
+                        db.register_customer_booking(customer["id"], reservation.get("price", 0))
+                except Exception as e:
+                    print(f"[!] Müşteri eşleştirme hatası (site rezervasyonu): {e}")
 
                 db_id = db.save_reservation_to_db(reservation)
                 if db_id:
@@ -2089,6 +2218,136 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"success": True, "message": "Test mesajı gönderildi!"})
             else:
                 self._send_error("Telegram mesajı gönderilemedi. Bot token ve Chat ID'yi kontrol edin.", 400)
+            return
+        if path == "/api/admin/notifications/read":
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                notif_id = body.get("id")
+                for n in DASHBOARD_NOTIFICATIONS:
+                    if notif_id is None or n.get("id") == notif_id:
+                        n["read"] = True
+                self._send_json({"success": True})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
+            return
+        if path == "/api/webhooks/stripe" or path == "/api/webhooks/paytr":
+            # Ödeme sağlayıcısı callback iskeleti — kimlik doğrulama (Bearer) BİLEREK yok,
+            # çünkü Stripe/PayTR bu uca kendi imzalı payload'ıyla gelir. Provider seçildiğinde:
+            #   Stripe: 'Stripe-Signature' header + STRIPE_WEBHOOK_SECRET ile stripe.Webhook.construct_event(...)
+            #   PayTR : 'hash' alanı + PAYTR_MERCHANT_SALT ile HMAC doğrulaması
+            # yapılmalı — şu an imza doğrulaması YOK (altyapı hazırlığı, canlı anahtar yok).
+            provider_name = "stripe" if path.endswith("stripe") else "paytr"
+            try:
+                raw = self._read_body()
+                try:
+                    body = json.loads(raw) if raw else {}
+                except json.JSONDecodeError:
+                    # PayTR callback'i form-encoded gönderir; ileride burada
+                    # urllib.parse.parse_qs(raw) ile ayrıştırılabilir.
+                    body = dict(urllib.parse.parse_qsl(raw))
+
+                intent_id = body.get("payment_intent") or body.get("id") or body.get("merchant_oid") or ""
+                event_status = (body.get("status") or body.get("payment_status") or "").lower()
+                # Şimdilik gerçek bir provider bağlı olmadığından, testte doğrudan
+                # reservationId + status=succeeded ile de tetiklenebilir.
+                res_id = body.get("reservationId")
+                is_success = event_status in ("succeeded", "success", "paid", "completed") or body.get("type") == "payment_intent.succeeded"
+
+                target = None
+                if res_id is not None:
+                    target = next((r for r in RESERVATIONS if r.get("id") == res_id), None)
+                elif intent_id:
+                    target = next((r for r in RESERVATIONS if r.get("stripePaymentIntentId") == intent_id), None)
+
+                if target is None:
+                    # Provider henüz bağlı değilken bilinmeyen payload'lar sessizce 200 döner
+                    # (gerçek entegrasyonda sağlayıcılar yeniden deneme yapar, hata vermemek önemli).
+                    self._send_json({"success": True, "note": "Eşleşen rezervasyon bulunamadı, yoksayıldı."})
+                    return
+
+                if is_success:
+                    target["paymentStatus"] = "paid"
+                    save_reservations()
+                    try:
+                        db.update_reservation_in_db(target["id"], {"paymentStatus": "paid"})
+                    except Exception:
+                        pass
+                    if target.get("customerId"):
+                        try:
+                            db.register_customer_booking(target["customerId"], 0)
+                        except Exception:
+                            pass
+                    _push_dashboard_notification(
+                        f"💳 Ödeme alındı: {target.get('customerName', '')} — Rezervasyon #{target['id']}",
+                        ntype="payment", reservation_id=target["id"]
+                    )
+                    send_telegram(
+                        f"💳 <b>Ödeme Alındı</b>\n👤 {target.get('customerName', '')}\n"
+                        f"🆔 Rezervasyon #{target['id']}\n💰 {target.get('price', 0)} {target.get('currency', 'TRY')}\n"
+                        f"🔌 Sağlayıcı: {provider_name}"
+                    )
+                self._send_json({"success": True})
+            except Exception as e:
+                print(f"[!] Webhook hatası ({provider_name}): {e}")
+                self._send_json({"success": True})  # provider'a her zaman 200 dön, yeniden denemeyi önle
+            return
+        if path == "/api/admin/payments/create-link":
+            # Dövizli Ödeme Linki Oluşturma — provider-agnostic altyapı.
+            # NOT: Stripe/PayTR arasında henüz karar verilmedi. Bu uç gerçek bir ödeme
+            # sağlayıcısına bağlı DEĞİLDİR — rezervasyona bir "bekleyen ödeme linki" kaydı
+            # oluşturur ve provider seçilip API anahtarları tanımlandığında
+            # _generate_payment_link() içindeki TODO bloklarının doldurulması yeterlidir.
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                res_id = body.get("reservationId")
+                amount = body.get("amount")
+                currency = (body.get("currency") or "EUR").upper()
+                provider = (body.get("provider") or PAYMENT_PROVIDER or "manual").lower()
+                if res_id is None or amount in (None, ""):
+                    self._send_error("reservationId ve amount zorunludur.", 400)
+                    return
+                try:
+                    amount = float(amount)
+                except (TypeError, ValueError):
+                    self._send_error("Geçersiz tutar.", 400)
+                    return
+                target = None
+                for r in RESERVATIONS:
+                    if r.get("id") == res_id:
+                        target = r
+                        break
+                if target is None:
+                    self._send_error("Rezervasyon bulunamadı.", 404)
+                    return
+                link_info = _generate_payment_link(target, amount, currency, provider)
+                target["currency"] = currency
+                target["paymentLink"] = link_info["url"]
+                target["stripePaymentIntentId"] = link_info.get("intentId", "")
+                target["paymentStatus"] = "link_created"
+                save_reservations()
+                try:
+                    db.update_reservation_in_db(res_id, {
+                        "currency": currency, "paymentLink": link_info["url"],
+                        "stripePaymentIntentId": link_info.get("intentId", ""),
+                        "paymentStatus": "link_created",
+                    })
+                except Exception:
+                    pass
+                self._send_json({"success": True, "reservation": target, "paymentLink": link_info["url"]})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
             return
         if path == "/api/chat/send":
             try:
@@ -2607,6 +2866,29 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_json({"success": True, "message": "Rezervasyon silindi."})
                 else:
                     self._send_error("Geçersiz aksiyon.", 400)
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
+            return
+        if path == "/api/admin/customers":
+            # VIP Müşteri CRM Hafızası — müşteri notu/VIP durumu güncelleme
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                customer_id = body.get("id")
+                if customer_id is None:
+                    self._send_error("Müşteri ID gerekli.", 400)
+                    return
+                ok = db.update_customer(customer_id, body)
+                if not ok:
+                    self._send_error("Müşteri güncellenemedi (DB yok veya bulunamadı).", 400)
+                    return
+                customer = db.get_customer_by_id(customer_id)
+                self._send_json({"success": True, "customer": customer})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             except Exception as e:

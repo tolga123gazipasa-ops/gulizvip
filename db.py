@@ -80,6 +80,20 @@ CREATE TABLE IF NOT EXISTS destinations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL DEFAULT '',
+    phone VARCHAR(50) DEFAULT '',
+    email VARCHAR(200) DEFAULT '',
+    notes TEXT DEFAULT '',
+    total_bookings INTEGER DEFAULT 0,
+    total_spent DECIMAL(10,2) DEFAULT 0,
+    is_vip BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
 """
 
 def init_db():
@@ -109,6 +123,11 @@ def init_db():
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS dropoff_lng DECIMAL(10,7);")
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS distance_km DECIMAL(6,2);")
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS is_manual BOOLEAN DEFAULT FALSE;")
+                # CRM / Ödeme Modülü — müşteri eşleştirme + döviz + ödeme linki altyapısı.
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS customer_id INTEGER;")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'TRY';")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS payment_link VARCHAR(500) DEFAULT '';")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(200) DEFAULT '';")
         conn.close()
         print("[✓] PostgreSQL tabloları hazır.")
         return True
@@ -161,6 +180,10 @@ def load_reservations_from_db():
                 "dropoffLng": float(row["dropoff_lng"]) if row.get("dropoff_lng") is not None else None,
                 "distanceKm": float(row["distance_km"]) if row.get("distance_km") is not None else None,
                 "isManual": row.get("is_manual", False),
+                "customerId": row.get("customer_id"),
+                "currency": row.get("currency") or "TRY",
+                "paymentLink": row.get("payment_link") or "",
+                "stripePaymentIntentId": row.get("stripe_payment_intent_id") or "",
                 "createdAt": row["created_at"].isoformat() if row["created_at"] else "",
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             })
@@ -186,9 +209,11 @@ def save_reservation_to_db(reservation):
                          flight_number, date, time, passengers, duration, notes, price,
                          payment_method, payment_status, status,
                          vehicle_unit_id, buffer_minutes, estimated_duration_minutes,
-                         pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, distance_km, is_manual)
+                         pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, distance_km, is_manual,
+                         customer_id, currency, payment_link, stripe_payment_intent_id)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                            %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     reservation.get("type", "transfer"),
@@ -216,6 +241,10 @@ def save_reservation_to_db(reservation):
                     reservation.get("dropoffLng"),
                     reservation.get("distanceKm"),
                     reservation.get("isManual", False),
+                    reservation.get("customerId"),
+                    reservation.get("currency", "TRY"),
+                    reservation.get("paymentLink", ""),
+                    reservation.get("stripePaymentIntentId", ""),
                 ))
                 new_id = cur.fetchone()["id"]
         conn.close()
@@ -325,6 +354,10 @@ def update_reservation_in_db(res_id, fields):
             "dropoffLng": "dropoff_lng",
             "distanceKm": "distance_km",
             "isManual": "is_manual",
+            "customerId": "customer_id",
+            "currency": "currency",
+            "paymentLink": "payment_link",
+            "stripePaymentIntentId": "stripe_payment_intent_id",
         }
         set_parts = []
         values = []
@@ -364,6 +397,180 @@ def get_next_reservation_id():
     except Exception as e:
         print(f"[!] DB sequence hatası: {e}")
         return None
+
+
+# ─── Customers (VIP CRM Hafızası) ────────────────────────────────────────────────
+
+def _customer_row_to_dict(row):
+    return {
+        "id": row["id"],
+        "name": row.get("name", "") or "",
+        "phone": row.get("phone", "") or "",
+        "email": row.get("email", "") or "",
+        "notes": row.get("notes", "") or "",
+        "totalBookings": row.get("total_bookings", 0) or 0,
+        "totalSpent": float(row["total_spent"]) if row.get("total_spent") is not None else 0,
+        "isVip": row.get("is_vip", False),
+        "createdAt": row["created_at"].isoformat() if row.get("created_at") else "",
+        "updatedAt": row["updated_at"].isoformat() if row.get("updated_at") else "",
+    }
+
+
+def search_customers(query, limit=8):
+    """İsim veya telefona göre müşteri ara (autocomplete için). Boş query'de son eklenenleri döner."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                q = (query or "").strip()
+                if q:
+                    like = f"%{q}%"
+                    cur.execute(
+                        "SELECT * FROM customers WHERE name ILIKE %s OR phone ILIKE %s "
+                        "ORDER BY is_vip DESC, total_bookings DESC LIMIT %s",
+                        (like, like, limit)
+                    )
+                else:
+                    cur.execute("SELECT * FROM customers ORDER BY updated_at DESC LIMIT %s", (limit,))
+                rows = cur.fetchall()
+        conn.close()
+        return [_customer_row_to_dict(r) for r in rows]
+    except Exception as e:
+        print(f"[!] DB müşteri arama hatası: {e}")
+        return None
+
+
+def get_customer_by_id(customer_id):
+    if not HAS_PSYCOPG2 or not customer_id:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM customers WHERE id = %s", (customer_id,))
+                row = cur.fetchone()
+        conn.close()
+        return _customer_row_to_dict(row) if row else None
+    except Exception as e:
+        print(f"[!] DB müşteri okuma hatası: {e}")
+        return None
+
+
+def get_customer_by_phone(phone):
+    if not HAS_PSYCOPG2 or not phone:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM customers WHERE phone = %s LIMIT 1", (phone,))
+                row = cur.fetchone()
+        conn.close()
+        return _customer_row_to_dict(row) if row else None
+    except Exception as e:
+        print(f"[!] DB müşteri okuma hatası: {e}")
+        return None
+
+
+def find_or_create_customer(phone, name, email=""):
+    """Telefon numarasına göre müşteri bul, yoksa yeni oluştur. Müşteri dict'ini döner (id dahil)."""
+    if not HAS_PSYCOPG2:
+        return None
+    phone = (phone or "").strip()
+    if not phone:
+        return None
+    try:
+        existing = get_customer_by_phone(phone)
+        if existing:
+            # İsim/e-posta değişmişse (ör. yeni rezervasyonda farklı yazılmış) güncelle
+            conn = get_conn()
+            if conn:
+                with conn:
+                    with conn.cursor() as cur:
+                        if name and name.strip() and name.strip() != existing["name"]:
+                            cur.execute("UPDATE customers SET name = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s", (name.strip(), existing["id"]))
+                        if email and not existing["email"]:
+                            cur.execute("UPDATE customers SET email = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s", (email, existing["id"]))
+                conn.close()
+            return existing
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "INSERT INTO customers (name, phone, email) VALUES (%s, %s, %s) RETURNING *",
+                    (name or "", phone, email or "")
+                )
+                row = cur.fetchone()
+        conn.close()
+        return _customer_row_to_dict(row)
+    except Exception as e:
+        print(f"[!] DB müşteri oluşturma hatası: {e}")
+        return None
+
+
+def update_customer(customer_id, fields):
+    """Müşteri alanlarını güncelle (name, phone, email, notes, isVip)."""
+    if not HAS_PSYCOPG2:
+        return False
+    field_map = {"name": "name", "phone": "phone", "email": "email", "notes": "notes", "isVip": "is_vip"}
+    set_parts, values = [], []
+    for json_key, db_col in field_map.items():
+        if json_key in fields:
+            set_parts.append(f"{db_col} = %s")
+            values.append(fields[json_key])
+    if not set_parts:
+        return False
+    try:
+        conn = get_conn()
+        if not conn:
+            return False
+        set_parts.append("updated_at = CURRENT_TIMESTAMP")
+        values.append(customer_id)
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(f"UPDATE customers SET {', '.join(set_parts)} WHERE id = %s", tuple(values))
+                ok = cur.rowcount > 0
+        conn.close()
+        return ok
+    except Exception as e:
+        print(f"[!] DB müşteri güncelleme hatası: {e}")
+        return False
+
+
+def register_customer_booking(customer_id, amount):
+    """Bir rezervasyon onaylandığında/tamamlandığında müşterinin total_bookings ve
+    total_spent alanlarını artırır. 5+ rezervasyonda otomatik VIP işaretler."""
+    if not HAS_PSYCOPG2 or not customer_id:
+        return False
+    try:
+        conn = get_conn()
+        if not conn:
+            return False
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE customers SET total_bookings = total_bookings + 1, "
+                    "total_spent = total_spent + %s, "
+                    "is_vip = CASE WHEN total_bookings + 1 >= 5 THEN TRUE ELSE is_vip END, "
+                    "updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                    (amount or 0, customer_id)
+                )
+                ok = cur.rowcount > 0
+        conn.close()
+        return ok
+    except Exception as e:
+        print(f"[!] DB müşteri rezervasyon sayacı güncelleme hatası: {e}")
+        return False
 
 
 # ─── Config (anahtar-değer deposu) ──────────────────────────────────────────────

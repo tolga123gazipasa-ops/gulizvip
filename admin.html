@@ -405,6 +405,7 @@
         .cal-row-track { position: relative; flex: 1; min-width: 1080px; height: 46px; background: repeating-linear-gradient(to right, #F8FAFC 0, #F8FAFC calc(100%/18 - 1px), #F1F5F9 calc(100%/18 - 1px), #F1F5F9 calc(100%/18)); cursor: pointer; margin: 4px 0; border-radius: 6px; overflow: hidden; }
         .cal-segment { position: absolute; top: 3px; bottom: 3px; border-radius: 5px; font-size: 11px; color: #fff; padding: 3px 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
         .cal-segment.reservation { background: var(--primary-red); }
+        .cal-segment.reservation.paid { background: #16A34A; }
         .cal-segment.reservation.buffer-part { opacity: 0.55; }
         .cal-segment.block { background: #94A3B8; }
         .cal-segment:hover { filter: brightness(1.08); z-index: 5; }
@@ -982,10 +983,13 @@
 
                     <div id="cal-reservation-form">
                         <input type="hidden" id="cr-vehicle-id">
-                        <div class="form-row">
-                            <div class="form-group"><label>Müşteri Adı *</label><input type="text" id="cr-name" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
-                            <div class="form-group"><label>Telefon</label><input type="text" id="cr-phone" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                        <input type="hidden" id="cr-customer-id">
+                        <div class="form-row" style="position:relative;">
+                            <div class="form-group" style="position:relative;"><label>Müşteri Adı *</label><input type="text" id="cr-name" autocomplete="off" oninput="crSearchCustomers(this.value)" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div class="form-group" style="position:relative;"><label>Telefon</label><input type="text" id="cr-phone" autocomplete="off" oninput="crSearchCustomers(this.value)" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                            <div id="cr-customer-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border-color);border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.12);z-index:20;max-height:220px;overflow-y:auto;"></div>
                         </div>
+                        <div id="cr-customer-card" style="display:none;margin-bottom:12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:12px 14px;font-size:13px;"></div>
                         <div class="form-row">
                             <div class="form-group"><label>Alış Noktası</label><input type="text" id="cr-pickup" placeholder="Adres yazmaya başlayın..." onchange="crCalculateDistance();" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
                             <div class="form-group"><label>Varış Noktası</label><input type="text" id="cr-destination" placeholder="Adres yazmaya başlayın..." onchange="crCalculateDistance();" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
@@ -2134,12 +2138,12 @@
             var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
             var typeMap = { transfer: 'Havalimanı Transfer', tahsis: 'Şoförlü VIP Tahsis' };
             var payMap = { kredi_karti: 'Kredi Kartı', havale: 'Havale/EFT' };
-            var payStatusMap = { pending: 'Ödeme Bekliyor', confirmed: 'Ödeme Onaylandı' };
+            var payStatusMap = { pending: 'Ödeme Bekliyor', confirmed: 'Ödeme Onaylandı', link_created: 'Ödeme Linki Gönderildi', paid: 'Ödendi ✅' };
             var statusClass = { pending: 'badge-pending', approved: 'badge-approved', completed: '', cancelled: '' };
             var durumHtml = '<span class="badge ' + (statusClass[r.status] || '') + '" style="' + (r.status === 'completed' ? 'background:#E2E8F0;color:#475569;' : r.status === 'cancelled' ? 'background:#FEE2E2;color:#DC2626;' : '') + '">' + (statusMap[r.status] || r.status) + '</span>';
 
-            var payBadgeClass = r.paymentStatus === 'confirmed' ? 'badge-approved' : 'badge-pending';
-            var payExtraStyle = r.paymentStatus === 'confirmed' ? '' : 'background:#FEF3C7;color:#D97706;';
+            var payBadgeClass = (r.paymentStatus === 'confirmed' || r.paymentStatus === 'paid') ? 'badge-approved' : 'badge-pending';
+            var payExtraStyle = (r.paymentStatus === 'confirmed' || r.paymentStatus === 'paid') ? 'background:#DCFCE7;color:#16A34A;' : 'background:#FEF3C7;color:#D97706;';
             var payHtml = (payMap[r.paymentMethod] || '—') + '<br><span class="badge ' + payBadgeClass + '" style="font-size:11px;padding:2px 8px;margin-top:4px;display:inline-block;' + payExtraStyle + '">' + (payStatusMap[r.paymentStatus] || r.paymentStatus || '—') + '</span>';
 
             var gzrh = r.type === 'tahsis' ? r.pickup + ' (' + r.duration + ' Saat)' : r.pickup + ' → ' + r.destination;
@@ -2185,9 +2189,13 @@
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Yolcu</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + (r.passengers || 1) + ' Kişi</div></div>' +
                 (r.duration ? '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Süre</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + r.duration + ' Saat</div></div>' : '') +
                 (r.notes ? '<div style="grid-column:1/-1;background:#FFF9E6;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Notlar</div><div style="font-size:14px;margin-top:4px;">' + escapeHtml(r.notes) + '</div></div>' : '') +
+                (r.paymentLink ? '<div style="grid-column:1/-1;background:#F0FDF4;padding:12px;border-radius:8px;border:1px solid #BBF7D0;"><div style="font-size:11px;color:#16A34A;text-transform:uppercase;letter-spacing:0.5px;">Dövizli Ödeme Linki (' + escapeHtml(r.currency || 'EUR') + ')</div><div style="font-size:13px;margin-top:4px;word-break:break-all;"><a href="' + escapeHtml(r.paymentLink) + '" target="_blank" rel="noopener">' + escapeHtml(r.paymentLink) + '</a></div></div>' : '') +
                 '</div>' +
                 '<div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">' + actionsHtml + '</div>' +
-                '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">' + editBtnHtml + '</div>' +
+                '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">' + editBtnHtml +
+                ' <button class="btn-secondary" onclick="openPaymentLinkModal(' + r.id + ')" style="padding:8px 16px;font-size:13px;"><i class="fa-solid fa-link"></i> Ödeme Linki Oluştur</button>' +
+                ' <button class="btn-secondary" onclick="sendWhatsAppReservation(' + r.id + ')" style="padding:8px 16px;font-size:13px;background:#DCF8C6;color:#075E54;border-color:#BFEAB0;"><i class="fa-brands fa-whatsapp"></i> WhatsApp\'tan Gönder</button>' +
+                '</div>' +
                 '<div style="margin-top:12px;"><button onclick="adminDeleteReservation(' + r.id + ')" style="padding:8px 16px;font-size:13px;background:transparent;color:#DC2626;border:1px solid #FCA5A5;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-trash"></i> Rezervasyonu Sil</button></div>' +
                 '</div></div>';
 
@@ -2388,6 +2396,116 @@
         .catch(function() { alert('Sunucu hatası'); });
     }
 
+    // ─── Dövizli Ödeme Linki (Stripe/PayTR altyapısı) ────────────────────────
+    function openPaymentLinkModal(id) {
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+        fetch('/api/admin/reservations', { method: 'GET', headers: {'Authorization': 'Bearer ' + token} })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(!data.success) return;
+            var r = null;
+            for(var i = 0; i < data.reservations.length; i++) { if(data.reservations[i].id === id) { r = data.reservations[i]; break; } }
+            if(!r) { alert('Rezervasyon bulunamadı'); return; }
+
+            var modalHtml =
+                '<div id="payment-link-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;display:flex;justify-content:center;align-items:center;" onclick="if(event.target===this)closePaymentLinkModal()">' +
+                '<div style="background:#fff;border-radius:16px;padding:28px;width:90%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+                '<h3 style="color:#1B2B4C;margin:0;font-size:18px;">Ödeme Linki Oluştur</h3>' +
+                '<button onclick="closePaymentLinkModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999;">&times;</button>' +
+                '</div>' +
+                '<p style="font-size:13px;color:#64748B;margin:0 0 16px;">Rezervasyon #' + r.id + ' — ' + escapeHtml(r.customerName || '') + '</p>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tutar</label><input id="pl-amount" type="number" step="0.01" value="' + (r.price || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Para Birimi</label><select id="pl-currency" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;">' +
+                '<option value="EUR"' + (r.currency === 'EUR' ? ' selected' : '') + '>EUR (€)</option>' +
+                '<option value="USD"' + (r.currency === 'USD' ? ' selected' : '') + '>USD ($)</option>' +
+                '<option value="TRY"' + (!r.currency || r.currency === 'TRY' ? ' selected' : '') + '>TRY (₺)</option>' +
+                '<option value="GBP"' + (r.currency === 'GBP' ? ' selected' : '') + '>GBP (£)</option>' +
+                '</select></div>' +
+                '</div>' +
+                '<p style="font-size:12px;color:#94A3B8;margin:0 0 16px;line-height:1.5;">Not: Kredi kartı sağlayıcısı (Stripe/PayTR) henüz seçilmedi — bu link, altyapı hazır olduğunda gerçek ödeme sayfasına yönlendirecek izlenebilir bir referans linkidir.</p>' +
+                '<button class="btn-approve" onclick="submitPaymentLink(' + r.id + ')" style="width:100%;padding:12px;font-size:14px;"><i class="fa-solid fa-link"></i> Linki Oluştur</button>' +
+                '</div></div>';
+
+            var existing = document.getElementById('payment-link-modal');
+            if(existing) existing.remove();
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        })
+        .catch(function() { alert('Rezervasyon bilgisi alınamadı.'); });
+    }
+
+    function closePaymentLinkModal() {
+        var el = document.getElementById('payment-link-modal');
+        if(el) el.remove();
+    }
+
+    function submitPaymentLink(id) {
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+        var amount = parseFloat(document.getElementById('pl-amount').value);
+        var currency = document.getElementById('pl-currency').value;
+        if(!amount || amount <= 0) { alert('Geçerli bir tutar girin.'); return; }
+
+        fetch('/api/admin/payments/create-link', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify({ reservationId: id, amount: amount, currency: currency })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(data.success) {
+                closePaymentLinkModal();
+                loadReservations();
+                showReservationDetail(id);
+            } else {
+                alert('Hata: ' + (data.error || 'Ödeme linki oluşturulamadı'));
+            }
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    // ─── WhatsApp Hızlı Rezervasyon Gönderimi ────────────────────────────────
+    function sendWhatsAppReservation(id) {
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+        fetch('/api/admin/reservations', { method: 'GET', headers: {'Authorization': 'Bearer ' + token} })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(!data.success) return;
+            var r = null;
+            for(var i = 0; i < data.reservations.length; i++) { if(data.reservations[i].id === id) { r = data.reservations[i]; break; } }
+            if(!r) { alert('Rezervasyon bulunamadı'); return; }
+            if(!r.customerPhone) { alert('Bu rezervasyonda telefon numarası kayıtlı değil.'); return; }
+
+            var route = r.type === 'tahsis' ? (r.pickup || '') + ' (' + (r.duration || '—') + ' Saat Tahsis)' : (r.pickup || '') + ' → ' + (r.destination || '');
+            var vehicleLabel = r.type === 'tahsis' ? 'Şoförlü Günlük VIP' : 'Havalimanı Transferi';
+            var amountLabel = r.price ? (Number(r.price).toLocaleString('tr-TR') + ' ' + (r.currency || 'TRY')) : 'Belirtilmedi';
+
+            var lines = [
+                'Merhaba ' + (r.customerName || '') + ',',
+                'Güliz VIP Transfer rezervasyon detaylarınız:',
+                '',
+                'Tarih/Saat: ' + (r.date || '') + ' ' + (r.time || ''),
+                'Güzergah: ' + route,
+                'Araç: ' + vehicleLabel,
+                'Tutar: ' + amountLabel
+            ];
+            if(r.paymentLink) lines.push('Ödeme Linki: ' + r.paymentLink);
+            lines.push('', 'İyi yolculuklar dileriz! 🚐', 'Güliz VIP Transfer');
+
+            var message = lines.join('\n');
+            var phoneDigits = (r.customerPhone || '').replace(/[^0-9]/g, '');
+            if(phoneDigits.length === 10) phoneDigits = '90' + phoneDigits; // TR yerel numarayı ülke koduna tamamla
+            else if(phoneDigits.length === 11 && phoneDigits.charAt(0) === '0') phoneDigits = '90' + phoneDigits.substring(1);
+
+            var waUrl = 'https://wa.me/' + phoneDigits + '?text=' + encodeURIComponent(message);
+            window.open(waUrl, '_blank');
+        })
+        .catch(function() { alert('Rezervasyon bilgisi alınamadı.'); });
+    }
+
     // ─── Dashboard Radar Widget ────────────────────────────
     var dashboardRadarPolling = null;
 
@@ -2570,7 +2688,7 @@
         var html = '';
         var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
         var payMap = { kredi_karti: 'Kredi Kartı', havale: 'Havale/EFT' };
-        var payStatusMap = { pending: 'Bekliyor', confirmed: 'Onaylandı' };
+        var payStatusMap = { pending: 'Bekliyor', confirmed: 'Onaylandı', link_created: 'Link Gönderildi', paid: 'Ödendi ✅' };
 
         for(var i = 0; i < filtered.length; i++) {
             var r = filtered[i];
@@ -2580,7 +2698,7 @@
 
             var paymentMethodLabel = payMap[r.paymentMethod] || r.paymentMethod || '—';
             var paymentStatusLabel = payStatusMap[r.paymentStatus] || r.paymentStatus || '—';
-            var paymentBadgeClass = r.paymentStatus === 'confirmed' ? 'badge-approved' : 'badge-pending';
+            var paymentBadgeClass = (r.paymentStatus === 'confirmed' || r.paymentStatus === 'paid') ? 'badge-approved' : 'badge-pending';
             var paymentHtml = paymentMethodLabel + '<br><span class="badge ' + paymentBadgeClass + '" style="font-size:11px;padding:2px 8px;margin-top:4px;display:inline-block;">' + paymentStatusLabel + '</span>';
 
             var gzrh = r.type === 'tahsis' ? (r.pickup || '') + ' (' + (r.duration || '—') + ' Saat)' : (r.pickup || '') + ' → ' + (r.destination || '');
@@ -4252,9 +4370,11 @@
                 var start = timeToMinutes(r.time);
                 var coreEnd = timeToMinutes(r.endTime || r.time);
                 var bufferEnd = timeToMinutes(r.blockedUntil || r.endTime || r.time);
-                segHtml += calSegmentDiv(start, coreEnd, 'reservation', escapeHtml(r.customerName || 'Rezervasyon'), 'openReservationDetail(' + r.id + ')');
+                var paidCls = r.paymentStatus === 'paid' ? ' paid' : '';
+                var segLabel = (r.paymentStatus === 'paid' ? '✅ ' : '') + escapeHtml(r.customerName || 'Rezervasyon');
+                segHtml += calSegmentDiv(start, coreEnd, 'reservation' + paidCls, segLabel, 'openReservationDetail(' + r.id + ')');
                 if (bufferEnd > coreEnd) {
-                    segHtml += calSegmentDiv(coreEnd, bufferEnd, 'reservation buffer-part', 'tampon', 'openReservationDetail(' + r.id + ')');
+                    segHtml += calSegmentDiv(coreEnd, bufferEnd, 'reservation buffer-part' + paidCls, 'tampon', 'openReservationDetail(' + r.id + ')');
                 }
             }
 
@@ -4298,6 +4418,11 @@
         document.getElementById('cr-pickup').value = '';
         document.getElementById('cr-destination').value = '';
         document.getElementById('cr-map-info').style.display = 'none';
+        document.getElementById('cr-name').value = '';
+        document.getElementById('cr-phone').value = '';
+        document.getElementById('cr-customer-id').value = '';
+        document.getElementById('cr-customer-card').style.display = 'none';
+        document.getElementById('cr-customer-suggestions').style.display = 'none';
         crPickupLat = null; crPickupLng = null; crPickupText = '';
         crDropoffLat = null; crDropoffLng = null; crDropoffText = '';
         crDistanceKm = null; crDurationMinutes = null;
@@ -4345,6 +4470,88 @@
         else { el.style.background = '#f0f4ff'; el.style.color = '#1B2B4C'; }
         el.innerHTML = msg;
     }
+
+    // ─── VIP Müşteri CRM Hafızası — isim/telefon autocomplete + Müşteri Kimlik Kartı ─
+    var crSearchTimer = null;
+    var crLastQuery = '';
+
+    function crSearchCustomers(q) {
+        document.getElementById('cr-customer-id').value = '';
+        q = (q || '').trim();
+        if (crSearchTimer) clearTimeout(crSearchTimer);
+        if (q.length < 2) {
+            var box = document.getElementById('cr-customer-suggestions');
+            box.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+        crSearchTimer = setTimeout(function() { crRunCustomerSearch(q); }, 300);
+    }
+
+    async function crRunCustomerSearch(q) {
+        crLastQuery = q;
+        var token = getToken();
+        try {
+            var res = await fetch('/api/admin/customers/search?q=' + encodeURIComponent(q), {
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            var data = await res.json();
+            if (q !== crLastQuery) return; // eski istek — güncel değil
+            var box = document.getElementById('cr-customer-suggestions');
+            if (!data.success || !data.customers || data.customers.length === 0) {
+                box.style.display = 'none';
+                box.innerHTML = '';
+                return;
+            }
+            box.innerHTML = data.customers.map(function(c) {
+                var vipBadge = c.isVip ? ' <span style="color:#D97706;">⭐ VIP</span>' : '';
+                return '<div onclick=\'crSelectCustomer(' + JSON.stringify(c).replace(/'/g, "&#39;") + ')\' style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #F1F5F9;font-size:13px;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'\'">' +
+                    '<strong>' + escapeHtml(c.name || 'İsimsiz') + '</strong>' + vipBadge + '<br>' +
+                    '<span style="color:#94A3B8;">' + escapeHtml(c.phone || '') + ' — ' + (c.totalBookings || 0) + ' transfer</span>' +
+                    '</div>';
+            }).join('');
+            box.style.display = 'block';
+        } catch(e) {
+            // sessizce yoksay — autocomplete kritik değil
+        }
+    }
+
+    function crSelectCustomer(c) {
+        document.getElementById('cr-name').value = c.name || '';
+        document.getElementById('cr-phone').value = c.phone || '';
+        document.getElementById('cr-customer-id').value = c.id || '';
+        var box = document.getElementById('cr-customer-suggestions');
+        box.style.display = 'none';
+        box.innerHTML = '';
+
+        var card = document.getElementById('cr-customer-card');
+        var vipLine = c.isVip ? '<div style="color:#D97706;font-weight:700;margin-bottom:4px;">⭐ VIP Müşteri</div>' : '';
+        card.innerHTML = vipLine +
+            '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:6px;">' +
+            '<span><i class="fa-solid fa-route"></i> Geçmiş transfer: <strong>' + (c.totalBookings || 0) + '</strong></span>' +
+            '<span><i class="fa-solid fa-sack-dollar"></i> Toplam harcama: <strong>' + (c.totalSpent ? Number(c.totalSpent).toLocaleString('tr-TR') : 0) + '₺</strong></span>' +
+            '</div>' +
+            (c.notes ? ('<div style="background:#fff;border-radius:6px;padding:8px 10px;margin-top:4px;">' +
+                '<div style="color:#94A3B8;font-size:11px;text-transform:uppercase;margin-bottom:2px;">Özel Notlar</div>' +
+                '<div>' + escapeHtml(c.notes) + '</div>' +
+                '<button type="button" onclick="crCopyCustomerNotes(' + JSON.stringify(c.notes).replace(/"/g, '&quot;') + ')" style="margin-top:6px;padding:4px 10px;font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-copy"></i> Notu Sürücü Notuna Kopyala</button>' +
+                '</div>') : '');
+        card.style.display = 'block';
+    }
+
+    function crCopyCustomerNotes(notes) {
+        var notesEl = document.getElementById('cr-notes');
+        if (!notesEl) return;
+        var existing = notesEl.value.trim();
+        notesEl.value = existing ? (existing + ' | ' + notes) : notes;
+    }
+
+    document.addEventListener('click', function(evt) {
+        var box = document.getElementById('cr-customer-suggestions');
+        if (!box || box.style.display === 'none') return;
+        if (evt.target.id === 'cr-name' || evt.target.id === 'cr-phone' || box.contains(evt.target)) return;
+        box.style.display = 'none';
+    });
 
     async function submitQuickReservation() {
         var token = getToken();

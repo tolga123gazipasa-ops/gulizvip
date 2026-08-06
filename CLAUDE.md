@@ -119,3 +119,15 @@
 - Sadece Python stdlib kullanılır (harici kütüphane yok)
 - Çalışma dizini: `C:\Users\MSI\OneDrive\Desktop\gulizvip\`
 - VM'de bash path: `/sessions/tender-wizardly-edison/mnt/gulizvip/`
+
+### VIP CRM + Dövizli Ödeme Linki + WhatsApp (Ağustos 2026)
+- **DB:** `customers` tablosu (`id, name, phone, email, notes, total_bookings, total_spent, is_vip`); `reservations` tablosuna `customer_id, currency, payment_link, stripe_payment_intent_id` kolonları eklendi (`payment_status` zaten mevcuttu).
+- **CRM backend (`db.py`):** `search_customers()`, `get_customer_by_id/phone()`, `find_or_create_customer()` (telefona göre eşleştirir/oluşturur), `update_customer()`, `register_customer_booking()` (5+ rezervasyonda otomatik VIP).
+- **Endpoint'ler:**
+  - `GET /api/admin/customers/search?q=` — isim/telefon autocomplete (DB yoksa `RESERVATIONS`'tan fallback türetir)
+  - `PUT /api/admin/customers` — müşteri notu/VIP güncelleme
+  - `POST /api/admin/payments/create-link` — provider-agnostic ödeme linki (Stripe/PayTR henüz seçilmedi — `PAYMENT_PROVIDER` env var + `_generate_payment_link()` içindeki TODO'lar doldurulunca gerçek entegrasyon eklenir)
+  - `POST /api/webhooks/stripe` / `POST /api/webhooks/paytr` — imza doğrulaması YOK (altyapı hazırlığı); başarılı ödemede `paymentStatus='paid'` + dashboard bildirimi + Telegram
+  - `GET /api/admin/notifications`, `POST /api/admin/notifications/read` — ödeme vb. dashboard bildirimleri
+  - `/api/reservations` (public) ve `/api/admin/calendar/quick-reservation` artık her rezervasyonda `find_or_create_customer()` çağırıyor
+- **Admin UI:** Rezervasyon detay kartında "Ödeme Linki Oluştur" (currency+tutar) ve "WhatsApp'tan Gönder" (`wa.me` linki) butonları; takvimde ödenmiş rezervasyonlar yeşil (`paymentStatus==='paid'`); Araç Takvimi hızlı rezervasyon formunda isim/telefon autocomplete + "Müşteri Kimlik Kartı" (geçmiş transfer, toplam harcama, not kopyalama).
