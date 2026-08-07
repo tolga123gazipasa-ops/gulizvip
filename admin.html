@@ -2,7 +2,8 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1B2B4C">
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
     <title>Güliz Transfer | Operasyon Paneli</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -80,8 +81,10 @@
             --shadow-lg: 0 24px 48px -12px rgba(15,23,42,0.25);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
-        body { background-color: var(--admin-bg); color: var(--admin-text); display: flex; height: 100vh; overflow: hidden; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
+        html { -webkit-text-size-adjust: 100%; }
+        button, a { touch-action: manipulation; }
+        body { background-color: var(--admin-bg); color: var(--admin-text); display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary-navy) 0%, var(--primary-red) 100%); z-index: 10000; }
 
         /* --- LOGIN EKRANI --- */
@@ -94,7 +97,7 @@
         .login-box p { font-size: 13px; color: #94A3B8; margin-bottom: 30px; }
         .login-box .form-group { margin-bottom: 20px; text-align: left; }
         .login-box .form-group label { font-size: 12px; font-weight: 700; color: var(--primary-navy); display: block; margin-bottom: 6px; }
-        .login-box .form-group input { width: 100%; padding: 14px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 14px; outline: none; transition: var(--transition); }
+        .login-box .form-group input { width: 100%; padding: 14px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 16px; outline: none; transition: var(--transition); }
         .login-box .form-group input:focus { border-color: var(--primary-navy); box-shadow: 0 0 0 3px rgba(27,43,76,0.1); }
         .login-btn { width: 100%; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-dark) 100%); color: white; border: none; padding: 14px; border-radius: var(--radius-sm); font-weight: 700; font-size: 15px; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm); }
         .login-btn:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
@@ -191,7 +194,7 @@
         .form-row { display: flex; gap: 20px; margin-bottom: 20px; }
         .form-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
         .form-group label { font-size: 12px; font-weight: 700; color: var(--primary-navy); }
-        .form-group input, .form-group select { padding: 12px 15px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 14px; font-family: 'Montserrat', sans-serif; outline: none; transition: var(--transition); }
+        .form-group input, .form-group select { padding: 12px 15px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 16px; font-family: 'Montserrat', sans-serif; outline: none; transition: var(--transition); }
         .form-group input:focus, .form-group select:focus { border-color: var(--primary-navy); box-shadow: 0 0 0 3px rgba(27,43,76,0.08); }
 
         /* GÖRSEL YÖNETİMİ GRID */
@@ -279,7 +282,7 @@
             .panel-section { padding: 12px; }
             .login-box { padding: 24px 16px; }
             .action-btns { flex-wrap: wrap; }
-            .form-group input, .form-group select { font-size: 13px; padding: 10px 12px; }
+            .form-group input, .form-group select { font-size: 16px; padding: 10px 12px; }
             .btn-primary, .btn-secondary { padding: 10px 14px; font-size: 12px; min-height: 44px; }
         }
 
@@ -291,7 +294,7 @@
         .radar-stat-card .stat-value.online { color:#22c55e; }
         .radar-stat-card .stat-value.offline { color:#6b7280; }
         .radar-filter-bar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
-        .radar-search-input { flex:1; min-width:160px; padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--card-bg); color:var(--text); }
+        .radar-search-input { flex:1; min-width:160px; padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:16px; background:var(--card-bg); color:var(--text); }
         .radar-search-input::placeholder { color:var(--text-gray); }
         .radar-online-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
         .radar-online-dot.active { background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,0.5); }
@@ -482,7 +485,7 @@
         </div>
     </div>
 
-    <div id="appContainer" style="display:none;flex:1;height:100vh;">
+    <div id="appContainer" style="display:none;flex:1;height:100vh;height:100dvh;">
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar">
         <div class="sidebar-logo">
@@ -869,7 +872,7 @@
                     </div>
                     <div class="form-group">
                         <label>Havalimanı <span style="color:var(--primary-red);">*</span></label>
-                        <select id="dest-airport" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:14px;">
+                        <select id="dest-airport" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:16px;">
                             <option value="GZP">Gazipaşa Havalimanı (GZP)</option>
                             <option value="AYT">Antalya Havalimanı (AYT)</option>
                             <option value="both">İkisi de (GZP + AYT)</option>
@@ -880,7 +883,7 @@
                     </div>
                     <div class="form-group">
                         <label>Açıklama</label>
-                        <textarea id="dest-description" rows="3" placeholder="Kısa açıklama metni..." style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+                        <textarea id="dest-description" rows="3" placeholder="Kısa açıklama metni..." style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:16px;resize:vertical;"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Görsel</label>
@@ -896,7 +899,7 @@
                     </div>
                     <div class="form-group">
                         <label>Galeri Resimleri (bölge detayına tıklayınca gösterilir)</label>
-                        <textarea id="dest-gallery" rows="2" placeholder="Görsel URL'lerini virgülle ayırın, veya Yükle ile ekleyin" oninput="renderDestGalleryPreview()" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+                        <textarea id="dest-gallery" rows="2" placeholder="Görsel URL'lerini virgülle ayırın, veya Yükle ile ekleyin" oninput="renderDestGalleryPreview()" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:16px;resize:vertical;"></textarea>
                         <div style="margin-top:8px;">
                             <button type="button" class="btn-secondary" onclick="document.getElementById('dest-gallery-file').click()">Galeriye Resim Yükle</button>
                             <input type="file" id="dest-gallery-file" accept="image/*" style="display:none" onchange="uploadDestinationGalleryImage(this)" multiple>
@@ -930,7 +933,7 @@
                         <h3><i class="fa-solid fa-calendar-days"></i> Araç Takvimi</h3>
                         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                             <button class="btn-secondary" onclick="shiftCalendarDate(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-                            <input type="date" id="calendar-date" onchange="loadCalendarView()" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;">
+                            <input type="date" id="calendar-date" onchange="loadCalendarView()" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:16px;">
                             <button class="btn-secondary" onclick="shiftCalendarDate(1)"><i class="fa-solid fa-chevron-right"></i></button>
                             <button class="btn-secondary" onclick="toggleVehicleUnitsPanel()"><i class="fa-solid fa-van-shuttle"></i> Araçları Yönet</button>
                             <button class="btn-secondary" id="cal-map-toggle-btn" onclick="toggleCalendarMap()"><i class="fa-solid fa-map-location-dot"></i> Harita Görünümü</button>
@@ -1142,7 +1145,7 @@
                     </div>
                     <div class="radar-filter-bar">
                         <input type="text" class="radar-search-input" id="radar-search-input" placeholder="IP, konum, cihaz veya sayfa ile filtrele..." oninput="renderRadarTable()">
-                        <select id="radar-status-filter" onchange="renderRadarTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--card-bg);color:var(--text);">
+                        <select id="radar-status-filter" onchange="renderRadarTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:16px;background:var(--card-bg);color:var(--text);">
                             <option value="all">Tümü</option>
                             <option value="online">Sadece Online</option>
                             <option value="offline">Sadece Offline</option>
@@ -1184,11 +1187,11 @@
                     <div id="page-editor-area" style="display:none;">
                         <div class="form-group">
                             <label>Sayfa Başlığı <span style="font-size:12px;color:var(--text-gray);">(Tarayıcı sekmesinde görünür)</span></label>
-                            <input type="text" id="page-editor-title" placeholder="Sayfa başlığı..." maxlength="200" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:15px;">
+                            <input type="text" id="page-editor-title" placeholder="Sayfa başlığı..." maxlength="200" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:16px;">
                         </div>
                         <div class="form-group">
                             <label>Sayfa Alt Başlığı</label>
-                            <input type="text" id="page-editor-subtitle" placeholder="Sayfa alt başlığı (hero bölümünde görünür)..." maxlength="300" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:15px;">
+                            <input type="text" id="page-editor-subtitle" placeholder="Sayfa alt başlığı (hero bölümünde görünür)..." maxlength="300" style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:16px;">
                         </div>
                         <div class="form-group">
                             <label>Sayfa İçeriği</label>
@@ -1237,10 +1240,10 @@
                     <p style="font-size:13px;color:var(--text-gray);margin:0 0 16px;">Canlı destek mesajları ve yeni rezervasyonlar için Telegram bildirimleri. Ayarları kaydettikten sonra "Test Mesajı Gönder" butonuyla deneyebilirsiniz.</p>
                     <div class="form-row">
                         <div class="form-group"><label>Bot Token</label>
-                            <input type="password" id="telegram-bot-token" placeholder="123456789:ABCdefGHIjklmNOPqrstUVwxyz" style="font-family:'Courier New',monospace;font-size:13px;">
+                            <input type="password" id="telegram-bot-token" placeholder="123456789:ABCdefGHIjklmNOPqrstUVwxyz" style="font-family:'Courier New',monospace;font-size:16px;">
                         </div>
                         <div class="form-group"><label>Chat ID</label>
-                            <input type="text" id="telegram-chat-id" placeholder="-1001234567890" style="font-family:'Courier New',monospace;font-size:13px;">
+                            <input type="text" id="telegram-chat-id" placeholder="-1001234567890" style="font-family:'Courier New',monospace;font-size:16px;">
                         </div>
                     </div>
                     <div id="telegram-status" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;font-weight:600;"></div>
@@ -2312,22 +2315,22 @@
                 '</div>' +
                 '<div style="margin-bottom:16px;"><span class="badge ' + (r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-approved' : '') + '">' + (statusMap[r.status] || r.status) + '</span> <span style="color:var(--text-gray);font-size:13px;">' + (typeMap[r.type] || r.type) + '</span></div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
-                '<div style="grid-column:1/-1;"><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Müşteri Adı</label><input id="edit-name" value="' + escapeHtml(r.customerName || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Telefon</label><input id="edit-phone" value="' + escapeHtml(r.customerPhone || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Alış</label><input id="edit-pickup" value="' + escapeHtml(r.pickup || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                (r.type === 'transfer' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Varış</label><input id="edit-destination" value="' + escapeHtml(r.destination || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' : '') +
-                (r.type === 'transfer' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Uçuş No</label><input id="edit-flight" value="' + escapeHtml(r.flightNumber || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' : '') +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tarih</label><input id="edit-date" type="date" value="' + escapeHtml(r.date || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Saat</label><input id="edit-time" type="time" value="' + escapeHtml(r.time || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Yolcu</label><input id="edit-passengers" type="number" value="' + (r.passengers || 1) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                (r.type === 'tahsis' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Süre (saat)</label><input id="edit-duration" type="number" value="' + (r.duration || 4) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' : '') +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tutar (₺)</label><input id="edit-price" type="number" value="' + (r.price || 0) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Araç Ata (Takvim)</label><select id="edit-vehicle-unit" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;">' +
+                '<div style="grid-column:1/-1;"><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Müşteri Adı</label><input id="edit-name" value="' + escapeHtml(r.customerName || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Telefon</label><input id="edit-phone" value="' + escapeHtml(r.customerPhone || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Alış</label><input id="edit-pickup" value="' + escapeHtml(r.pickup || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                (r.type === 'transfer' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Varış</label><input id="edit-destination" value="' + escapeHtml(r.destination || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' : '') +
+                (r.type === 'transfer' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Uçuş No</label><input id="edit-flight" value="' + escapeHtml(r.flightNumber || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' : '') +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tarih</label><input id="edit-date" type="date" value="' + escapeHtml(r.date || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Saat</label><input id="edit-time" type="time" value="' + escapeHtml(r.time || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Yolcu</label><input id="edit-passengers" type="number" value="' + (r.passengers || 1) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                (r.type === 'tahsis' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Süre (saat)</label><input id="edit-duration" type="number" value="' + (r.duration || 4) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' : '') +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tutar (₺)</label><input id="edit-price" type="number" value="' + (r.price || 0) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Araç Ata (Takvim)</label><select id="edit-vehicle-unit" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;">' +
                 '<option value="">— Atanmadı —</option>' +
                 vehicleUnits.map(function(u) { return '<option value="' + u.id + '"' + (r.vehicleUnitId === u.id ? ' selected' : '') + '>' + escapeHtml(u.name) + '</option>'; }).join('') +
                 '</select></div>' +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tampon Süre (dk)</label><input id="edit-buffer" type="number" value="' + (r.bufferMinutes != null ? r.bufferMinutes : 45) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                '<div style="grid-column:1/-1;"><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Notlar</label><textarea id="edit-notes" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;min-height:60px;resize:vertical;">' + escapeHtml(r.notes || '') + '</textarea></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tampon Süre (dk)</label><input id="edit-buffer" type="number" value="' + (r.bufferMinutes != null ? r.bufferMinutes : 45) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                '<div style="grid-column:1/-1;"><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Notlar</label><textarea id="edit-notes" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;min-height:60px;resize:vertical;">' + escapeHtml(r.notes || '') + '</textarea></div>' +
                 '</div>' +
                 '<div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">' +
                 '<button class="btn-approve" onclick="adminSaveEdit(' + r.id + ')" style="padding:10px 24px;font-size:14px;"><i class="fa-solid fa-save"></i> Kaydet</button> ' +
@@ -2468,8 +2471,8 @@
                 '</div>' +
                 '<p style="font-size:13px;color:#64748B;margin:0 0 16px;">Rezervasyon #' + r.id + ' — ' + escapeHtml(r.customerName || '') + '</p>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">' +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tutar</label><input id="pl-amount" type="number" step="0.01" value="' + (r.price || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Para Birimi</label><select id="pl-currency" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;">' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tutar</label><input id="pl-amount" type="number" step="0.01" value="' + (r.price || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Para Birimi</label><select id="pl-currency" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;">' +
                 '<option value="EUR"' + (r.currency === 'EUR' ? ' selected' : '') + '>EUR (€)</option>' +
                 '<option value="USD"' + (r.currency === 'USD' ? ' selected' : '') + '>USD ($)</option>' +
                 '<option value="TRY"' + (!r.currency || r.currency === 'TRY' ? ' selected' : '') + '>TRY (₺)</option>' +
@@ -2992,9 +2995,9 @@
                 '<h4 style="margin:0;font-size:16px;font-weight:700;">' + (bankLabels[key] || key) + '</h4></div>' +
                 '<div class="form-row">' +
                 '<div class="form-group" style="flex:1;"><label>Banka Adı</label>' +
-                '<input type="text" id="bank-name-' + key + '" value="' + escapeHtml(acct.name) + '" style="font-size:15px;font-weight:600;padding:10px 12px;" placeholder="Örn: Halkbank"></div>' +
+                '<input type="text" id="bank-name-' + key + '" value="' + escapeHtml(acct.name) + '" style="font-size:16px;font-weight:600;padding:10px 12px;" placeholder="Örn: Halkbank"></div>' +
                 '<div class="form-group" style="flex:2;"><label>IBAN</label>' +
-                '<input type="text" id="bank-iban-' + key + '" value="' + escapeHtml(acct.iban) + '" style="font-size:14px;font-family:\'Courier New\',monospace;letter-spacing:0.5px;padding:10px 12px;" placeholder="TR12 0001 2009 4321 1234 5678 90"></div>' +
+                '<input type="text" id="bank-iban-' + key + '" value="' + escapeHtml(acct.iban) + '" style="font-size:16px;font-family:\'Courier New\',monospace;letter-spacing:0.5px;padding:10px 12px;" placeholder="TR12 0001 2009 4321 1234 5678 90"></div>' +
                 '</div></div>';
         }
         container.innerHTML = html;
