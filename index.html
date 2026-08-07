@@ -981,6 +981,31 @@
            görünen #page-title tek h1 olarak kalsın (SEO best practice). */
         body.page-mode .seo-h1 { display: none; }
 
+        /* --- DURUM SAYFALARI (404 / 403 / 500) — hash tabanlı vanilla JS router --- */
+        body.error-mode .homepage-section { display: none !important; }
+        .error-page { display: none; min-height: 70vh; align-items: center; justify-content: center; padding: 90px 20px; background: linear-gradient(160deg, var(--primary-navy) 0%, #0F172A 100%); text-align: center; position: relative; overflow: hidden; }
+        .error-page::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.03"><path d="M20,80 L50,10 L80,80 Z" fill="white"/></svg>') repeat; background-size: 60px; pointer-events: none; }
+        .error-page.active { display: flex; }
+        .error-page-inner { max-width: 580px; position: relative; z-index: 1; }
+        .error-page-icon { width: 84px; height: 84px; border-radius: 50%; background: rgba(227,24,55,0.12); border: 1px solid rgba(227,24,55,0.3); display: flex; align-items: center; justify-content: center; font-size: 34px; color: var(--primary-red); margin: 0 auto 26px; }
+        .error-page-title { font-size: 28px; font-weight: 800; color: var(--pure-white); margin-bottom: 16px; line-height: 1.35; }
+        .error-page-title .error-page-code { color: var(--primary-red); }
+        .error-page-desc { font-size: 15px; color: rgba(255,255,255,0.72); line-height: 1.8; margin-bottom: 34px; }
+        .error-page-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .error-btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; text-decoration: none; cursor: pointer; border: none; font-family: 'Montserrat', sans-serif; transition: var(--transition); }
+        .error-btn-primary { background: var(--primary-red); color: var(--pure-white); }
+        .error-btn-primary:hover { background: #C0102E; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(227,24,55,0.3); }
+        .error-btn-outline { background: transparent; color: var(--pure-white); border: 1px solid rgba(255,255,255,0.35); }
+        .error-btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.6); }
+        @media (max-width: 600px) {
+            .error-page { padding: 60px 18px; min-height: 60vh; }
+            .error-page-icon { width: 64px; height: 64px; font-size: 26px; margin-bottom: 20px; }
+            .error-page-title { font-size: 21px; }
+            .error-page-desc { font-size: 14px; }
+            .error-page-actions { flex-direction: column; }
+            .error-btn { width: 100%; justify-content: center; }
+        }
+
         @media (max-width: 768px) {
             .page-hero { padding: 50px 20px 40px; }
             .page-hero h1 { font-size: 24px; }
@@ -1046,6 +1071,42 @@
     <div class="page-content" id="page-content">
         <p>İçerik yükleniyor...</p>
     </div>
+
+    <main id="status-pages">
+        <section class="error-page" id="page-404">
+            <div class="error-page-inner">
+                <div class="error-page-icon"><i class="fa-solid fa-map-signs"></i></div>
+                <h2 class="error-page-title"><span class="error-page-code">404</span> - Aradığınız Sayfa Bulunamadı</h2>
+                <p class="error-page-desc">Aradığınız sayfa taşınmış, kaldırılmış ya da hiç var olmamış olabilir.</p>
+                <div class="error-page-actions">
+                    <a href="#home" class="error-btn error-btn-primary"><i class="fa-solid fa-house"></i> Ana Sayfaya Dön</a>
+                    <a href="https://wa.me/902426062548" target="_blank" rel="noopener" class="error-btn error-btn-outline"><i class="fa-brands fa-whatsapp"></i> 7/24 WhatsApp Destek</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="error-page" id="page-403">
+            <div class="error-page-inner">
+                <div class="error-page-icon"><i class="fa-solid fa-lock"></i></div>
+                <h2 class="error-page-title"><span class="error-page-code">403</span> - Bu Alana Erişim Yetkiniz Yok</h2>
+                <p class="error-page-desc">Girmeye çalıştığınız alan güvenlik sebebiyle kısıtlanmıştır.</p>
+                <div class="error-page-actions">
+                    <a href="#home" class="error-btn error-btn-primary"><i class="fa-solid fa-house"></i> Görsel Girişe Dön</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="error-page" id="page-500">
+            <div class="error-page-inner">
+                <div class="error-page-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+                <h2 class="error-page-title"><span class="error-page-code">500</span> - Bağlantı Güncelleniyor</h2>
+                <p class="error-page-desc">Şu anda sistemimizde kısa süreli bir bakım yapılmaktadır. Lütfen birkaç dakika sonra tekrar deneyin.</p>
+                <div class="error-page-actions">
+                    <button type="button" onclick="location.reload()" class="error-btn error-btn-primary"><i class="fa-solid fa-rotate-right"></i> Sayfayı Yenile</button>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <section class="hero homepage-section">
         <div class="hero-slider" id="bgSlider">
@@ -3268,6 +3329,65 @@
             };
             xhr.onerror = function() { loadFallback(); };
             xhr.send();
+        })();
+
+        // ===== DURUM SAYFALARI ROUTER (404 / 403 / 500) — saf Vanilla JS, harici kütüphane yok =====
+        (function() {
+            // Sitede gerçekten var olan / linklenen hash'lerin beyaz listesi.
+            // Bu listedeki bir hash'e gidilirse normal site görünümüne dönülür (hata sayfası gösterilmez).
+            var VALID_HASHES = ['', 'home', 'hizmetler', 'filo', 'blog', 'ucus-ekrani', 'iletisim', 'sss', 'rezervasyon', 'nasil-calisir'];
+
+            // Durum kodunu tetikleyen hash -> gösterilecek section id eşlemesi
+            var ERROR_MAP = {
+                '404': 'page-404', 'page-404': 'page-404',
+                '403': 'page-403', 'page-403': 'page-403',
+                '500': 'page-500', 'page-500': 'page-500'
+            };
+
+            function hideAllErrorPages() {
+                var pages = document.querySelectorAll('.error-page');
+                for (var i = 0; i < pages.length; i++) {
+                    pages[i].classList.remove('active');
+                }
+                document.body.classList.remove('error-mode');
+            }
+
+            function showErrorPage(sectionId) {
+                hideAllErrorPages();
+                var target = document.getElementById(sectionId);
+                if (!target) return;
+                document.body.classList.add('error-mode');
+                target.classList.add('active');
+                window.scrollTo(0, 0);
+            }
+
+            function route() {
+                // /sayfa/<slug> statik sayfa modundayken bu router devreye girmez
+                if (document.body.classList.contains('page-mode')) return;
+
+                var hash = window.location.hash.replace(/^#/, '');
+
+                if (hash === '' || hash === 'home') {
+                    hideAllErrorPages();
+                    return;
+                }
+
+                if (ERROR_MAP.hasOwnProperty(hash)) {
+                    showErrorPage(ERROR_MAP[hash]);
+                    return;
+                }
+
+                if (VALID_HASHES.indexOf(hash) !== -1) {
+                    hideAllErrorPages();
+                    return;
+                }
+
+                // Tanınmayan/geçersiz herhangi bir hash otomatik olarak 404 gösterir
+                showErrorPage('page-404');
+            }
+
+            window.addEventListener('hashchange', route);
+            document.addEventListener('DOMContentLoaded', route);
         })();
     </script>
 </body>
