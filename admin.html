@@ -83,9 +83,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         body { background-color: var(--admin-bg); color: var(--admin-text); display: flex; height: 100vh; overflow: hidden; }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary-navy) 0%, var(--primary-red) 100%); z-index: 10000; }
-        /* #appContainer, giriş sonrası JS ile display:flex yapılan asıl flex kapsayıcı —
-           üst yatay menü + alt içerik olacak şekilde dikey istifleniyor. */
-        #appContainer { flex-direction: column; }
 
         /* --- LOGIN EKRANI --- */
         .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 30% 20%, #1B2B4C 0%, #0F172A 55%, #060B17 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; }
@@ -109,29 +106,31 @@
         .cred-status.success { background: #D1FAE5; color: #059669; }
         .cred-status.error { background: #FEE2E2; color: var(--danger); }
 
-        /* --- ÜST MENÜ (YATAY NAV) --- */
-        .sidebar { width: 100%; height: 66px; background: var(--pure-white); color: var(--admin-text); display: flex; flex-direction: row; align-items: center; flex-shrink: 0; box-shadow: 0 2px 14px rgba(15,23,42,0.07); border-bottom: 1px solid var(--border-color); padding: 0 24px; gap: 22px; z-index: 6; }
-        .sidebar-logo { padding: 0; text-align: left; border-bottom: none; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-        .sidebar-logo-img { max-height: 32px; width: auto; display: block; margin: 0; }
-        .sidebar-logo h2 { font-weight: 800; font-size: 17px; color: var(--primary-navy); letter-spacing: 0.5px; }
+        /* --- SOL MENÜ (SIDEBAR) --- */
+        /* Not: logo.png beyaz/açık renkli öğeler içeriyor (index.html'deki navy header'da
+           tasarlandığı gibi) — bu yüzden sidebar açık/beyaz yapılırsa logo görünmez olur.
+           Marka lacivertini kullanıyoruz (index.html header'ıyla aynı ton) — logo orada
+           zaten kanıtlanmış şekilde okunaklı görünüyor. */
+        .sidebar { width: 260px; background: linear-gradient(180deg, #223A63 0%, #16233D 100%); color: var(--pure-white); display: flex; flex-direction: column; flex-shrink: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.18); z-index: 5; }
+        .sidebar-logo { padding: 28px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-logo-img { max-height: 50px; width: auto; display: block; margin: 0 auto; }
+        .sidebar-logo h2 { font-weight: 800; font-size: 22px; color: var(--pure-white); letter-spacing: 1px; }
         .sidebar-logo span { color: var(--primary-red); }
-        .sidebar-logo p { display: none; }
+        .sidebar-logo p { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 8px; text-transform: uppercase; letter-spacing: 1.5px; }
 
-        .sidebar-menu { padding: 0; flex: 1; height: 100%; display: flex; flex-direction: row; align-items: center; gap: 4px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
-        .sidebar-menu::-webkit-scrollbar { height: 4px; }
-        .sidebar-menu::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
-        .menu-item { padding: 9px 14px; margin-bottom: 0; display: flex; align-items: center; gap: 9px; color: var(--text-gray); text-decoration: none; font-size: 13px; font-weight: 600; transition: var(--transition); border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-        .menu-item:hover { background-color: rgba(227,24,55,0.07); color: var(--primary-red); transform: none; }
-        .menu-item.active { background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-dark) 100%); color: var(--pure-white); box-shadow: 0 4px 12px -3px rgba(227,24,55,0.45); }
-        .menu-item.active:hover { color: var(--pure-white); }
-        .menu-item i { font-size: 15px; width: 16px; text-align: center; }
+        .sidebar-menu { padding: 16px 12px; flex: 1; overflow-y: auto; }
+        .menu-item { padding: 13px 16px; margin-bottom: 3px; display: flex; align-items: center; gap: 14px; color: rgba(255,255,255,0.62); text-decoration: none; font-size: 14px; font-weight: 600; transition: var(--transition); border-radius: var(--radius-sm); cursor: pointer; }
+        .menu-item:hover { background-color: rgba(255,255,255,0.08); color: var(--pure-white); transform: translateX(2px); }
+        .menu-item.active { background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-dark) 100%); color: var(--pure-white); box-shadow: 0 6px 16px -4px rgba(227,24,55,0.5); }
+        .menu-item.active:hover { transform: none; }
+        .menu-item i { font-size: 18px; width: 20px; text-align: center; }
 
-        .sidebar-footer { padding: 0; border-top: none; flex-shrink: 0; }
-        .logout-btn { display: flex; align-items: center; gap: 8px; color: var(--danger); text-decoration: none; font-weight: 600; font-size: 13px; transition: var(--transition); cursor: pointer; white-space: nowrap; padding: 9px 12px; border-radius: var(--radius-sm); }
-        .logout-btn:hover { background: rgba(239,68,68,0.08); }
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .logout-btn { display: flex; align-items: center; gap: 10px; color: #FCA5A5; text-decoration: none; font-weight: 600; font-size: 14px; transition: var(--transition); cursor: pointer; }
+        .logout-btn:hover { color: #FECACA; }
 
         /* --- ANA İÇERİK ALANI --- */
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--admin-bg); min-width: 0; }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--admin-bg); }
         
         .top-header { background: var(--pure-white); padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); box-shadow: var(--shadow-sm); position: relative; z-index: 4; }
         .header-title h1 { font-size: 22px; font-weight: 800; color: var(--primary-navy); letter-spacing: -0.4px; }
@@ -229,21 +228,21 @@
         .form-actions { margin-top: 20px; display: flex; gap: 10px; }
         .btn-secondary { background: var(--border-color); color: var(--primary-navy); border: none; padding: 10px 18px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; font-size: 13px; transition: var(--transition); }
         .btn-secondary:hover { background: #CBD5E1; transform: translateY(-1px); }
-        .hamburger-admin { display: none !important; background: none; border: none; color: var(--primary-navy); font-size: 22px; cursor: pointer; padding: 6px; }
+        .hamburger-admin { display: none; background: none; border: none; color: var(--primary-navy); font-size: 22px; cursor: pointer; padding: 6px; }
 
         /* ===== RESPONSIVE — ADMIN PANEL ===== */
-        /* Üst menü artık yatay bir çubuk (eski sol sidebar); dar ekranlarda kendi içinde
-           yatay kaydırılıyor, aç/kapa hamburger mekanizmasına gerek kalmadı. */
         @media (max-width: 992px) {
+            .hamburger-admin { display: block; }
             .admin-profile span { display: none; }
             .top-header { padding: 14px 20px; }
             .dashboard-content { padding: 24px; }
-            .sidebar { padding: 0 16px; gap: 14px; height: 58px; }
-            .sidebar-logo h2 { display: none; }
         }
 
         @media (max-width: 768px) {
-            .sidebar-overlay { display: none; }
+            .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; z-index: 1000; transition: left 0.3s ease; }
+            .sidebar.open { left: 0; }
+            .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+            .sidebar-overlay.show { display: block; }
             .main-content { width: 100%; }
             .top-header { padding: 12px 16px; }
             .header-title h1 { font-size: 16px; }
