@@ -178,6 +178,26 @@ ROUTE_SEO_PAGES = {
         "title": "Antalya Havalimanı (AYT) - Manavgat VIP Transfer | Güliz VIP Transfer",
         "description": "Antalya Havalimanı'ndan (AYT) Manavgat'a konforlu VIP transfer hizmeti. 7/24 uçuş takipli, dakik ve lüks ulaşım.",
     },
+    # Not: "iletisim", "sss" ve "hizli-rezervasyon" anasayfadaki gerçek bölümlere (#iletisim,
+    # #sss, #rezervasyon) karşılık gelir — Google fragment (#) URL'lerini ayrı sayfa saymadığı
+    # için bunları sitemap'te anlamlı şekilde listeleyebilmek adına kendi title/description/
+    # canonical'ı olan gerçek URL'ler haline getirdik. "anchor" alanı, sayfa açılınca ilgili
+    # bölüme otomatik kaydırma yapar.
+    "iletisim": {
+        "title": "İletişim | Güliz VIP Transfer - Gazipaşa & Antalya Transfer",
+        "description": "Güliz VIP Transfer ile iletişime geçin. Telefon, WhatsApp ve e-posta ile 7/24 rezervasyon ve bilgi alın. Gazipaşa (GZP) ve Antalya (AYT) havalimanı VIP transfer hizmeti.",
+        "anchor": "iletisim",
+    },
+    "sss": {
+        "title": "Sıkça Sorulan Sorular | Güliz VIP Transfer",
+        "description": "Uçuş rötarı, ödeme yöntemleri, bebek koltuğu ve gece transferleri hakkında merak edilenler. Gazipaşa & Antalya havalimanı VIP transfer sıkça sorulan sorular.",
+        "anchor": "sss",
+    },
+    "hizli-rezervasyon": {
+        "title": "Hızlı Rezervasyon | Güliz VIP Transfer - Gazipaşa & Antalya",
+        "description": "Gazipaşa (GZP) ve Antalya (AYT) havalimanı VIP transferinizi saniyeler içinde online rezerve edin. Anında fiyat, uygun ödeme seçenekleri.",
+        "anchor": "rezervasyon",
+    },
 }
 
 
@@ -228,6 +248,15 @@ def _render_route_seo_page(slug):
         'content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından Alanya, Side, Manavgat, Belek ve Kemer\'e 7/24 VIP transfer."',
         f'content="{new_desc}"'
     )
+    anchor = route.get("anchor")
+    if anchor and "</body>" in html:
+        scroll_script = (
+            f'<script>window.addEventListener("load", function() {{'
+            f'var el = document.getElementById("{anchor}");'
+            f'if (el) el.scrollIntoView({{behavior: "smooth", block: "start"}});'
+            f'}});</script></body>'
+        )
+        html = html.replace("</body>", scroll_script, 1)
     return html
 
 
