@@ -1,48 +1,61 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-06
+Son güncelleme: 2026-08-07 (öğleden sonra)
 
 ## Şu An Neredeyiz
 
-**FAZ 1 (Araç Takvimi ve Filo Yönetim Modülü) tamamlandı, deploy edilmeyi bekliyor.**
-
-Detaylı özet: `faz1-arac-takvimi-ozet.md` dosyasında.
+CRM/Ödeme + Teknik SEO paketleri push edildi (Tolga kendi bilgisayarından push etti). Üstüne bugün sitemap'e 3 yeni sayfa eklendi: **`69a8eaa`** commit'i henüz push edilmedi.
 
 ### Hemen Yapılması Gereken
 
 ```
 cd C:\proje\gulizvip
-git add .
-git commit -m "Faz 1: Arac Takvimi ve Filo Yonetim Modulu + kritik syntax hatasi duzeltmesi"
-git push
+git push origin main
 ```
 
-Deploy sonrası admin panelde **Araç Takvimi → Araçları Yönet → "Filodan Otomatik Oluştur"** ile araç birimlerini (Vito 1/2/3 vb.) bir kere oluşturman lazım.
+- `69a8eaa` — Sitemap'e İletişim, SSS, Hızlı Rezervasyon rota sayfaları eklendi (`/iletisim`, `/sss`, `/hizli-rezervasyon` — kendi title/description/canonical'ı var, ilgili anasayfa bölümüne otomatik kaydırıyor)
 
-⚠️ Bu deploy içinde production'ı çökertecek kritik bir syntax hatası da düzeltildi (`global RESERVATIONS` hatası) — o yüzden bu push'u geciktirme.
+Push edince Railway otomatik deploy edecek (GitHub → Railway bağlı).
 
-## Genel Proje Geçmişi (Bu Oturumda Yapılanlar)
+### Push Sonrası Yapılacaklar
 
-1. **Popüler Turistik Bölgeler (SEO/Destinasyonlar) özelliği**: GZP + AYT kapsayan 6 landmark destinasyon (Gazipaşa Delik Deniz, Gazipaşa Koru Plajı, Alanya Kalesi, Side Antik Kenti, Belek, Kemer) — admin panelden tam CRUD, galeri resimleri, detay modalı. **Canlıya (Railway) eklendi.**
-2. **Kritik altyapı sorunu bulundu ve düzeltildi**: Railway "web" servisinde `DATABASE_URL` hiç tanımlı değildi — bu yüzden destinasyonlar gibi DB-first özellikler production'da sessizce boş kalıyordu. `railway variables --set` ile düzeltildi.
-3. **Admin panel bug'ları**: "Destinasyonlar gelmiyor" sorunu (duplicate `switchTab()` fonksiyonu, `view-destinations` dispatch eksikti) düzeltildi.
-4. **FAZ 1 — Araç Takvimi ve Filo Yönetim Modülü** (bu oturumun büyük kısmı):
-   - DB: `vehicle_units`, `calendar_blocks` (JSON config), `reservations` tablosuna 9 yeni kolon (lat/lng, distance_km, buffer_minutes, vehicle_unit_id, vb.)
-   - Backend: `/api/admin/vehicle-units`, `/api/admin/calendar`, `/api/admin/calendar/block`, `/api/admin/calendar/quick-reservation`
-   - Admin UI: Gantt-tarzı günlük takvim, renk kodlama, manuel blok/hızlı rezervasyon, araç birimi yönetimi
-   - Bonus: rezervasyon düzenleme ve onay/iptal butonlarındaki 4 sessiz bug düzeltildi
+1. **Google Search Console'a sitemap gönder**: Site Haritaları sekmesinde kutuya `sitemap.xml` yaz, Gönder'e bas (tam yolu Google otomatik tamamlıyor).
+2. **admin.html indeks kontrolü**: URL denetimi'nden `https://gulizvip.com.tr/admin.html`'i kontrol et. "Dizine eklendi" çıkarsa → URL Kaldırma aracından tam adresi girip geçici (6 aylık) kaldırma talebi gönder. Çıkmıyorsa ekstra bir şey yapmana gerek yok (robots.txt zaten engelliyor, hiç indekslenmeyecek).
+3. **JSON-LD aggregateRating'i güncelle**: `index.html` içindeki `"aggregateRating": {"ratingValue": "4.9", "reviewCount": "127"}` değerleri YER TUTUCUDUR. Google İşletme Profili'ndeki gerçek puan/yorum sayısıyla güncellemezsen ya da bu bloğu silmezsen, Google'ın structured-data (sahte yorum) politikasını ihlal etmiş olursun.
 
-## Açık Kalanlar / Sıradaki Adımlar
+## Bu Oturumda Yapılanlar (Özet)
 
-- [ ] Yukarıdaki deploy komutlarını çalıştır (git push)
-- [ ] Deploy sonrası "Filodan Otomatik Oluştur" ile araç birimlerini oluştur
-- [ ] Destinasyonların 4'er galeri resminin production DB'sine gerçekten yazıldığını admin panelden teyit et
-- [ ] **Faz 2** (henüz başlanmadı): Google Maps ile mesafe/süre hesaplama — otomatik ve manuel rezervasyonlarda pickup/dropoff koordinatlarını doldurma
-- [ ] **Faz 3** (henüz başlanmadı): Otomatik siparişlerin çakışmayan ilk müsait araca ataması + sitede "Dolu/Müsait Değil" gösterimi + o günkü rotaların harita görünümü
+### 1. VIP CRM + Dövizli Ödeme Linki + WhatsApp (commit d3d2038)
+- DB: `customers` tablosu + `reservations`'a `customer_id/currency/payment_link/stripe_payment_intent_id` kolonları
+- Her rezervasyonda telefona göre otomatik müşteri eşleştirme/oluşturma (`find_or_create_customer`)
+- `GET /api/admin/customers/search` — isim/telefon autocomplete
+- `POST /api/admin/payments/create-link` — **provider-agnostic** ödeme linki (Stripe/PayTR HENÜZ SEÇİLMEDİ, sadece altyapı hazır — `PAYMENT_PROVIDER` env var + `_generate_payment_link()` içindeki TODO'lar doldurulunca gerçek entegrasyon eklenecek)
+- `POST /api/webhooks/stripe` ve `/api/webhooks/paytr` — imza doğrulaması yok (altyapı hazırlığı), başarılı ödemede yeşil "Ödendi" + Telegram bildirimi
+- Admin UI: rezervasyon kartında "Ödeme Linki Oluştur" + "WhatsApp'tan Gönder" butonları; Araç Takvimi hızlı rezervasyon formunda müşteri autocomplete + Müşteri Kimlik Kartı
+
+### 2. Teknik SEO Altyapısı (commit d7b82d7)
+- `index.html` head: genişletilmiş keywords, hreflang (tr + x-default — en/de/ru için gerçek sayfa yokken eklemek Search Console hatası üretir)
+- JSON-LD: `LocalBusiness`+`TaxiService` şeması + görünür SSS ile eşleşen `FAQPage` şeması
+- `GET /sitemap.xml`, `GET /robots.txt` — dinamik üretiliyor (server.py)
+- `ROUTE_SEO_PAGES` — 7 popüler rota (`/gazipasa-alanya-transfer` vb.) kendi title/description/canonical'ıyla, aynı sayfa şablonunu paylaşıyor
+- `admin.html` → çift korumalı noindex (meta + `X-Robots-Tag` header) + robots.txt disallow
+- Eksik `alt`/`loading="lazy"` etiketleri tamamlandı, `/sayfa/` sayfalarındaki çift `<h1>` sorunu düzeltildi
+
+### 3. Footer sosyal linkler
+- WhatsApp (`wa.me/902426062548`) ve Instagram (`instagram.com/gulizviptransfer`) linkleri footer'a eklendi (önceden `#` idi, boş duruyordu)
+
+## Açık Kalanlar / Konuşulan Ama Henüz Karar Verilmeyenler
+
+- [ ] **Push + deploy** (yukarıda)
+- [ ] **Ödeme sağlayıcısı seçimi**: Stripe mi PayTR mi? Karar verilince gerçek entegrasyon eklenecek
+- [ ] **aggregateRating gerçek değerleri** (yukarıda)
+- [ ] **Opsiyonel `/iletisim` sayfası**: İletişim şu an anasayfanın bir bölümü (#iletisim), ayrı URL değil — Tolga isterse rota-SEO tekniğiyle ayrı bir sayfa açılabilir, karar bekleniyor
+- [ ] Task #37 (eski liste): "Her bölgeye 4 galeri resmi ekle" — durumu teyit edilmedi, muhtemelen hâlâ eksik
+- [ ] Destinasyonların 4'er galeri resminin production DB'sine gerçekten yazıldığı hiç teyit edilmedi (çok eski açık madde)
 
 ## Önemli Notlar
 
-- Backend Python stdlib `http.server` (server.py), PostgreSQL opsiyonel (`db.py`), yoksa JSON dosya fallback.
+- Backend Python stdlib `http.server` (server.py), PostgreSQL opsiyonel (`db.py`), yoksa JSON dosya fallback
 - Admin login: `admin@guliztransfer.com` / `Guliz2025!`
-- Railway proje: "easygoing-recreation", servisler: "web" + "Postgres"
-- Assistant admin şifresini kendisi giremez (güvenlik kuralı) — login her zaman Tolga tarafından yapılmalı.
+- Assistant admin şifresini kendisi giremez (güvenlik kuralı) — login her zaman Tolga tarafından yapılmalı
+- Assistant GitHub'a push edemez (kimlik bilgisi yok) — push her zaman Tolga'nın kendi bilgisayarından yapılmalı
