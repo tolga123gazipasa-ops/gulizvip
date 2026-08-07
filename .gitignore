@@ -5,6 +5,9 @@ __pycache__/
 *.log
 reservations.json
 slider_images.json
+chat_messages.json
+contact_messages.json
+dashboard_notifications.json
 .DS_Store
 .vscode/
 temp_*.py

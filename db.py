@@ -94,6 +94,38 @@ CREATE TABLE IF NOT EXISTS customers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id SERIAL PRIMARY KEY,
+    session_id VARCHAR(100) DEFAULT '',
+    name VARCHAR(200) DEFAULT '',
+    phone VARCHAR(50) DEFAULT '',
+    message TEXT DEFAULT '',
+    is_admin BOOLEAN DEFAULT FALSE,
+    admin_name VARCHAR(100) DEFAULT '',
+    is_read BOOLEAN DEFAULT FALSE,
+    is_new_session BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id);
+
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) DEFAULT '',
+    phone VARCHAR(50) DEFAULT '',
+    email VARCHAR(200) DEFAULT '',
+    message TEXT DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS dashboard_notifications (
+    id SERIAL PRIMARY KEY,
+    message TEXT DEFAULT '',
+    ntype VARCHAR(30) DEFAULT 'info',
+    reservation_id INTEGER,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 def init_db():
@@ -571,6 +603,311 @@ def register_customer_booking(customer_id, amount):
     except Exception as e:
         print(f"[!] DB müşteri rezervasyon sayacı güncelleme hatası: {e}")
         return False
+
+
+# ─── Live Chat Messages (Canlı Destek) ───────────────────────────────────────────
+
+def load_chat_messages_from_db():
+    """Tüm sohbet mesajlarını veritabanından yükle (id sırasına göre)."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM chat_messages ORDER BY id ASC")
+                rows = cur.fetchall()
+        conn.close()
+        result = []
+        for row in rows:
+            result.append({
+                "id": row["id"],
+                "sessionId": row.get("session_id") or "",
+                "name": row.get("name") or "",
+                "phone": row.get("phone") or "",
+                "message": row.get("message") or "",
+                "isAdmin": bool(row.get("is_admin", False)),
+                "adminName": row.get("admin_name") or "",
+                "read": bool(row.get("is_read", False)),
+                "isNewSession": bool(row.get("is_new_session", False)),
+                "timestamp": row["created_at"].isoformat() if row.get("created_at") else "",
+            })
+        return result
+    except Exception as e:
+        print(f"[!] DB sohbet mesajları yükleme hatası: {e}")
+        return None
+
+
+def save_chat_message_to_db(msg):
+    """Yeni sohbet mesajını veritabanına ekle. Eklenen kaydın id'sini döndür."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO chat_messages
+                        (session_id, name, phone, message, is_admin, admin_name, is_read, is_new_session)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                """, (
+                    msg.get("sessionId", ""),
+                    msg.get("name", ""),
+                    msg.get("phone", ""),
+                    msg.get("message", ""),
+                    msg.get("isAdmin", False),
+                    msg.get("adminName", ""),
+                    msg.get("read", False),
+                    msg.get("isNewSession", False),
+                ))
+                new_id = cur.fetchone()["id"]
+        conn.close()
+        return new_id
+    except Exception as e:
+        print(f"[!] DB sohbet mesajı kaydetme hatası: {e}")
+        return None
+
+
+def mark_chat_session_read_in_db(session_id):
+    """Bir oturumdaki ziyaretçi mesajlarını okundu olarak işaretle."""
+    if not HAS_PSYCOPG2:
+        return False
+    try:
+        conn = get_conn()
+        if not conn:
+            return False
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE chat_messages SET is_read = TRUE WHERE session_id = %s AND is_admin = FALSE",
+                    (session_id,)
+                )
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"[!] DB sohbet okundu güncelleme hatası: {e}")
+        return False
+
+
+def delete_chat_message_from_db(message_id, session_id=None):
+    """Bir sohbet mesajını sil. session_id verilirse eşleşme ek şart olarak aranır."""
+    if not HAS_PSYCOPG2:
+        return False
+    try:
+        conn = get_conn()
+        if not conn:
+            return False
+        with conn:
+            with conn.cursor() as cur:
+                if session_id:
+                    cur.execute("DELETE FROM chat_messages WHERE id = %s AND session_id = %s", (message_id, session_id))
+                else:
+                    cur.execute("DELETE FROM chat_messages WHERE id = %s", (message_id,))
+                ok = cur.rowcount > 0
+        conn.close()
+        return ok
+    except Exception as e:
+        print(f"[!] DB sohbet mesajı silme hatası: {e}")
+        return False
+
+
+def get_next_chat_id():
+    """chat_messages sequence'ından bir sonraki id'yi al (başlangıç sayacı için)."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT nextval('chat_messages_id_seq')")
+                val = cur.fetchone()[0]
+        conn.close()
+        return val
+    except Exception as e:
+        print(f"[!] DB sohbet sequence hatası: {e}")
+        return None
+
+
+# ─── İletişim Formu Mesajları ─────────────────────────────────────────────────────
+
+def load_contact_messages_from_db():
+    """Tüm iletişim formu mesajlarını veritabanından yükle."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM contact_messages ORDER BY id ASC")
+                rows = cur.fetchall()
+        conn.close()
+        result = []
+        for row in rows:
+            result.append({
+                "id": row["id"],
+                "name": row.get("name") or "",
+                "phone": row.get("phone") or "",
+                "email": row.get("email") or "",
+                "message": row.get("message") or "",
+                "timestamp": row["created_at"].isoformat() if row.get("created_at") else "",
+            })
+        return result
+    except Exception as e:
+        print(f"[!] DB iletişim mesajları yükleme hatası: {e}")
+        return None
+
+
+def save_contact_message_to_db(contact):
+    """Yeni iletişim formu mesajını veritabanına ekle. Eklenen kaydın id'sini döndür."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO contact_messages (name, phone, email, message)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                """, (
+                    contact.get("name", ""),
+                    contact.get("phone", ""),
+                    contact.get("email", ""),
+                    contact.get("message", ""),
+                ))
+                new_id = cur.fetchone()["id"]
+        conn.close()
+        return new_id
+    except Exception as e:
+        print(f"[!] DB iletişim mesajı kaydetme hatası: {e}")
+        return None
+
+
+def get_next_contact_id():
+    """contact_messages sequence'ından bir sonraki id'yi al (başlangıç sayacı için)."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT nextval('contact_messages_id_seq')")
+                val = cur.fetchone()[0]
+        conn.close()
+        return val
+    except Exception as e:
+        print(f"[!] DB iletişim sequence hatası: {e}")
+        return None
+
+
+# ─── Dashboard Bildirimleri ───────────────────────────────────────────────────────
+
+def load_dashboard_notifications_from_db():
+    """Son 50 dashboard bildirimini veritabanından yükle (en yeni önce)."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM dashboard_notifications ORDER BY id DESC LIMIT 50")
+                rows = cur.fetchall()
+        conn.close()
+        result = []
+        for row in rows:
+            result.append({
+                "id": row["id"],
+                "type": row.get("ntype") or "info",
+                "message": row.get("message") or "",
+                "reservationId": row.get("reservation_id"),
+                "read": bool(row.get("is_read", False)),
+                "createdAt": row["created_at"].isoformat() if row.get("created_at") else "",
+            })
+        return result
+    except Exception as e:
+        print(f"[!] DB dashboard bildirimleri yükleme hatası: {e}")
+        return None
+
+
+def save_dashboard_notification_to_db(notif):
+    """Yeni dashboard bildirimini veritabanına ekle. Eklenen kaydın id'sini döndür."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO dashboard_notifications (message, ntype, reservation_id, is_read)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                """, (
+                    notif.get("message", ""),
+                    notif.get("type", "info"),
+                    notif.get("reservationId"),
+                    notif.get("read", False),
+                ))
+                new_id = cur.fetchone()["id"]
+        conn.close()
+        return new_id
+    except Exception as e:
+        print(f"[!] DB dashboard bildirimi kaydetme hatası: {e}")
+        return None
+
+
+def mark_dashboard_notification_read_in_db(notification_id):
+    """Bir dashboard bildirimini okundu olarak işaretle."""
+    if not HAS_PSYCOPG2:
+        return False
+    try:
+        conn = get_conn()
+        if not conn:
+            return False
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE dashboard_notifications SET is_read = TRUE WHERE id = %s", (notification_id,))
+                ok = cur.rowcount > 0
+        conn.close()
+        return ok
+    except Exception as e:
+        print(f"[!] DB dashboard bildirimi okundu güncelleme hatası: {e}")
+        return False
+
+
+def get_next_dashboard_notification_id():
+    """dashboard_notifications sequence'ından bir sonraki id'yi al (başlangıç sayacı için)."""
+    if not HAS_PSYCOPG2:
+        return None
+    try:
+        conn = get_conn()
+        if not conn:
+            return None
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT nextval('dashboard_notifications_id_seq')")
+                val = cur.fetchone()[0]
+        conn.close()
+        return val
+    except Exception as e:
+        print(f"[!] DB dashboard sequence hatası: {e}")
+        return None
 
 
 # ─── Config (anahtar-değer deposu) ──────────────────────────────────────────────

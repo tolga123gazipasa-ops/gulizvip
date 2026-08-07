@@ -331,6 +331,13 @@ RESERVATIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "re
 RESERVATIONS = []
 RESERVATION_ID = 1000
 
+# ─── Canlı Destek / İletişim / Bildirim JSON Fallback Dosyaları ─────────────────
+# DB varsa asıl veri PostgreSQL'dedir; bu dosyalar sadece DATABASE_URL yokken
+# (ya da DB'ye erişilemediğinde) kalıcılığı sağlayan yedek/fallback'tir.
+CHAT_MESSAGES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_messages.json")
+CONTACT_MESSAGES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "contact_messages.json")
+DASHBOARD_NOTIFICATIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_notifications.json")
+
 # ─── Price Data (Rota Fiyatları) ────────────────────────────────────────────────
 PRICES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prices.json")
 ROUTE_PRICES = []
@@ -889,6 +896,102 @@ DASHBOARD_NOTIFICATION_ID = 1
 dashboard_notif_lock = threading.Lock()
 
 
+def load_chat_messages():
+    """Sohbet mesajlarını başlangıçta yükle. Önce PostgreSQL, yoksa JSON dosyası."""
+    global CHAT_MESSAGES, CHAT_ID
+    db_messages = db.load_chat_messages_from_db()
+    if db_messages is not None:
+        CHAT_MESSAGES = db_messages
+        next_id = db.get_next_chat_id()
+        if next_id:
+            CHAT_ID = next_id
+        print(f"[i] {len(CHAT_MESSAGES)} sohbet mesajı PostgreSQL'den yüklendi.")
+        return
+    try:
+        if os.path.exists(CHAT_MESSAGES_FILE):
+            with open(CHAT_MESSAGES_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                CHAT_MESSAGES = data.get("messages", [])
+                CHAT_ID = data.get("next_id", 1)
+    except Exception as e:
+        print(f"[!] Sohbet mesajları dosyası yüklenemedi: {e}")
+        CHAT_MESSAGES = []
+        CHAT_ID = 1
+
+
+def save_chat_messages():
+    """Sohbet mesajlarını JSON dosyasına yedekle (DB kullanılamadığında asıl kaynak)."""
+    try:
+        with open(CHAT_MESSAGES_FILE, "w", encoding="utf-8") as f:
+            json.dump({"messages": CHAT_MESSAGES, "next_id": CHAT_ID}, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[!] Sohbet mesajları kaydedilemedi: {e}")
+
+
+def load_contact_messages():
+    """İletişim formu mesajlarını başlangıçta yükle. Önce PostgreSQL, yoksa JSON dosyası."""
+    global CONTACT_MESSAGES, CONTACT_ID
+    db_messages = db.load_contact_messages_from_db()
+    if db_messages is not None:
+        CONTACT_MESSAGES = db_messages
+        next_id = db.get_next_contact_id()
+        if next_id:
+            CONTACT_ID = next_id
+        print(f"[i] {len(CONTACT_MESSAGES)} iletişim mesajı PostgreSQL'den yüklendi.")
+        return
+    try:
+        if os.path.exists(CONTACT_MESSAGES_FILE):
+            with open(CONTACT_MESSAGES_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                CONTACT_MESSAGES = data.get("messages", [])
+                CONTACT_ID = data.get("next_id", 1)
+    except Exception as e:
+        print(f"[!] İletişim mesajları dosyası yüklenemedi: {e}")
+        CONTACT_MESSAGES = []
+        CONTACT_ID = 1
+
+
+def save_contact_messages():
+    """İletişim formu mesajlarını JSON dosyasına yedekle."""
+    try:
+        with open(CONTACT_MESSAGES_FILE, "w", encoding="utf-8") as f:
+            json.dump({"messages": CONTACT_MESSAGES, "next_id": CONTACT_ID}, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[!] İletişim mesajları kaydedilemedi: {e}")
+
+
+def load_dashboard_notifications():
+    """Dashboard bildirimlerini başlangıçta yükle. Önce PostgreSQL, yoksa JSON dosyası."""
+    global DASHBOARD_NOTIFICATIONS, DASHBOARD_NOTIFICATION_ID
+    db_notifs = db.load_dashboard_notifications_from_db()
+    if db_notifs is not None:
+        DASHBOARD_NOTIFICATIONS = db_notifs
+        next_id = db.get_next_dashboard_notification_id()
+        if next_id:
+            DASHBOARD_NOTIFICATION_ID = next_id
+        print(f"[i] {len(DASHBOARD_NOTIFICATIONS)} dashboard bildirimi PostgreSQL'den yüklendi.")
+        return
+    try:
+        if os.path.exists(DASHBOARD_NOTIFICATIONS_FILE):
+            with open(DASHBOARD_NOTIFICATIONS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                DASHBOARD_NOTIFICATIONS = data.get("notifications", [])
+                DASHBOARD_NOTIFICATION_ID = data.get("next_id", 1)
+    except Exception as e:
+        print(f"[!] Dashboard bildirimleri dosyası yüklenemedi: {e}")
+        DASHBOARD_NOTIFICATIONS = []
+        DASHBOARD_NOTIFICATION_ID = 1
+
+
+def save_dashboard_notifications():
+    """Dashboard bildirimlerini JSON dosyasına yedekle."""
+    try:
+        with open(DASHBOARD_NOTIFICATIONS_FILE, "w", encoding="utf-8") as f:
+            json.dump({"notifications": DASHBOARD_NOTIFICATIONS, "next_id": DASHBOARD_NOTIFICATION_ID}, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[!] Dashboard bildirimleri kaydedilemedi: {e}")
+
+
 def _push_dashboard_notification(message, ntype="info", reservation_id=None):
     global DASHBOARD_NOTIFICATION_ID
     with dashboard_notif_lock:
@@ -902,7 +1005,13 @@ def _push_dashboard_notification(message, ntype="info", reservation_id=None):
         }
         DASHBOARD_NOTIFICATIONS.insert(0, notif)
         del DASHBOARD_NOTIFICATIONS[50:]  # yalnızca son 50 bildirimi tut
-        DASHBOARD_NOTIFICATION_ID += 1
+        db_id = db.save_dashboard_notification_to_db(notif)
+        if db_id:
+            notif["id"] = db_id
+            DASHBOARD_NOTIFICATION_ID = db_id + 1
+        else:
+            DASHBOARD_NOTIFICATION_ID += 1
+        save_dashboard_notifications()
     return notif
 
 # ─── Ödeme (Dövizli Ödeme Linki) — Provider-agnostic altyapı ──────────────────────
@@ -2412,6 +2521,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 for n in DASHBOARD_NOTIFICATIONS:
                     if notif_id is None or n.get("id") == notif_id:
                         n["read"] = True
+                        db.mark_dashboard_notification_read_in_db(n["id"])
+                save_dashboard_notifications()
                 self._send_json({"success": True})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
@@ -2547,7 +2658,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Mesaj boş olamaz.", 400)
                     return
                 CHAT_MESSAGES.append(msg)
-                CHAT_ID += 1
+                db_id = db.save_chat_message_to_db(msg)
+                if db_id:
+                    msg["id"] = db_id
+                    CHAT_ID = db_id + 1
+                else:
+                    CHAT_ID += 1
+                save_chat_messages()
                 if is_new_session:
                     telegram_text = f"🆕 <b>YENİ ZİYARETÇİ SOHBETİ BAŞLADI</b>\n👤 <b>İsim:</b> {msg['name'] or 'Belirtilmemiş'}\n📞 <b>Telefon:</b> {msg['phone'] or 'Belirtilmemiş'}\n💬 <b>Mesaj:</b> {msg['message']}\n🆔 <b>Session:</b> <code>{msg['sessionId']}</code>\n🕐 <b>Saat:</b> {msg['timestamp']}\n\n⚠️ <b>Müşteriye iletilmesi için lütfen bu mesaja YANITLA (Reply) diyerek cevap veriniz.</b>"
                 else:
@@ -2586,7 +2703,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "sessionId": matched_session_id
                 }
                 CHAT_MESSAGES.append(msg)
-                CHAT_ID += 1
+                db_id = db.save_chat_message_to_db(msg)
+                if db_id:
+                    msg["id"] = db_id
+                    CHAT_ID = db_id + 1
+                else:
+                    CHAT_ID += 1
+                save_chat_messages()
                 print(f"[telegram-webhook] Reply session {matched_session_id}: \"{message_text[:60]}\"")
                 self._send_json({"ok": True})
             except Exception as e:
@@ -2617,7 +2740,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "phone": ""
                 }
                 CHAT_MESSAGES.append(msg)
-                CHAT_ID += 1
+                db_id = db.save_chat_message_to_db(msg)
+                if db_id:
+                    msg["id"] = db_id
+                    CHAT_ID = db_id + 1
+                else:
+                    CHAT_ID += 1
+                save_chat_messages()
                 self._send_json({"success": True, "message": msg})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
@@ -2634,7 +2763,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Mesaj boş olamaz.", 400)
                     return
                 CHAT_MESSAGES.append(msg)
-                CHAT_ID += 1
+                db_id = db.save_chat_message_to_db(msg)
+                if db_id:
+                    msg["id"] = db_id
+                    CHAT_ID = db_id + 1
+                else:
+                    CHAT_ID += 1
+                save_chat_messages()
                 self._send_json({"success": True, "message": msg})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
@@ -2650,6 +2785,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 for m in CHAT_MESSAGES:
                     if m.get("sessionId") == session_id and not m.get("isAdmin"):
                         m["read"] = True
+                db.mark_chat_session_read_in_db(session_id)
+                save_chat_messages()
                 self._send_json({"success": True})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
@@ -2790,6 +2927,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 else:
                     CHAT_MESSAGES = [m for m in CHAT_MESSAGES if m["id"] != message_id]
                 if len(CHAT_MESSAGES) < initial_count:
+                    db.delete_chat_message_from_db(message_id, session_id or None)
+                    save_chat_messages()
                     self._send_json({"success": True, "message": "Mesaj silindi."})
                 else:
                     self._send_error("Mesaj bulunamadı.", 404)
@@ -2817,7 +2956,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "timestamp": datetime.now().isoformat()
                 }
                 CONTACT_MESSAGES.append(contact)
-                CONTACT_ID += 1
+                db_id = db.save_contact_message_to_db(contact)
+                if db_id:
+                    contact["id"] = db_id
+                    CONTACT_ID = db_id + 1
+                else:
+                    CONTACT_ID += 1
+                save_contact_messages()
                 tg_msg = "📬 <b>Yeni Iletisim Mesaji</b>\n"
                 tg_msg += "👤 <b>Isim:</b> " + name + "\n"
                 tg_msg += "📞 <b>Telefon:</b> " + phone + "\n"
@@ -3455,6 +3600,9 @@ if __name__ == "__main__":
     load_vehicle_units()
     load_calendar_blocks()
     load_reservations()
+    load_chat_messages()
+    load_contact_messages()
+    load_dashboard_notifications()
     try:
         server = http.server.HTTPServer((HOST, PORT), GulizHandler)
         print(f"[v] Guliz VIP Backend running on http://{HOST}:{PORT}")
