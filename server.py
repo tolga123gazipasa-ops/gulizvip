@@ -1127,6 +1127,25 @@ def _get_visitor_ip(handler):
     return client
 
 
+def _lookup_geo(ip):
+    """Bir IP adresi için şehir/ülke/bölge bilgisini ip-api.com üzerinden SUNUCU tarafında
+    sorgula. Not: ziyaretçinin tarayıcısından doğrudan https://ip-api.com'a istek atmak
+    403 Forbidden ile başarısız oluyordu — ip-api.com'un ücretsiz planı sadece düz HTTP
+    destekliyor, HTTPS için ücretli plan gerekiyor. Sunucudan HTTP ile sorgulamak bu kısıtı
+    aşıyor (mixed-content/CORS sorunu da yok). Yerel/özel IP'lerde (127.0.0.1, 192.168.x.x
+    vb.) ip-api başarısız döner — bu durumda sessizce boş değer döner."""
+    try:
+        ip_url = f"http://ip-api.com/json/{ip}?fields=status,city,country,regionName"
+        req = urllib.request.Request(ip_url, headers={"User-Agent": "GulizVIP/1.0"})
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        if data.get("status") == "success":
+            return data.get("city", ""), data.get("country", ""), data.get("regionName", "")
+    except Exception:
+        pass
+    return "", "", ""
+
+
 def _format_duration(seconds):
     """Format seconds to human-readable duration string."""
     if seconds < 60:
@@ -2801,15 +2820,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("sessionId gerekli.", 400)
                     return
                 ip = _get_visitor_ip(self)
+                city, country, region = _lookup_geo(ip)
                 visitor = {
                     "sessionId": session_id,
                     "ip": ip,
                     "device": body.get("device", ""),
                     "os": body.get("os", ""),
                     "browser": body.get("browser", ""),
-                    "city": body.get("city", ""),
-                    "country": body.get("country", ""),
-                    "region": body.get("region", ""),
+                    "city": city,
+                    "country": country,
+                    "region": region,
                     "referrer": body.get("referrer", ""),
                     "entryPage": body.get("entryPage", ""),
                     "currentPage": body.get("entryPage", ""),
@@ -2824,7 +2844,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 }
                 with visitor_lock:
                     VISITOR_SESSIONS[session_id] = visitor
-                print(f"[tracking] Yeni ziyaretçi: {ip} / {body.get('city', '?')} / {body.get('device', '?')}")
+                print(f"[tracking] Yeni ziyaretçi: {ip} / {city or '?'} / {body.get('device', '?')}")
                 threading.Thread(target=_send_telegram_visitor_identify, args=(visitor,), daemon=True).start()
                 self._send_json({"success": True, "visitorId": session_id})
             except json.JSONDecodeError:

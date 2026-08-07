@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#1B2B4C">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+    <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     <title>Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP Transfer</title>
     <meta name="description" content="Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP transfer hizmeti sunuyoruz.">
@@ -3107,8 +3111,6 @@
             else if (/Edg/.test(ua)) browser = 'Edge';
             else if (/OPR/.test(ua)) browser = 'Opera';
 
-            var city = '';
-            var country = '';
             var identified = false;
             var heartbeatTimer = null;
             var currentPage = window.location.pathname;
@@ -3116,34 +3118,25 @@
             var referrer = document.referrer || '';
 
             function identify() {
+                // Not: şehir/ülke bilgisi artık tarayıcıdan doğrudan ip-api.com'a istek
+                // atılarak değil, sunucu tarafında (server.py -> _lookup_geo) çözülüyor.
+                // ip-api.com'un ücretsiz planı HTTPS'i desteklemiyor, tarayıcıdan istek
+                // atmak 403 Forbidden ile başarısız oluyordu.
                 if (identified) return;
-                fetch('https://ip-api.com/json/?fields=status,country,city,query')
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (data.status === 'success') {
-                            city = data.city || '';
-                            country = data.country || '';
-                        }
+                fetch('/api/track/identify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        device: device,
+                        os: os,
+                        browser: browser,
+                        referrer: referrer,
+                        entryPage: entryPage
                     })
-                    .catch(function() {})
-                    .finally(function() {
-                        fetch('/api/track/identify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                sessionId: sessionId,
-                                device: device,
-                                os: os,
-                                browser: browser,
-                                city: city,
-                                country: country,
-                                referrer: referrer,
-                                entryPage: entryPage
-                            })
-                        }).catch(function() {});
-                        identified = true;
-                        startHeartbeat();
-                    });
+                }).catch(function() {});
+                identified = true;
+                startHeartbeat();
             }
 
             function startHeartbeat() {
