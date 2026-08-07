@@ -2795,11 +2795,18 @@
                 return;
             }
             var bySession = {};
-            unread.forEach(function(m) { bySession[m.sessionId || 'unknown'] = m; });
-            var sessions = Object.keys(bySession).map(function(k) { return bySession[k]; });
-            el.innerHTML = sessions.slice(0, 5).map(function(m) {
+            var bySessionNew = {};
+            unread.forEach(function(m) {
+                var sid = m.sessionId || 'unknown';
+                bySession[sid] = m;
+                if (m.isNewSession) bySessionNew[sid] = true;
+            });
+            var sessions = Object.keys(bySession).map(function(k) { return { msg: bySession[k], isNew: !!bySessionNew[k] }; });
+            el.innerHTML = sessions.slice(0, 5).map(function(s) {
+                var m = s.msg;
+                var newBadge = s.isNew ? '<span style="background:#16A34A;color:white;font-size:10px;border-radius:4px;padding:1px 6px;margin-left:6px;font-weight:700;">YENİ</span>' : '';
                 return '<div onclick="switchTab(\'view-chat\', document.querySelectorAll(\'.menu-item\')[9])" style="padding:10px 0;border-bottom:1px solid var(--border-color);cursor:pointer;font-size:13px;">' +
-                    '<strong>' + escapeHtml(m.name || 'Ziyaretçi') + '</strong>' + (m.phone ? ' <span style="color:#94A3B8;font-size:12px;">' + escapeHtml(m.phone) + '</span>' : '') +
+                    '<strong>' + escapeHtml(m.name || 'Ziyaretçi') + '</strong>' + newBadge + (m.phone ? ' <span style="color:#94A3B8;font-size:12px;">' + escapeHtml(m.phone) + '</span>' : '') +
                     '<br><span style="color:#64748B;">' + escapeHtml((m.message || '').slice(0, 80)) + '</span></div>';
             }).join('');
         } catch (e) {
@@ -3212,7 +3219,8 @@
                         phone: msg.phone || '',
                         messages: [],
                         lastMessage: '',
-                        unread: 0
+                        unread: 0,
+                        isNewSession: !!msg.isNewSession
                     };
                 }
                 chatState.sessions[sid].messages.push(msg);
@@ -3256,13 +3264,16 @@
             var unreadBadge = session.unread > 0
                 ? '<span style="background:var(--danger);color:white;font-size:10px;border-radius:50%;padding:2px 6px;margin-left:6px;">' + session.unread + '</span>'
                 : '';
+            var newSessionBadge = session.isNewSession
+                ? '<span style="background:#16A34A;color:white;font-size:10px;border-radius:4px;padding:2px 8px;margin-left:6px;font-weight:700;">YENİ</span>'
+                : '';
             var timeStr = '';
             var lastMsg = session.messages[session.messages.length - 1];
             if (lastMsg && lastMsg.timestamp) {
                 timeStr = '<span style="float:right;font-size:10px;color:var(--text-gray);">' + lastMsg.timestamp.substring(11, 16) + '</span>';
             }
             html += '<div class="chat-user' + activeClass + '" onclick="selectSession(\'' + sid.replace(/'/g, "\\'") + '\')">'
-                + '<h4>' + label + unreadBadge + timeStr + '</h4>'
+                + '<h4>' + label + unreadBadge + newSessionBadge + timeStr + '</h4>'
                 + '<p>' + escapeHtml(preview) + '</p>'
                 + getVisitorTrackingHtml(sid) + '</div>';
         });
@@ -3296,6 +3307,7 @@
 
     function selectSession(sessionId) {
         chatState.activeSessionId = sessionId;
+        if (chatState.sessions[sessionId]) chatState.sessions[sessionId].isNewSession = false;
         fetch('/api/admin/chat/read', {
             method: 'POST',
             headers: getAuthHeaders(),

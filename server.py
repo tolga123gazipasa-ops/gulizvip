@@ -2535,16 +2535,23 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             try:
                 body = json.loads(self._read_body())
                 global CHAT_ID, CHAT_MESSAGES
-                msg = {"id": CHAT_ID, "name": body.get("name", ""), "phone": body.get("phone", ""), "message": body.get("message", ""), "timestamp": datetime.now().isoformat(), "isAdmin": False, "adminName": "", "read": False, "sessionId": body.get("sessionId", "")}
+                session_id = body.get("sessionId", "")
+                # Bu sessionId'den daha önce hiç mesaj (ziyaretçi ya da admin) gelmiş mi?
+                # Gelmediyse bu, ziyaretçi için gerçekten yeni bir oturum demektir —
+                # (ör. 12 saatlik kimlik sıfırlaması sonrası dönen ziyaretçi de dahil).
+                is_new_session = bool(session_id) and not any(
+                    m.get("sessionId") == session_id for m in CHAT_MESSAGES
+                )
+                msg = {"id": CHAT_ID, "name": body.get("name", ""), "phone": body.get("phone", ""), "message": body.get("message", ""), "timestamp": datetime.now().isoformat(), "isAdmin": False, "adminName": "", "read": False, "sessionId": session_id, "isNewSession": is_new_session}
                 if not msg["message"]:
                     self._send_error("Mesaj boş olamaz.", 400)
                     return
                 CHAT_MESSAGES.append(msg)
                 CHAT_ID += 1
-                if msg["name"] or msg["phone"]:
-                    telegram_text = f"🆕 <b>Yeni Canlı Destek Mesajı</b>\n👤 <b>İsim:</b> {msg['name'] or 'Belirtilmemiş'}\n📞 <b>Telefon:</b> {msg['phone'] or 'Belirtilmemiş'}\n💬 <b>Mesaj:</b> {msg['message']}\n🆔 <b>Session:</b> <code>{msg['sessionId']}</code>\n🕐 <b>Saat:</b> {msg['timestamp']}\n\n⚠️ <b>Müşteriye iletilmesi için lütfen bu mesaja YANITLA (Reply) diyerek cevap veriniz.</b>"
+                if is_new_session:
+                    telegram_text = f"🆕 <b>YENİ ZİYARETÇİ SOHBETİ BAŞLADI</b>\n👤 <b>İsim:</b> {msg['name'] or 'Belirtilmemiş'}\n📞 <b>Telefon:</b> {msg['phone'] or 'Belirtilmemiş'}\n💬 <b>Mesaj:</b> {msg['message']}\n🆔 <b>Session:</b> <code>{msg['sessionId']}</code>\n🕐 <b>Saat:</b> {msg['timestamp']}\n\n⚠️ <b>Müşteriye iletilmesi için lütfen bu mesaja YANITLA (Reply) diyerek cevap veriniz.</b>"
                 else:
-                    telegram_text = f"🆕 <b>Yeni Canlı Destek Mesajı</b>\n💬 <b>Mesaj:</b> {msg['message']}\n🆔 <b>Session:</b> <code>{msg['sessionId']}</code>\n🕐 <b>Saat:</b> {msg['timestamp']}\n\n⚠️ <b>Müşteriye iletilmesi için lütfen bu mesaja YANITLA (Reply) diyerek cevap veriniz.</b>"
+                    telegram_text = f"💬 <b>Devam Eden Sohbet — Yeni Mesaj</b>\n👤 <b>İsim:</b> {msg['name'] or 'Belirtilmemiş'}\n📞 <b>Telefon:</b> {msg['phone'] or 'Belirtilmemiş'}\n💬 <b>Mesaj:</b> {msg['message']}\n🆔 <b>Session:</b> <code>{msg['sessionId']}</code>\n🕐 <b>Saat:</b> {msg['timestamp']}\n\n⚠️ <b>Müşteriye iletilmesi için lütfen bu mesaja YANITLA (Reply) diyerek cevap veriniz.</b>"
                 send_telegram(telegram_text)
                 self._send_json({"success": True, "message": msg})
             except json.JSONDecodeError:

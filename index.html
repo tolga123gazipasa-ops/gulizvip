@@ -1672,18 +1672,54 @@
         });
 
         // --- CANLI DESTEK SESSION VE KULLANICI BİLGİLERİ ---
-        var chatSessionId = localStorage.getItem('chatSessionId');
-        if (!chatSessionId) {
-            chatSessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        // Ziyaretçi kimliği (sessionId + ad/telefon) 12 saat sonra otomatik temizlenir —
+        // 12 saatten sonra gelen ziyaretçi admin panelinde "yeni oturum" olarak görünür.
+        var CHAT_IDENTITY_TTL_MS = 12 * 60 * 60 * 1000;
+
+        function clearChatIdentity() {
+            localStorage.removeItem('chatSessionId');
+            localStorage.removeItem('chatName');
+            localStorage.removeItem('chatPhone');
+            localStorage.removeItem('chatLastId');
+            localStorage.removeItem('chatIdentitySetAt');
+        }
+
+        function generateChatSessionId() {
+            var id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
-            localStorage.setItem('chatSessionId', chatSessionId);
+            localStorage.setItem('chatSessionId', id);
+            localStorage.setItem('chatIdentitySetAt', Date.now().toString());
+            return id;
         }
+
+        (function expireChatIdentityIfStale() {
+            var setAt = parseInt(localStorage.getItem('chatIdentitySetAt')) || 0;
+            if (setAt && (Date.now() - setAt) > CHAT_IDENTITY_TTL_MS) {
+                clearChatIdentity();
+            }
+        })();
+
+        var chatSessionId = localStorage.getItem('chatSessionId') || generateChatSessionId();
         var chatName = localStorage.getItem('chatName') || '';
         var chatPhone = localStorage.getItem('chatPhone') || '';
         var chatLastId = parseInt(localStorage.getItem('chatLastId')) || 0;
         var chatPollingTimer = null;
+
+        // Sayfa uzun süre açık kalırsa TTL'i arka planda da kontrol et — süre dolunca
+        // ziyaretçi için sessizce yeni bir oturum başlatılır, bir sonraki mesajda
+        // otomatik olarak yeniden tanıtım formuyla karşılaşır.
+        setInterval(function() {
+            var setAt = parseInt(localStorage.getItem('chatIdentitySetAt')) || 0;
+            if (setAt && (Date.now() - setAt) > CHAT_IDENTITY_TTL_MS) {
+                clearChatIdentity();
+                chatSessionId = generateChatSessionId();
+                chatName = '';
+                chatPhone = '';
+                chatLastId = 0;
+            }
+        }, 5 * 60 * 1000);
 
         function escapeHtml(str) {
             if (!str) return '';
