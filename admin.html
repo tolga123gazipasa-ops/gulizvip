@@ -533,6 +533,31 @@
                     <div class="dashboard-radar-grid" id="dashboard-radar-grid"></div>
                 </div>
 
+                <!-- ─── Dashboard genişletme: Araç Takvimi (bugün) + Ödeme/CRM bildirimleri ─── -->
+                <div class="form-row" style="align-items: stretch;">
+                    <div class="panel-section" style="flex: 1;">
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-calendar-days"></i> Araç Takvimi — Bugün</h3>
+                            <button class="btn-primary" onclick="switchTab('view-calendar', document.querySelectorAll('.menu-item')[6])">Takvime Git</button>
+                        </div>
+                        <div id="dashboard-fleet-today"><p style="color:#94A3B8;font-size:13px;">Yükleniyor...</p></div>
+                    </div>
+                    <div class="panel-section" style="flex: 1;">
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-bell"></i> Ödeme & CRM Bildirimleri</h3>
+                        </div>
+                        <div id="dashboard-notifications-list"><p style="color:#94A3B8;font-size:13px;">Yükleniyor...</p></div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-comment-dots"></i> Canlı Destek — Okunmamış Mesajlar</h3>
+                        <button class="btn-primary" onclick="switchTab('view-chat', document.querySelectorAll('.menu-item')[9])">Tümünü Gör</button>
+                    </div>
+                    <div id="dashboard-chat-preview"><p style="color:#94A3B8;font-size:13px;">Yükleniyor...</p></div>
+                </div>
+
                 <div class="panel-section">
                     <div class="section-header">
                         <h3>Son Gelen Rezervasyon Talepleri</h3>
@@ -2662,8 +2687,124 @@
                 // Dashboard radar widget
                 loadDashboardRadar();
                 document.getElementById('dashboard-radar-compact').style.display = '';
+
+                // Genişletilmiş dashboard widget'ları
+                loadDashboardFleetToday();
+                loadDashboardNotifications();
+                loadDashboardChatPreview();
             }
         } catch(e) {}
+    }
+
+    // ─── Dashboard: Araç Takvimi (bugün) özeti ───────────────────────────
+    async function loadDashboardFleetToday() {
+        var token = getToken();
+        var el = document.getElementById('dashboard-fleet-today');
+        if (!token || !el) return;
+        try {
+            var res = await fetch('/api/admin/calendar?date=' + todayStr(), { headers: {'Authorization': 'Bearer ' + token} });
+            var data = await res.json();
+            if (!data.success) { el.innerHTML = '<p style="color:#94A3B8;font-size:13px;">Yüklenemedi.</p>'; return; }
+            var units = data.vehicleUnits || [];
+            if (units.length === 0) {
+                el.innerHTML = '<p style="color:#94A3B8;font-size:13px;">Henüz araç birimi tanımlanmamış. <a href="javascript:void(0)" onclick="switchTab(\'view-calendar\', document.querySelectorAll(\'.menu-item\')[6])" style="color:var(--primary-red);">Araç Takvimi\'nden ekleyin</a>.</p>';
+                return;
+            }
+            var nowMin = timeToMinutes(new Date().toTimeString().slice(0, 5));
+            var html = units.map(function(u) {
+                var uRes = (data.reservations || []).filter(function(r) { return r.vehicleUnitId === u.id; });
+                var uBlocks = (data.blocks || []).filter(function(b) { return b.vehicleUnitId === u.id; });
+                var busyNow = uRes.some(function(r) {
+                    return nowMin >= timeToMinutes(r.time) && nowMin < timeToMinutes(r.blockedUntil || r.endTime || r.time);
+                }) || uBlocks.some(function(b) {
+                    return nowMin >= timeToMinutes(b.startTime) && nowMin < timeToMinutes(b.endTime);
+                });
+                var statusHtml = busyNow
+                    ? '<span class="badge" style="background:#FEE2E2;color:#DC2626;">Şu an dolu</span>'
+                    : '<span class="badge badge-approved">Müsait</span>';
+                return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">' +
+                    '<div><strong>' + escapeHtml(u.name || '') + '</strong>' + (u.plateNumber ? '<br><span style="font-size:12px;color:#94A3B8;">' + escapeHtml(u.plateNumber) + '</span>' : '') + '</div>' +
+                    '<div style="text-align:right;">' + statusHtml + '<br><span style="font-size:12px;color:#94A3B8;">' + uRes.length + ' transfer bugün</span></div>' +
+                    '</div>';
+            }).join('');
+            el.innerHTML = html;
+        } catch (e) {
+            el.innerHTML = '<p style="color:#94A3B8;font-size:13px;">Yüklenemedi.</p>';
+        }
+    }
+
+    // ─── Dashboard: Ödeme & CRM bildirimleri ─────────────────────────────
+    function dashboardTimeAgo(iso) {
+        if (!iso) return '';
+        var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+        if (diff < 60) return 'az önce';
+        if (diff < 3600) return Math.floor(diff / 60) + ' dk önce';
+        if (diff < 86400) return Math.floor(diff / 3600) + ' sa önce';
+        return Math.floor(diff / 86400) + ' gün önce';
+    }
+
+    async function loadDashboardNotifications() {
+        var token = getToken();
+        var el = document.getElementById('dashboard-notifications-list');
+        if (!token || !el) return;
+        try {
+            var res = await fetch('/api/admin/notifications', { headers: {'Authorization': 'Bearer ' + token} });
+            var data = await res.json();
+            if (!data.success || !data.notifications || data.notifications.length === 0) {
+                el.innerHTML = '<p style="color:#94A3B8;font-size:13px;">Henüz bildirim yok.</p>';
+                return;
+            }
+            el.innerHTML = data.notifications.slice(0, 6).map(function(n) {
+                var dot = n.read ? '' : '<span style="width:8px;height:8px;border-radius:50%;background:var(--primary-red);display:inline-block;margin-right:8px;"></span>';
+                return '<div onclick="dashboardOpenNotification(' + n.id + ', ' + (n.reservationId != null ? n.reservationId : 'null') + ')" style="padding:10px 0;border-bottom:1px solid var(--border-color);cursor:pointer;font-size:13px;">' +
+                    dot + escapeHtml(n.message || '') + '<br><span style="font-size:11px;color:#94A3B8;margin-left:' + (n.read ? '0' : '16px') + ';">' + dashboardTimeAgo(n.createdAt) + '</span></div>';
+            }).join('');
+        } catch (e) {
+            el.innerHTML = '<p style="color:#94A3B8;font-size:13px;">Yüklenemedi.</p>';
+        }
+    }
+
+    async function dashboardOpenNotification(id, reservationId) {
+        var token = getToken();
+        try {
+            await fetch('/api/admin/notifications/read', {
+                method: 'POST',
+                headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                body: JSON.stringify({ id: id })
+            });
+        } catch (e) {}
+        loadDashboardNotifications();
+        if (reservationId != null) {
+            switchTab('view-reservations', document.querySelectorAll('.menu-item')[1]);
+            setTimeout(function() { showReservationDetail(reservationId); }, 300);
+        }
+    }
+
+    // ─── Dashboard: Canlı Destek okunmamış mesaj önizlemesi ──────────────
+    async function loadDashboardChatPreview() {
+        var token = getToken();
+        var el = document.getElementById('dashboard-chat-preview');
+        if (!token || !el) return;
+        try {
+            var res = await fetch('/api/admin/chat/messages', { headers: {'Authorization': 'Bearer ' + token} });
+            var data = await res.json();
+            if (!data.success || !data.messages) { el.innerHTML = '<p style="color:#94A3B8;font-size:13px;">Yüklenemedi.</p>'; return; }
+            var unread = data.messages.filter(function(m) { return !m.isAdmin && !m.read; });
+            if (unread.length === 0) {
+                el.innerHTML = '<p style="color:#94A3B8;font-size:13px;">Okunmamış mesaj yok.</p>';
+                return;
+            }
+            var bySession = {};
+            unread.forEach(function(m) { bySession[m.sessionId || 'unknown'] = m; });
+            var sessions = Object.keys(bySession).map(function(k) { return bySession[k]; });
+            el.innerHTML = sessions.slice(0, 5).map(function(m) {
+                return '<div onclick="switchTab(\'view-chat\', document.querySelectorAll(\'.menu-item\')[9])" style="padding:10px 0;border-bottom:1px solid var(--border-color);cursor:pointer;font-size:13px;">' +
+                    '<strong>' + escapeHtml(m.name || 'Ziyaretçi') + '</strong>' + (m.phone ? ' <span style="color:#94A3B8;font-size:12px;">' + escapeHtml(m.phone) + '</span>' : '') +
+                    '<br><span style="color:#64748B;">' + escapeHtml((m.message || '').slice(0, 80)) + '</span></div>';
+            }).join('');
+        } catch (e) {
+            el.innerHTML = '<p style="color:#94A3B8;font-size:13px;">Yüklenemedi.</p>';
+        }
     }
 
     function renderReservations(reservations) {
