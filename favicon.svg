@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Güliz VIP Transfer">
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="#0F172A"/>
+  <path fill="#E31837" d="M32,4 L33.2,7.3 L36.8,7.4 L34,9.6 L35,13 L32,11 L29,13 L30,9.6 L27.2,7.4 L30.8,7.3 Z"/>
+  <text x="32" y="41" text-anchor="middle" dominant-baseline="central"
+        font-family="Arial, Helvetica, sans-serif" font-weight="900"
+        font-size="27" letter-spacing="-2" fill="#FFFFFF">GLZ</text>
+</svg>
