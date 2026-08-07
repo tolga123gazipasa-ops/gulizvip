@@ -753,6 +753,14 @@
         .chat-footer input { flex: 1; padding: 10px 15px; border: 1px solid var(--border-light); border-radius: 20px; outline: none; font-size: 13px; font-family: 'Montserrat', sans-serif;}
         .chat-footer button { background: var(--primary-red); color: var(--pure-white); border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
         .chat-footer button:hover { background: var(--primary-navy); }
+        .chat-info-form { padding: 20px; background: var(--bg-light); display: flex; flex-direction: column; gap: 12px; }
+        .chat-info-form p { font-size: 13px; color: var(--text-dark); font-weight: 600; margin: 0 0 2px; line-height: 1.5; }
+        .chat-info-form input { padding: 11px 14px; border: 1px solid var(--border-light); border-radius: 8px; outline: none; font-size: 13px; font-family: 'Montserrat', sans-serif; background: var(--pure-white); }
+        .chat-info-form input:focus { border-color: var(--primary-red); }
+        .chat-info-form button { background: var(--primary-red); color: var(--pure-white); border: none; padding: 11px 15px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .chat-info-form button:hover { background: var(--primary-navy); }
+        .chat-user-label { padding: 8px 15px 0; background: var(--pure-white); font-size: 11px; color: var(--text-gray); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .chat-user-label button { background: none; border: none; color: var(--primary-red); font-size: 11px; font-weight: 700; cursor: pointer; padding: 0; }
 
         /* ONAY MODALI (POPUP) */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
@@ -1538,9 +1546,19 @@
             <div><i class="fa-solid fa-headset"></i> Güliz Asistan</div>
             <button onclick="toggleChat()"><i class="fa-solid fa-xmark"></i></button>
         </div>
+        <div class="chat-info-form" id="chatInfoForm" style="display:none;">
+            <p>Sohbete başlamadan önce size nasıl hitap edelim?</p>
+            <input type="text" id="chatInfoName" placeholder="Adınız Soyadınız" onkeypress="if(event.key==='Enter'){document.getElementById('chatInfoPhone').focus();}">
+            <input type="tel" id="chatInfoPhone" placeholder="Telefon (05XX XXX XX XX)" onkeypress="if(event.key==='Enter'){submitChatInfo();}">
+            <button onclick="submitChatInfo()"><i class="fa-solid fa-comment-dots"></i> Sohbete Başla</button>
+        </div>
+        <div class="chat-user-label" id="chatUserLabel" style="display:none;">
+            <span id="chatUserLabelText"></span>
+            <button onclick="editChatInfo()"><i class="fa-solid fa-pen"></i> Düzenle</button>
+        </div>
         <div class="chat-body" id="chatBody">
         </div>
-        <div class="chat-footer">
+        <div class="chat-footer" id="chatFooter">
             <input type="text" id="chatInput" placeholder="Mesajınızı yazın..." onkeypress="handleKeyPress(event)">
             <button onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
@@ -1613,13 +1631,6 @@
             return div.innerHTML;
         }
 
-        function promptVisitorInfo() {
-            var name = prompt('Adınızı giriniz:', chatName);
-            if (name) { chatName = name; localStorage.setItem('chatName', name); }
-            var phone = prompt('Telefon numaranızı giriniz (05XX...):', chatPhone);
-            if (phone) { chatPhone = phone; localStorage.setItem('chatPhone', phone); }
-        }
-
         // --- SIKÇA SORULAN SORULAR (SSS) AÇ/KAPAT ---
         function toggleFaq(element) {
             const item = element.parentElement;
@@ -1681,11 +1692,58 @@
             return div.innerHTML;
         }
 
-        function promptVisitorInfo() {
-            var name = prompt('Adınızı giriniz:', chatName);
-            if (name) { chatName = name; localStorage.setItem('chatName', name); }
-            var phone = prompt('Telefon numaranızı giriniz (05XX...):', chatPhone);
-            if (phone) { chatPhone = phone; localStorage.setItem('chatPhone', phone); }
+        // --- CANLI DESTEK: AD/TELEFON — AYNI PENCERE İÇİNDE INLINE FORM ---
+        function showChatInfoForm(prefill) {
+            document.getElementById("chatInfoForm").style.display = "flex";
+            document.getElementById("chatUserLabel").style.display = "none";
+            document.getElementById("chatBody").style.display = "none";
+            document.getElementById("chatFooter").style.display = "none";
+            if (prefill) {
+                document.getElementById("chatInfoName").value = chatName;
+                document.getElementById("chatInfoPhone").value = chatPhone;
+            }
+            document.getElementById("chatInfoName").focus();
+        }
+
+        function updateChatUserLabel() {
+            var label = document.getElementById("chatUserLabelText");
+            label.textContent = chatName + (chatPhone ? " · " + chatPhone : "");
+            document.getElementById("chatUserLabel").style.display = "flex";
+        }
+
+        function submitChatInfo() {
+            var name = document.getElementById("chatInfoName").value.trim();
+            var phone = document.getElementById("chatInfoPhone").value.trim();
+            if (!name || !phone) {
+                var hint = document.getElementById("chatInfoName");
+                hint.style.borderColor = !name ? "var(--primary-red)" : "var(--border-light)";
+                document.getElementById("chatInfoPhone").style.borderColor = !phone ? "var(--primary-red)" : "var(--border-light)";
+                return;
+            }
+            chatName = name;
+            chatPhone = phone;
+            localStorage.setItem('chatName', name);
+            localStorage.setItem('chatPhone', phone);
+
+            document.getElementById("chatInfoForm").style.display = "none";
+            document.getElementById("chatBody").style.display = "flex";
+            document.getElementById("chatFooter").style.display = "flex";
+            updateChatUserLabel();
+            startChatPolling();
+
+            // Kullanıcı bir mesaj yazıp göndermeye çalışırken forma yönlendirildiyse,
+            // bilgilerini girer girmez o mesaj otomatik gönderilsin.
+            var pendingInput = document.getElementById("chatInput");
+            if (pendingInput.value.trim() !== "") {
+                sendMessage();
+            } else {
+                pendingInput.focus();
+            }
+        }
+
+        function editChatInfo() {
+            stopChatPolling();
+            showChatInfoForm(true);
         }
 
         // --- CANLI DESTEK MESAJ GÖNDERME (BACKEND API İLE) ---
@@ -1695,10 +1753,10 @@
 
             if(msg === "") return;
 
-            // İlk mesajda ad/telefon al
+            // Ad/telefon henüz alınmadıysa (beklenmedik durum) — aynı pencerede formu göster
             if (!chatName || !chatPhone) {
-                promptVisitorInfo();
-                if (!chatName || !chatPhone) return;
+                showChatInfoForm(false);
+                return;
             }
 
             var chatBody = document.getElementById("chatBody");
@@ -1877,6 +1935,11 @@
             } else {
                 widget.style.display = "flex";
                 btn.style.display = "none";
+                // Ad/telefon zaten biliniyorsa direkt sohbeti göster; bilinmiyorsa
+                // mesaj göndermeye çalışınca (sendMessage) aynı pencerede form açılır —
+                // ziyaretçi önce SSS/karşılama mesajını serbestçe okuyabilsin diye
+                // giriş bilgisi burada zorunlu tutulmuyor.
+                if (chatName && chatPhone) updateChatUserLabel();
                 startChatPolling();
             }
         }
