@@ -508,6 +508,7 @@
             <a class="menu-item" onclick="switchTab('view-flights', this)"><i class="fa-solid fa-plane"></i> Canlı Uçuşlar (GZP)</a>
             <a class="menu-item" onclick="switchTab('view-flights-ayt', this)"><i class="fa-solid fa-plane"></i> Canlı Uçuşlar (AYT)</a>
             <a class="menu-item" onclick="switchTab('view-chat', this)"><i class="fa-solid fa-comment-dots"></i> Canlı Destek</a>
+            <a class="menu-item" onclick="switchTab('view-contact', this)"><i class="fa-solid fa-envelope"></i> İletişim Mesajları</a>
             <a class="menu-item" onclick="switchTab('view-radar', this)"><i class="fa-solid fa-tower-broadcast"></i> Canlı Radar</a>
             <a class="menu-item" onclick="switchTab('view-page-management', this)"><i class="fa-solid fa-file-lines"></i> Sayfa Yönetimi</a>
             <a class="menu-item" onclick="switchTab('view-settings', this)"><i class="fa-solid fa-gear"></i> Sistem Ayarları</a>
@@ -1135,6 +1136,21 @@
                 </div>
             </div>
 
+            <div id="view-contact" class="panel-view">
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3>İletişim Mesajları — "Bize Ulaşın" Formu</h3>
+                        <button class="btn-primary" onclick="loadContactMessages()" style="padding:8px 16px;font-size:13px;"><i class="fa-solid fa-rotate"></i> Yenile</button>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>Tarih</th><th>Ad Soyad</th><th>Telefon</th><th>E-posta</th><th>Mesaj</th></tr></thead>
+                        <tbody id="contact-messages-tbody">
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-gray);">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div id="view-radar" class="panel-view">
                 <div class="panel-section">
                     <div class="section-header">
@@ -1366,6 +1382,55 @@
         if (tabId === 'view-calendar') {
             loadCalendarView();
         }
+
+        // İletişim Mesajları sekmesi: listeyi yenile
+        if (tabId === 'view-contact') {
+            loadContactMessages();
+        }
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str == null ? '' : String(str);
+        return div.innerHTML;
+    }
+
+    function formatContactDate(isoStr) {
+        if (!isoStr) return '-';
+        try {
+            var d = new Date(isoStr);
+            return d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+        } catch(e) {
+            return isoStr;
+        }
+    }
+
+    function loadContactMessages() {
+        var tbody = document.getElementById('contact-messages-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-gray);">Yükleniyor...</td></tr>';
+        fetch('/api/admin/contact-messages', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+        })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.success || !data.messages || data.messages.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-gray);">Henüz iletişim mesajı yok.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.messages.map(function(m) {
+                    return '<tr>' +
+                        '<td>' + formatContactDate(m.timestamp) + '</td>' +
+                        '<td>' + escapeHtml(m.name) + '</td>' +
+                        '<td><a href="tel:' + escapeHtml(m.phone) + '" style="color:var(--primary-red);text-decoration:none;">' + escapeHtml(m.phone) + '</a></td>' +
+                        '<td>' + (m.email ? escapeHtml(m.email) : '<span style="color:var(--text-gray);">-</span>') + '</td>' +
+                        '<td style="max-width:340px;white-space:pre-wrap;">' + escapeHtml(m.message) + '</td>' +
+                        '</tr>';
+                }).join('');
+            })
+            .catch(function() {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--primary-red);">Mesajlar yüklenemedi.</td></tr>';
+            });
     }
 </script>
 

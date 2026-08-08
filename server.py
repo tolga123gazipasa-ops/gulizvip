@@ -2016,6 +2016,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
                 self._send_json({"success": True, "messages": CHAT_MESSAGES, "unread": sum(1 for m in CHAT_MESSAGES if not m.get("read") and not m.get("isAdmin"))})
                 return
+            if path == "/api/admin/contact-messages":
+                user = self._authenticate()
+                if not user:
+                    self._send_error("Yetkisiz erişim.", 401)
+                    return
+                sorted_messages = sorted(CONTACT_MESSAGES, key=lambda m: m.get("id", 0), reverse=True)
+                self._send_json({"success": True, "messages": sorted_messages, "count": len(sorted_messages)})
+                return
             if path == "/api/admin/chat/history":
                 user = self._authenticate()
                 if not user:
@@ -2983,6 +2991,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 else:
                     CONTACT_ID += 1
                 save_contact_messages()
+                _push_dashboard_notification(
+                    f"📬 Yeni iletişim mesajı: {name} ({phone})",
+                    ntype="contact",
+                    reservation_id=None
+                )
                 tg_msg = "📬 <b>Yeni Iletisim Mesaji</b>\n"
                 tg_msg += "👤 <b>Isim:</b> " + name + "\n"
                 tg_msg += "📞 <b>Telefon:</b> " + phone + "\n"
