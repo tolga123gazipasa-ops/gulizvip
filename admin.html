@@ -95,7 +95,11 @@
         .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 30% 20%, #1B2B4C 0%, #0F172A 55%, #060B17 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; }
         .login-overlay.hidden { display: none; }
         .login-box { background: var(--pure-white); padding: 50px 40px; border-radius: var(--radius-lg); width: 420px; max-width: 92%; box-shadow: var(--shadow-lg); text-align: center; border-top: 4px solid var(--primary-red); }
-        .login-logo-img { max-height: 60px; width: auto; display: block; margin: 0 auto 18px; }
+        /* logo.png beyaz/açık renkli öğeler içeriyor (koyu zeminler için tasarlanmış) — beyaz
+           login kartında görünmez oluyordu. Logoyu koyu lacivert bir rozet zemin üzerine
+           oturtuyoruz (sidebar ile aynı marka tonu) ki her yerde net görünsün. */
+        .login-logo-wrap { display: inline-block; background: linear-gradient(135deg, #223A63 0%, #16233D 100%); border-radius: var(--radius-md); padding: 20px 28px; margin: 0 auto 22px; box-shadow: var(--shadow-md); }
+        .login-logo-img { max-height: 56px; width: auto; display: block; margin: 0 auto; }
         .login-box h1 { font-size: 28px; font-weight: 800; color: var(--primary-navy); margin-bottom: 5px; }
         .login-box h1 span { color: var(--primary-red); }
         .login-box p { font-size: 13px; color: #94A3B8; margin-bottom: 30px; }
@@ -467,7 +471,9 @@
 
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
-            <img src="/logo.png" alt="Güliz VIP Logo" class="login-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+            <div class="login-logo-wrap">
+                <img src="/logo.png" alt="Güliz VIP Logo" class="login-logo-img" onerror="this.parentElement.style.display='none';this.parentElement.nextElementSibling.style.display='block';">
+            </div>
             <h1 style="display:none;">GÜLİZ <span>VIP</span></h1>
             <p>Operasyon Merkezi'ne hoş geldiniz. Lütfen giriş yapın.</p>
             <div class="form-group">
