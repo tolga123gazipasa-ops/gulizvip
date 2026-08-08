@@ -31,6 +31,7 @@ import uuid
 import socket
 import traceback
 import collections
+import ipaddress
 
 # Resend e-posta — opsiyonel, yoksa sessizce atlanır
 try:
@@ -1115,11 +1116,52 @@ def send_confirmation_email(reservation):
         return False
 
 
+def _is_public_ip(ip):
+    """Bir IP'nin genel (internet üzerinden erişilebilir/coğrafi olarak konumlandırılabilir)
+    olup olmadığını kontrol eder. Özel/yerel/rezerve aralıklar (10.x, 172.16-31.x, 192.168.x,
+    127.x, ::1 vb.) proxy zincirindeki dahili sunucu adresleridir — bunlar için konum sorgusu
+    anlamsız/yanıltıcı sonuç üretir (ör. Railway/Cloudflare'ın kendi altyapı IP'si yurtdışında
+    olduğu için ziyaretçi yurtdışındaymış gibi görünür)."""
+    try:
+        addr = ipaddress.ip_address(ip)
+        return not (addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_multicast)
+    except ValueError:
+        return False
+
+
 def _get_visitor_ip(handler):
-    """Extract real visitor IP from request headers."""
+    """Ziyaretçinin gerçek IP adresini istek başlıklarından çıkar.
+
+    ÖNEMLİ (konum/IP yanlışlığı düzeltmesi): Site Cloudflare üzerinden proxy'leniyorsa
+    (turuncu bulut aktifse), Railway'e ulaşan bağlantı artık ziyaretçiden değil Cloudflare'ın
+    kendi kenar (edge) sunucusundan gelir. Bu durumda:
+      - CF-Connecting-IP: Cloudflare'ın enjekte ettiği, sahtesi üretilemeyen GERÇEK ziyaretçi IP'si.
+        Bu her zaman X-Forwarded-For'dan ÖNCELİKLİDİR.
+      - X-Forwarded-For: Railway'in kendi proxy katmanı bu başlığı bazen zincire eklemek yerine
+        SIFIRLAYIP sadece kendisine bağlanan tarafın (yani Cloudflare edge sunucusunun) IP'sini
+        yazabilir. Bu, IP-API sorgusunun ziyaretçi yerine Cloudflare'ın (genelde yurtdışındaki)
+        veri merkezinin konumunu döndürmesine sebep olur — kullanıcının bildirdiği "hep yurtdışı
+        gösteriyor" sorununun kök nedeni büyük ihtimalle budur.
+    Bu yüzden X-Forwarded-For zincirindeki IP'ler soldan sağa taranır ve İLK GEÇERLİ GENEL
+    (public) IP seçilir; sadece dahili/özel IP'ler bulunursa zincirdeki ilk değere geri dönülür.
+    """
+    cf_ip = handler.headers.get("CF-Connecting-IP", "")
+    if cf_ip:
+        return cf_ip.strip()
+
+    true_client_ip = handler.headers.get("True-Client-IP", "")
+    if true_client_ip:
+        return true_client_ip.strip()
+
     forwarded = handler.headers.get("X-Forwarded-For", "")
     if forwarded:
-        return forwarded.split(",")[0].strip()
+        candidates = [p.strip() for p in forwarded.split(",") if p.strip()]
+        for candidate in candidates:
+            if _is_public_ip(candidate):
+                return candidate
+        if candidates:
+            return candidates[0]
+
     real_ip = handler.headers.get("X-Real-IP", "")
     if real_ip:
         return real_ip.strip()
@@ -2852,7 +2894,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 }
                 with visitor_lock:
                     VISITOR_SESSIONS[session_id] = visitor
-                print(f"[tracking] Yeni ziyaretçi: {ip} / {city or '?'} / {body.get('device', '?')}")
+                print(f"[tracking] Yeni ziyaretçi: {ip} / {city or '?'} / {body.get('device', '?')} "
+                      f"| CF-Connecting-IP={self.headers.get('CF-Connecting-IP', '-')} "
+                      f"XFF={self.headers.get('X-Forwarded-For', '-')}")
                 threading.Thread(target=_send_telegram_visitor_identify, args=(visitor,), daemon=True).start()
                 self._send_json({"success": True, "visitorId": session_id})
             except json.JSONDecodeError:
@@ -3012,7 +3056,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 tg_msg += "💬 <b>Mesaj:</b> " + (message[:200] + ("..." if len(message) > 200 else "")) + "\n"
                 tg_msg += "🕐 <b>Saat:</b> " + contact["timestamp"]
                 send_telegram(tg_msg)
-                print(f"[contact] Yeni iletisim formu: {name} / {phone}")
+                print(f"[contact] Yeni iletisim formu: {name} / {phone} / IP={visitor_ip} / {geo_city or '?'} "
+                      f"| CF-Connecting-IP={self.headers.get('CF-Connecting-IP', '-')} "
+                      f"XFF={self.headers.get('X-Forwarded-For', '-')}")
                 self._send_json({"success": True, "message": "Mesajiniz alindi."})
             except json.JSONDecodeError:
                 self._send_error("Gecersiz JSON.", 400)
