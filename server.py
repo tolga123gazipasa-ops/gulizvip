@@ -2975,12 +2975,21 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Ad, telefon ve mesaj zorunludur.", 400)
                     return
                 global CONTACT_ID, CONTACT_MESSAGES
+                visitor_ip = _get_visitor_ip(self)
+                geo_city, geo_country, geo_region = _lookup_geo(visitor_ip)
                 contact = {
                     "id": CONTACT_ID,
                     "name": name,
                     "phone": phone,
                     "email": email,
                     "message": message,
+                    "ipAddress": visitor_ip,
+                    "city": geo_city,
+                    "country": geo_country,
+                    "region": geo_region,
+                    "userAgent": self.headers.get("User-Agent", ""),
+                    "status": "new",
+                    "adminNote": "",
                     "timestamp": datetime.now().isoformat()
                 }
                 CONTACT_MESSAGES.append(contact)
@@ -3231,6 +3240,52 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     RESERVATIONS = [r for r in RESERVATIONS if r.get("id") != res_id]
                     save_reservations()
                     self._send_json({"success": True, "message": "Rezervasyon silindi."})
+                else:
+                    self._send_error("Geçersiz aksiyon.", 400)
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
+            return
+        if path == "/api/admin/contact-messages":
+            global CONTACT_MESSAGES
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                action = body.get("action", "")
+                msg_id = body.get("id")
+                if msg_id is None:
+                    self._send_error("Mesaj ID gerekli.", 400)
+                    return
+                if action == "update" or action == "edit":
+                    for m in CONTACT_MESSAGES:
+                        if m.get("id") == msg_id:
+                            for key in ("status", "adminNote", "name", "phone", "email", "message"):
+                                if key in body:
+                                    m[key] = body[key]
+                            save_contact_messages()
+                            try:
+                                db.update_contact_message_in_db(msg_id, body)
+                            except Exception:
+                                pass
+                            self._send_json({"success": True, "contact": m})
+                            return
+                    self._send_error("Mesaj bulunamadı.", 404)
+                elif action == "delete":
+                    before_count = len(CONTACT_MESSAGES)
+                    CONTACT_MESSAGES = [m for m in CONTACT_MESSAGES if m.get("id") != msg_id]
+                    if len(CONTACT_MESSAGES) == before_count:
+                        self._send_error("Mesaj bulunamadı.", 404)
+                        return
+                    save_contact_messages()
+                    try:
+                        db.delete_contact_message_from_db(msg_id)
+                    except Exception:
+                        pass
+                    self._send_json({"success": True, "message": "Mesaj silindi."})
                 else:
                     self._send_error("Geçersiz aksiyon.", 400)
             except json.JSONDecodeError:

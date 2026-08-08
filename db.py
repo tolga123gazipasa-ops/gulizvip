@@ -115,6 +115,13 @@ CREATE TABLE IF NOT EXISTS contact_messages (
     phone VARCHAR(50) DEFAULT '',
     email VARCHAR(200) DEFAULT '',
     message TEXT DEFAULT '',
+    ip_address VARCHAR(64) DEFAULT '',
+    city VARCHAR(100) DEFAULT '',
+    country VARCHAR(100) DEFAULT '',
+    region VARCHAR(100) DEFAULT '',
+    user_agent VARCHAR(500) DEFAULT '',
+    status VARCHAR(20) DEFAULT 'new',
+    admin_note TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -160,6 +167,14 @@ def init_db():
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'TRY';")
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS payment_link VARCHAR(500) DEFAULT '';")
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(200) DEFAULT '';")
+                # İletişim mesajları — IP/coğrafya/cihaz bilgisi + durum/not (admin panel detaylı yönetim)
+                cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS ip_address VARCHAR(64) DEFAULT '';")
+                cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS city VARCHAR(100) DEFAULT '';")
+                cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS country VARCHAR(100) DEFAULT '';")
+                cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS region VARCHAR(100) DEFAULT '';")
+                cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS user_agent VARCHAR(500) DEFAULT '';")
+                cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'new';")
+                cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS admin_note TEXT DEFAULT '';")
         conn.close()
         print("[✓] PostgreSQL tabloları hazır.")
         return True
@@ -758,6 +773,13 @@ def load_contact_messages_from_db():
                 "phone": row.get("phone") or "",
                 "email": row.get("email") or "",
                 "message": row.get("message") or "",
+                "ipAddress": row.get("ip_address") or "",
+                "city": row.get("city") or "",
+                "country": row.get("country") or "",
+                "region": row.get("region") or "",
+                "userAgent": row.get("user_agent") or "",
+                "status": row.get("status") or "new",
+                "adminNote": row.get("admin_note") or "",
                 "timestamp": row["created_at"].isoformat() if row.get("created_at") else "",
             })
         return result
@@ -777,14 +799,21 @@ def save_contact_message_to_db(contact):
         with conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute("""
-                    INSERT INTO contact_messages (name, phone, email, message)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO contact_messages (name, phone, email, message, ip_address, city, country, region, user_agent, status, admin_note)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     contact.get("name", ""),
                     contact.get("phone", ""),
                     contact.get("email", ""),
                     contact.get("message", ""),
+                    contact.get("ipAddress", ""),
+                    contact.get("city", ""),
+                    contact.get("country", ""),
+                    contact.get("region", ""),
+                    contact.get("userAgent", ""),
+                    contact.get("status", "new"),
+                    contact.get("adminNote", ""),
                 ))
                 new_id = cur.fetchone()["id"]
         conn.close()
@@ -792,6 +821,55 @@ def save_contact_message_to_db(contact):
     except Exception as e:
         print(f"[!] DB iletişim mesajı kaydetme hatası: {e}")
         return None
+
+
+def update_contact_message_in_db(message_id, fields):
+    """Bir iletişim mesajının admin tarafından düzenlenebilir alanlarını güncelle."""
+    if not HAS_PSYCOPG2:
+        return False
+    allowed = {
+        "name": "name", "phone": "phone", "email": "email", "message": "message",
+        "status": "status", "adminNote": "admin_note",
+    }
+    set_parts = []
+    values = []
+    for key, col in allowed.items():
+        if key in fields:
+            set_parts.append(f"{col} = %s")
+            values.append(fields[key])
+    if not set_parts:
+        return False
+    try:
+        conn = get_conn()
+        if not conn:
+            return False
+        with conn:
+            with conn.cursor() as cur:
+                values.append(message_id)
+                cur.execute(f"UPDATE contact_messages SET {', '.join(set_parts)} WHERE id = %s", values)
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"[!] DB iletişim mesajı güncelleme hatası: {e}")
+        return False
+
+
+def delete_contact_message_from_db(message_id):
+    """Bir iletişim mesajını veritabanından sil."""
+    if not HAS_PSYCOPG2:
+        return False
+    try:
+        conn = get_conn()
+        if not conn:
+            return False
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM contact_messages WHERE id = %s", (message_id,))
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"[!] DB iletişim mesajı silme hatası: {e}")
+        return False
 
 
 def get_next_contact_id():

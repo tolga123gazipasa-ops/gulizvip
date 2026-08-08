@@ -1143,9 +1143,9 @@
                         <button class="btn-primary" onclick="loadContactMessages()" style="padding:8px 16px;font-size:13px;"><i class="fa-solid fa-rotate"></i> Yenile</button>
                     </div>
                     <table class="data-table">
-                        <thead><tr><th>Tarih</th><th>Ad Soyad</th><th>Telefon</th><th>E-posta</th><th>Mesaj</th></tr></thead>
+                        <thead><tr><th>Tarih</th><th>Durum</th><th>Ad Soyad</th><th>Telefon</th><th>Konum</th><th>Mesaj</th><th>İşlem</th></tr></thead>
                         <tbody id="contact-messages-tbody">
-                            <tr><td colspan="5" style="text-align:center; color:var(--text-gray);">Yükleniyor...</td></tr>
+                            <tr><td colspan="7" style="text-align:center; color:var(--text-gray);">Yükleniyor...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1405,32 +1405,164 @@
         }
     }
 
+    var contactMessagesCache = [];
+    var CONTACT_STATUS_MAP = { 'new': 'Yeni', 'read': 'Okundu', 'replied': 'Yanıtlandı' };
+    var CONTACT_STATUS_COLOR = {
+        'new': 'background:#FEE2E2;color:#DC2626;',
+        'read': 'background:#FEF3C7;color:#B45309;',
+        'replied': 'background:#DCFCE7;color:#16A34A;'
+    };
+
+    function contactStatusBadge(status) {
+        var s = status || 'new';
+        return '<span class="badge" style="' + (CONTACT_STATUS_COLOR[s] || '') + '">' + (CONTACT_STATUS_MAP[s] || s) + '</span>';
+    }
+
     function loadContactMessages() {
         var tbody = document.getElementById('contact-messages-tbody');
         if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-gray);">Yükleniyor...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-gray);">Yükleniyor...</td></tr>';
         fetch('/api/admin/contact-messages', {
-            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+            headers: { 'Authorization': 'Bearer ' + getToken() }
         })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.success || !data.messages || data.messages.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-gray);">Henüz iletişim mesajı yok.</td></tr>';
+                    contactMessagesCache = [];
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-gray);">Henüz iletişim mesajı yok.</td></tr>';
                     return;
                 }
+                contactMessagesCache = data.messages;
                 tbody.innerHTML = data.messages.map(function(m) {
+                    var location = [m.city, m.country].filter(Boolean).join(', ') || '<span style="color:var(--text-gray);">-</span>';
+                    var preview = (m.message || '').length > 60 ? escapeHtml(m.message.slice(0, 60)) + '…' : escapeHtml(m.message || '');
                     return '<tr>' +
                         '<td>' + formatContactDate(m.timestamp) + '</td>' +
+                        '<td>' + contactStatusBadge(m.status) + '</td>' +
                         '<td>' + escapeHtml(m.name) + '</td>' +
                         '<td><a href="tel:' + escapeHtml(m.phone) + '" style="color:var(--primary-red);text-decoration:none;">' + escapeHtml(m.phone) + '</a></td>' +
-                        '<td>' + (m.email ? escapeHtml(m.email) : '<span style="color:var(--text-gray);">-</span>') + '</td>' +
-                        '<td style="max-width:340px;white-space:pre-wrap;">' + escapeHtml(m.message) + '</td>' +
+                        '<td>' + location + '</td>' +
+                        '<td style="max-width:280px;">' + preview + '</td>' +
+                        '<td><button class="btn-secondary" onclick="openContactDetail(' + m.id + ')" style="padding:6px 12px;font-size:12px;"><i class="fa-solid fa-eye"></i> Detay</button></td>' +
                         '</tr>';
                 }).join('');
             })
             .catch(function() {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--primary-red);">Mesajlar yüklenemedi.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--primary-red);">Mesajlar yüklenemedi.</td></tr>';
             });
+    }
+
+    function closeContactDetail() {
+        var el = document.getElementById('contact-detail-modal');
+        if (el) el.remove();
+    }
+
+    function openContactDetail(id) {
+        var m = contactMessagesCache.find(function(x) { return x.id === id; });
+        if (!m) { alert('Mesaj bulunamadı.'); return; }
+
+        var statusOptions = Object.keys(CONTACT_STATUS_MAP).map(function(key) {
+            return '<option value="' + key + '"' + (m.status === key ? ' selected' : '') + '>' + CONTACT_STATUS_MAP[key] + '</option>';
+        }).join('');
+
+        var geoLine = [m.city, m.region, m.country].filter(Boolean).join(', ') || 'Bilinmiyor';
+
+        var html =
+            '<div id="contact-detail-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;justify-content:center;align-items:center;" onclick="if(event.target===this)closeContactDetail()">' +
+            '<div style="background:#fff;border-radius:16px;padding:32px;width:90%;max-width:620px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
+            '<h3 style="color:#1B2B4C;margin:0;">İletişim Mesajı #' + m.id + '</h3>' +
+            '<button onclick="closeContactDetail()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">&times;</button>' +
+            '</div>' +
+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">' +
+            '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Tarih</div><div style="font-size:14px;font-weight:700;margin-top:4px;">' + formatContactDate(m.timestamp) + '</div></div>' +
+            '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">IP Adresi</div><div style="font-size:14px;font-weight:700;margin-top:4px;">' + escapeHtml(m.ipAddress || 'Bilinmiyor') + '</div></div>' +
+            '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Konum</div><div style="font-size:14px;font-weight:700;margin-top:4px;">' + escapeHtml(geoLine) + '</div></div>' +
+            '<div style="background:#F8FAFC;padding:12px;border-radius:8px;overflow:hidden;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Cihaz / Tarayıcı</div><div style="font-size:12px;margin-top:4px;word-break:break-all;color:#475569;">' + escapeHtml(m.userAgent || 'Bilinmiyor') + '</div></div>' +
+            '</div>' +
+
+            '<div style="margin-bottom:12px;"><label style="font-size:12px;font-weight:700;color:#475569;">Ad Soyad</label>' +
+            '<input type="text" id="contact-edit-name" value="' + escapeHtml(m.name) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;margin-top:4px;"></div>' +
+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+            '<div><label style="font-size:12px;font-weight:700;color:#475569;">Telefon</label>' +
+            '<input type="text" id="contact-edit-phone" value="' + escapeHtml(m.phone) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;margin-top:4px;"></div>' +
+            '<div><label style="font-size:12px;font-weight:700;color:#475569;">E-posta</label>' +
+            '<input type="email" id="contact-edit-email" value="' + escapeHtml(m.email || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;margin-top:4px;"></div>' +
+            '</div>' +
+
+            '<div style="margin-bottom:12px;"><label style="font-size:12px;font-weight:700;color:#475569;">Mesaj</label>' +
+            '<textarea id="contact-edit-message" rows="4" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;margin-top:4px;font-family:inherit;">' + escapeHtml(m.message) + '</textarea></div>' +
+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+            '<div><label style="font-size:12px;font-weight:700;color:#475569;">Durum</label>' +
+            '<select id="contact-edit-status" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;margin-top:4px;">' + statusOptions + '</select></div>' +
+            '</div>' +
+
+            '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;color:#475569;">Admin Notu (dahili, müşteri görmez)</label>' +
+            '<textarea id="contact-edit-note" rows="2" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px;margin-top:4px;font-family:inherit;" placeholder="Örn: Aranacak, teklif gönderildi...">' + escapeHtml(m.adminNote || '') + '</textarea></div>' +
+
+            '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;">' +
+            '<button onclick="deleteContactMessage(' + m.id + ')" style="padding:10px 18px;font-size:13px;background:transparent;color:#DC2626;border:1px solid #FCA5A5;border-radius:8px;cursor:pointer;"><i class="fa-solid fa-trash"></i> Mesajı Sil</button>' +
+            '<div style="display:flex;gap:10px;">' +
+            '<a href="https://wa.me/' + escapeHtml((m.phone || '').replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener" class="btn-secondary" style="padding:10px 18px;font-size:13px;text-decoration:none;background:#DCF8C6;color:#075E54;border-color:#BFEAB0;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>' +
+            '<button class="btn-primary" onclick="saveContactMessage(' + m.id + ')" style="padding:10px 18px;font-size:13px;"><i class="fa-solid fa-save"></i> Kaydet</button>' +
+            '</div>' +
+            '</div>' +
+
+            '</div></div>';
+
+        var existing = document.getElementById('contact-detail-modal');
+        if (existing) existing.remove();
+        document.body.insertAdjacentHTML('beforeend', html);
+    }
+
+    function saveContactMessage(id) {
+        var payload = {
+            action: 'update',
+            id: id,
+            name: document.getElementById('contact-edit-name').value.trim(),
+            phone: document.getElementById('contact-edit-phone').value.trim(),
+            email: document.getElementById('contact-edit-email').value.trim(),
+            message: document.getElementById('contact-edit-message').value.trim(),
+            status: document.getElementById('contact-edit-status').value,
+            adminNote: document.getElementById('contact-edit-note').value.trim()
+        };
+        fetch('/api/admin/contact-messages', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+            body: JSON.stringify(payload)
+        })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    closeContactDetail();
+                    loadContactMessages();
+                } else {
+                    alert('Hata: ' + (data.error || 'Kaydedilemedi'));
+                }
+            })
+            .catch(function() { alert('Sunucu hatası!'); });
+    }
+
+    function deleteContactMessage(id) {
+        if (!confirm('Bu iletişim mesajını kalıcı olarak silmek istediğinize emin misiniz?')) return;
+        fetch('/api/admin/contact-messages', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+            body: JSON.stringify({ action: 'delete', id: id })
+        })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    closeContactDetail();
+                    loadContactMessages();
+                } else {
+                    alert('Hata: ' + (data.error || 'Silinemedi'));
+                }
+            })
+            .catch(function() { alert('Sunucu hatası!'); });
     }
 </script>
 
