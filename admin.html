@@ -1749,9 +1749,13 @@
                     loadFleet();
                     loadDestinations();
                     setInterval(loadDashboard, 30000);
+                    startDashboardRadar();
                     setInterval(loadAdminFlights, 120000);
                     setInterval(loadAytFlights, 120000);
                     setInterval(loadReservations, 30000);
+                    startChatPolling();
+                    startRadarPolling();
+                    loadPageButtons();
                 } else {
                     localStorage.removeItem('guliz_token');
                     sessionStorage.removeItem('guliz_token');
