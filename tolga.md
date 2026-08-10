@@ -1,8 +1,24 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-10
+Son güncelleme: 2026-08-10 (akşam — PayPas debug oturumu)
 
-## En Son Yapılan: PayPas Sanal POS Entegrasyonu (henüz push edilmedi)
+## ŞU AN AÇIK SORUN: PayPas "Invalid API credentials" (401)
+
+Kredi kartı akışı canlıda kuruldu, iki gerçek bug bulunup düzeltildi (aşağıda), ama
+son adımda hâlâ takılıyor:
+
+1. ✅ Çözüldü — Cloudflare 502'yi kendi hata sayfasıyla değiştiriyordu → hata kodları 400'e çekildi (commit `b95bf63`)
+2. ✅ Çözüldü — paypas.com.tr da Cloudflare arkasında, Python'ın User-Agent'sız isteği bot sanılıp 403/error 1010 ile reddediliyordu → `SCRAPE_USER_AGENT` eklendi (commit `f725db2`)
+3. ❌ **AÇIK** — Artık PayPas'a gerçekten ulaşıyoruz ama PayPas `401 {"error":{"message":"Invalid API credentials","type":"authentication_error"}}` dönüyor.
+
+**Olası sebepler (Tolga'nın kontrol etmesi gerekiyor, ben PayPas paneline/Railway'e giremem):**
+- PayPas panelinde mağaza durumu "Beklemede" (onay bekliyor) — onaylanmadan API çalışmıyor olabilir
+- Railway'deki `PAYPAS_MERCHANT_KEY` / `PAYPAS_SECRET_KEY` değerlerinde kopyala-yapıştır kaynaklı fazladan boşluk/satır sonu olabilir — panelden tekrar kopyalayıp yapıştırması istendi
+- Not: PayPas panelindeki API Bilgileri modalında mod "TEST" seçiliydi (LIVE gri) — o ekrandaki Merchant ID/Secret Key muhtemelen test moduna ait
+
+Sıradaki adım: Tolga PayPas panelini/Railway değişkenlerini kontrol edip sonucu bildirecek.
+
+## PayPas Sanal POS Entegrasyonu — Teknik Özet
 
 Ödeme sağlayıcısı olarak **PayPas** (paypas.com.tr) seçildi ve gerçek entegrasyon yazıldı — commit `a2f48fb`.
 
