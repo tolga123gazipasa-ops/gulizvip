@@ -1132,27 +1132,95 @@ def _push_dashboard_notification(message, ntype="info", reservation_id=None):
     return notif
 
 # ─── Ödeme (Dövizli Ödeme Linki) — Provider-agnostic altyapı ──────────────────────
-# NOT: Tolga, Stripe/PayTR arasında henüz karar vermedi. Bu bölüm gerçek bir ödeme
-# sağlayıcısına BAĞLI DEĞİLDİR — sadece altyapıyı hazırlar. Provider seçilince:
-#   1) PAYMENT_PROVIDER = "stripe" veya "paytr" yapılır (env var ile de ayarlanabilir)
-#   2) İlgili STRIPE_SECRET_KEY / PAYTR_MERCHANT_* env var'ları eklenir
-#   3) _generate_payment_link() içindeki "manual" dalının yanına gerçek SDK/HTTP
-#      çağrısı eklenir (örn. stripe.checkout.Session.create(...))
+# NOT: Sağlayıcı olarak PayPas (paypas.com.tr) seçildi ve aşağıda gerçek entegrasyon var.
+# Stripe/PayTR dalları hâlâ iskelet — gerçek anahtar tanımlanmadıkça devre dışıdır.
+#   1) PAYMENT_PROVIDER = "paypas" (Railway env var)
+#   2) PAYPAS_MERCHANT_KEY / PAYPAS_SECRET_KEY env var'ları Railway'de tanımlanmalı
+#      (gerçek değerleri Tolga kendisi Railway → Variables'tan girmeli, koda yazılmaz)
 #   4) /api/webhooks/stripe veya /api/webhooks/paytr imza doğrulamasını gerçek
 #      secret ile yapacak şekilde güncellenir (şu an sadece iskelet/log var)
-PAYMENT_PROVIDER = os.environ.get("PAYMENT_PROVIDER", "manual")  # "stripe" | "paytr" | "manual"
+PAYMENT_PROVIDER = os.environ.get("PAYMENT_PROVIDER", "manual")  # "paypas" | "stripe" | "paytr" | "manual"
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 PAYTR_MERCHANT_ID = os.environ.get("PAYTR_MERCHANT_ID", "")
 PAYTR_MERCHANT_KEY = os.environ.get("PAYTR_MERCHANT_KEY", "")
 PAYTR_MERCHANT_SALT = os.environ.get("PAYTR_MERCHANT_SALT", "")
 
+# PayPas sanal POS — https://www.paypas.com.tr/api
+PAYPAS_BASE_URL = os.environ.get("PAYPAS_BASE_URL", "https://paypas.com.tr/api/v1")
+PAYPAS_MERCHANT_KEY = os.environ.get("PAYPAS_MERCHANT_KEY", "")  # Authorization: Bearer ...
+PAYPAS_SECRET_KEY = os.environ.get("PAYPAS_SECRET_KEY", "")      # X-SECRET-KEY
+
+
+def _paypas_request(method, endpoint, payload=None):
+    """PayPas API'sine imzalı istek atar. Hata durumunda RuntimeError fırlatır
+    (çağıran taraf bunu yakalayıp admin'e anlamlı bir hata döner — sessizce
+    sahte bir link üretilmez, çünkü bu gerçek para akışı)."""
+    url = f"{PAYPAS_BASE_URL}{endpoint}"
+    headers = {
+        "Authorization": f"Bearer {PAYPAS_MERCHANT_KEY}",
+        "X-SECRET-KEY": PAYPAS_SECRET_KEY,
+        "Content-Type": "application/json",
+    }
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"PayPas API hatası ({e.code}): {err_body}")
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"PayPas API'sine ulaşılamadı: {e.reason}")
+
+
+def _paypas_create_checkout_session(reservation, amount, currency):
+    """PayPas 'Ödeme Oturumu Oluşturma' (POST /checkout/sessions) çağrısı.
+    Tutar kuruş/cent cinsinden (unit_amount) gönderilir."""
+    base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+    res_id = reservation.get("id")
+    unit_amount = int(round(float(amount) * 100))
+    payload = {
+        "mode": "payment",
+        "success_url": f"{base_url}/api/payments/paypas/success/{res_id}",
+        "cancel_url": f"{base_url}/api/payments/paypas/cancel/{res_id}",
+        "client_reference_id": str(res_id),
+        "customer": {
+            "name": reservation.get("customerName", ""),
+            "email": reservation.get("customerEmail", ""),
+            "phone": reservation.get("customerPhone", ""),
+        },
+        "line_items": [{
+            "price_data": {
+                "currency": currency,
+                "unit_amount": unit_amount,
+                "product_data": {"name": f"Güliz VIP Transfer — Rezervasyon #{res_id}"},
+            },
+            "quantity": 1,
+        }],
+    }
+    return _paypas_request("POST", "/checkout/sessions", payload)
+
+
+def _paypas_get_session(session_id):
+    """PayPas 'Ödeme Sorgulama' (GET /checkout/sessions/{session_id})."""
+    return _paypas_request("GET", f"/checkout/sessions/{urllib.parse.quote(session_id)}")
+
 
 def _generate_payment_link(reservation, amount, currency, provider):
-    """Rezervasyon için ödeme linki üretir. Provider henüz seçilmediği için şu an
-    yalnızca izlenebilir bir 'manual' referans linki üretir (gerçek ödeme akışı yok).
-    Stripe/PayTR seçildiğinde buraya gerçek checkout session/link oluşturma kodu eklenir."""
+    """Rezervasyon için ödeme linki üretir.
+    - provider == 'paypas' ve anahtarlar tanımlıysa: gerçek PayPas checkout session açılır,
+      müşteri kart bilgisini PayPas'ın kendi ödeme sayfasında girer (biz hiç görmeyiz).
+    - Stripe/PayTR henüz gerçek entegre değil (anahtar yoksa manuel moda düşer).
+    - Hiçbiri yoksa: operasyon ekibinin ilettiği izlenebilir 'manual' referans linki."""
     ref = uuid.uuid4().hex[:12]
+    if provider == "paypas" and PAYPAS_MERCHANT_KEY and PAYPAS_SECRET_KEY:
+        session = _paypas_create_checkout_session(reservation, amount, currency)
+        checkout_url = session.get("url")
+        session_id = session.get("id", "")
+        if not checkout_url:
+            raise RuntimeError(f"PayPas beklenmeyen yanıt döndü (url yok): {session}")
+        return {"url": checkout_url, "intentId": session_id, "provider": "paypas"}
     if provider == "stripe" and STRIPE_SECRET_KEY:
         # TODO: stripe.checkout.Session.create(...) ile gerçek link üret.
         # Şimdilik anahtar tanımlı değilse manuel moda düşer.
@@ -1827,6 +1895,68 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             if path == "/api/unit-price":
                 self._send_json({"success": True, "unitPrice": UNIT_PRICE})
+                return
+            if path.startswith("/api/payments/paypas/success/"):
+                # PayPas ödeme sayfasından dönüşte tarayıcı buraya yönlenir
+                # (?session_id=... otomatik eklenir). Session'ı PayPas'a sorup
+                # gerçekten ödendiğini doğrulamadan rezervasyonu 'paid' işaretlemiyoruz.
+                base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+                res_id_str = path[len("/api/payments/paypas/success/"):].strip("/")
+                session_id = params.get("session_id", "")
+                try:
+                    res_id = int(res_id_str)
+                except ValueError:
+                    res_id = None
+                target = next((r for r in RESERVATIONS if r.get("id") == res_id), None) if res_id is not None else None
+                verified_paid = False
+                if session_id and PAYPAS_MERCHANT_KEY and PAYPAS_SECRET_KEY:
+                    try:
+                        info = _paypas_get_session(session_id)
+                        same_ref = str(info.get("client_reference_id", "")) == str(res_id)
+                        if info.get("payment_status") == "paid" and same_ref:
+                            verified_paid = True
+                    except Exception as e:
+                        print(f"[!] PayPas session doğrulama hatası: {e}")
+                if target is not None and verified_paid:
+                    already_paid = target.get("paymentStatus") == "paid"
+                    if not already_paid:
+                        with reservations_lock:
+                            target["paymentStatus"] = "paid"
+                        save_reservations()
+                        try:
+                            db.update_reservation_in_db(target["id"], {"paymentStatus": "paid"})
+                        except Exception:
+                            pass
+                        if target.get("customerId"):
+                            try:
+                                db.register_customer_booking(target["customerId"], target.get("price", 0))
+                            except Exception:
+                                pass
+                        _push_dashboard_notification(
+                            f"💳 Ödeme alındı: {target.get('customerName', '')} — Rezervasyon #{target['id']}",
+                            ntype="payment", reservation_id=target["id"]
+                        )
+                        send_telegram(
+                            f"💳 <b>Ödeme Alındı</b>\n👤 {target.get('customerName', '')}\n"
+                            f"🆔 Rezervasyon #{target['id']}\n💰 {target.get('price', 0)} {target.get('currency', 'TRY')}\n"
+                            f"🔌 Sağlayıcı: paypas"
+                        )
+                    self.send_response(302)
+                    self.send_header("Location", f"{base_url}/?odeme=basarili")
+                    self.end_headers()
+                else:
+                    # Doğrulanamadı — yine de ödeme muhtemelen alınmıştır (PayPas success_url'e
+                    # sadece başarılı ödemede yönlendirir), ama biz teyit edemedik. Kullanıcıyı
+                    # "kontrol ediliyor" mesajına yönlendir, admin panelinden manuel bakılabilir.
+                    self.send_response(302)
+                    self.send_header("Location", f"{base_url}/?odeme=dogrulanamadi")
+                    self.end_headers()
+                return
+            if path.startswith("/api/payments/paypas/cancel/"):
+                base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+                self.send_response(302)
+                self.send_header("Location", f"{base_url}/?odeme=iptal")
+                self.end_headers()
                 return
             if path == "/api/availability":
                 # FAZ 3: Sitede müsaitlik göstergesi. Filo tanımlı değilse (henüz araç birimi
