@@ -2326,6 +2326,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     print(f"[!] sitemap.xml sayfa listesi hatası: {e}")
                 for slug in ROUTE_SEO_PAGES:
                     urls.append({"loc": f"{BASE_URL}/{slug}", "lastmod": today, "changefreq": "weekly", "priority": "0.8"})
+                for lang in ("en", "ru"):
+                    urls.append({"loc": f"{BASE_URL}/{lang}/", "lastmod": today, "changefreq": "weekly", "priority": "0.9"})
                 xml_parts = ['<?xml version="1.0" encoding="UTF-8"?>',
                              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
                 for u in urls:
