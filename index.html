@@ -606,6 +606,14 @@
         .payment-section-title { font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
         .payment-methods { margin-bottom: 15px; }
         .payment-methods-label { font-size: 13px; font-weight: 600; color: var(--text-gray); margin-bottom: 10px; line-height: 1.5; }
+        .payment-method-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 5px; }
+        .payment-option { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 2px solid #E2E8F0; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
+        .payment-option input[type="radio"] { display: none; }
+        .payment-option.selected { border-color: var(--primary-navy); background: #F0F4FF; }
+        .payment-option::before { content: ''; width: 20px; height: 20px; border: 2px solid #CBD5E1; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.3s ease; }
+        .payment-option.selected::before { border-color: var(--primary-navy); background: var(--primary-navy); box-shadow: inset 0 0 0 4px #F0F4FF; }
+        .payment-option-title { font-size: 14px; font-weight: 700; color: var(--primary-navy); display: flex; align-items: center; gap: 8px; }
+        .payment-option-desc { font-size: 12px; color: var(--text-gray); margin-top: 2px; }
         .bank-details { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-top: 5px; }
         .bank-details-label { font-size: 13px; font-weight: 700; color: var(--text-gray); margin-bottom: 12px; }
         .bank-options { display: flex; flex-direction: column; gap: 10px; }
@@ -1219,7 +1227,22 @@
                 <div class="form-step" id="transfer-step3" style="display:none;">
                     <div class="payment-section-title" data-i18n="form.paymentMethodTitle">Ödeme Yöntemi</div>
                     <div class="payment-methods">
-                        <div class="payment-methods-label" data-i18n="form.paymentMethodsLabel">Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.</div>
+                        <div class="payment-method-options">
+                            <label class="payment-option selected" id="transfer-pay-havale-label">
+                                <input type="radio" name="transfer-paymethod" value="havale" checked>
+                                <div class="payment-option-info">
+                                    <div class="payment-option-title"><i class="fa-solid fa-building-columns"></i> <span data-i18n="form.payHavale">Banka Havalesi / EFT</span></div>
+                                    <div class="payment-option-desc" data-i18n="form.payHavaleDesc">IBAN'a havale yapın, ekibimiz onaylasın.</div>
+                                </div>
+                            </label>
+                            <label class="payment-option" id="transfer-pay-kart-label">
+                                <input type="radio" name="transfer-paymethod" value="kart">
+                                <div class="payment-option-info">
+                                    <div class="payment-option-title"><i class="fa-solid fa-credit-card"></i> <span data-i18n="form.payKart">Kredi Kartı (Online)</span></div>
+                                    <div class="payment-option-desc" data-i18n="form.payKartDesc">Güvenli ödeme sayfasına yönlendirilirsiniz.</div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
                     <div class="bank-details" id="transfer-bank-details">
                         <div class="bank-details-label" data-i18n="form.bankSelectLabel">Banka Seçiniz</div>
@@ -1305,7 +1328,22 @@
                 <div class="form-step" id="tahsis-step3" style="display:none;">
                     <div class="payment-section-title" data-i18n="form.paymentMethodTitle">Ödeme Yöntemi</div>
                     <div class="payment-methods">
-                        <div class="payment-methods-label" data-i18n="form.paymentMethodsLabel">Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.</div>
+                        <div class="payment-method-options">
+                            <label class="payment-option selected" id="tahsis-pay-havale-label">
+                                <input type="radio" name="tahsis-paymethod" value="havale" checked>
+                                <div class="payment-option-info">
+                                    <div class="payment-option-title"><i class="fa-solid fa-building-columns"></i> <span data-i18n="form.payHavale">Banka Havalesi / EFT</span></div>
+                                    <div class="payment-option-desc" data-i18n="form.payHavaleDesc">IBAN'a havale yapın, ekibimiz onaylasın.</div>
+                                </div>
+                            </label>
+                            <label class="payment-option" id="tahsis-pay-kart-label">
+                                <input type="radio" name="tahsis-paymethod" value="kart">
+                                <div class="payment-option-info">
+                                    <div class="payment-option-title"><i class="fa-solid fa-credit-card"></i> <span data-i18n="form.payKart">Kredi Kartı (Online)</span></div>
+                                    <div class="payment-option-desc" data-i18n="form.payKartDesc">Güvenli ödeme sayfasına yönlendirilirsiniz.</div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
                     <div class="bank-details" id="tahsis-bank-details">
                         <div class="bank-details-label" data-i18n="form.bankSelectLabel">Banka Seçiniz</div>
@@ -1725,6 +1763,9 @@
                 emailLabel:"E-posta Adresiniz", emailPh:"ornek@email.com",
                 paymentMethodTitle:"Ödeme Yöntemi",
                 paymentMethodsLabel:"Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.",
+                payHavale:"Banka Havalesi / EFT", payHavaleDesc:"IBAN'a havale yapın, ekibimiz onaylasın.",
+                payKart:"Kredi Kartı (Online)", payKartDesc:"Güvenli ödeme sayfasına yönlendirilirsiniz.",
+                payRedirecting:"Ödeme sayfasına yönlendiriliyor...", payFailed:"Ödeme sayfası açılamadı: ",
                 bankSelectLabel:"Banka Seçiniz", completeBtn:"Rezervasyonu Tamamla",
                 pickupHotelLabel:"Araç Alış Noktası (Otel / Adres)", pickupHotelPh:"Aracın sizi alacağı konum",
                 durationLabel:"Tahsis Süresi",
@@ -1829,6 +1870,9 @@
                 emailLabel:"Your Email Address", emailPh:"example@email.com",
                 paymentMethodTitle:"Payment Method",
                 paymentMethodsLabel:"Payment is made via bank transfer / EFT. Online credit card payment will be available soon.",
+                payHavale:"Bank Transfer / EFT", payHavaleDesc:"Transfer to our IBAN, our team will confirm.",
+                payKart:"Credit Card (Online)", payKartDesc:"You will be redirected to a secure payment page.",
+                payRedirecting:"Redirecting to payment page...", payFailed:"Could not open payment page: ",
                 bankSelectLabel:"Select Bank", completeBtn:"Complete Reservation",
                 pickupHotelLabel:"Vehicle Pickup Location (Hotel / Address)", pickupHotelPh:"The location where the vehicle will pick you up",
                 durationLabel:"Hire Duration",
@@ -1933,6 +1977,9 @@
                 emailLabel:"Ваш адрес эл. почты", emailPh:"example@email.com",
                 paymentMethodTitle:"Способ оплаты",
                 paymentMethodsLabel:"Оплата производится банковским переводом. Онлайн-оплата картой скоро будет доступна.",
+                payHavale:"Банковский перевод", payHavaleDesc:"Переведите на IBAN, наша команда подтвердит.",
+                payKart:"Банковская карта (онлайн)", payKartDesc:"Вы будете перенаправлены на безопасную страницу оплаты.",
+                payRedirecting:"Перенаправление на страницу оплаты...", payFailed:"Не удалось открыть страницу оплаты: ",
                 bankSelectLabel:"Выберите банк", completeBtn:"Завершить бронирование",
                 pickupHotelLabel:"Место подачи автомобиля (отель/адрес)", pickupHotelPh:"Место, где вас заберёт автомобиль",
                 durationLabel:"Продолжительность аренды",
@@ -2063,9 +2110,60 @@
         }
 
         (function initLanguage() {
-            // Öncelik sırası: sunucunun /en//ru/ rotasında enjekte ettiği SITE_LANG > hatırlanan tercih > 'tr'
-            var lang = window.SITE_LANG || localStorage.getItem('siteLang') || 'tr';
+            // Dil YALNIZCA sunucunun /en/ veya /ru/ rotasında enjekte ettiği window.SITE_LANG'e
+            // göre belirlenir. Diğer tüm rotalar (anasayfa "/", SEO rota sayfaları — bunların
+            // EN/RU karşılığı yok, bkz. server.py _render_route_seo_page) her zaman Türkçe'dir.
+            // DÜZELTME (bildirilen hata: "bazen İngilizce/Rusça geliyor"): Daha önce burada
+            // localStorage'daki eski tercih de kontrol ediliyordu. Bu, /en/ veya /ru/ sayfasını
+            // bir kez ziyaret eden (örn. Google'dan doğrudan o dile inen) bir kullanıcının
+            // tarayıcısında dilin kalıcı olarak "yapışmasına" yol açıyordu — TR bayrağına
+            // tıklayıp köke ("/") dönse bile anasayfa hâlâ Rusça/İngilizce açılıyordu, çünkü
+            // "/" sunucu tarafında SITE_LANG enjekte etmiyor ve eski localStorage değeri
+            // hâlâ orada duruyordu. Artık "/" her zaman Türkçe ile açılır ve applyLanguage()
+            // localStorage'ı da 'tr' olarak günceller (kendi kendini düzeltir).
+            var lang = window.SITE_LANG || 'tr';
             applyLanguage(lang);
+        })();
+
+        (function handlePaymentReturn() {
+            // PayPas ödeme sayfasından dönüşte server.py bizi "/?odeme=basarili|iptal|dogrulanamadi"
+            // ile buraya yönlendirir (bkz. GET /api/payments/paypas/success|cancel/<id>).
+            // Mevcut successModal'ı yeniden kullanıp içeriğini duruma göre değiştiriyoruz.
+            var params = new URLSearchParams(window.location.search);
+            var odeme = params.get('odeme');
+            if (!odeme) return;
+            var texts = {
+                tr: {
+                    basarili: { title: 'Ödemeniz Alındı!', desc: 'Kredi kartı ödemeniz başarıyla tamamlandı. Rezervasyonunuz onaylanmıştır, teşekkür ederiz.' },
+                    iptal: { title: 'Ödeme İptal Edildi', desc: 'Ödeme işlemini tamamlamadınız. Rezervasyonunuz banka havalesi ile de tamamlanabilir, ekibimiz sizinle iletişime geçecektir.' },
+                    dogrulanamadi: { title: 'Ödeme Kontrol Ediliyor', desc: 'Ödemenizin durumunu doğruluyoruz. Kısa süre içinde size dönüş yapılacaktır.' }
+                },
+                en: {
+                    basarili: { title: 'Payment Received!', desc: 'Your credit card payment was completed successfully. Your reservation is confirmed, thank you.' },
+                    iptal: { title: 'Payment Cancelled', desc: 'You did not complete the payment. Your reservation can also be completed via bank transfer, our team will contact you.' },
+                    dogrulanamadi: { title: 'Verifying Payment', desc: 'We are verifying your payment status. We will get back to you shortly.' }
+                },
+                ru: {
+                    basarili: { title: 'Оплата получена!', desc: 'Оплата картой прошла успешно. Ваше бронирование подтверждено, спасибо.' },
+                    iptal: { title: 'Оплата отменена', desc: 'Вы не завершили оплату. Бронирование можно завершить банковским переводом, наша команда свяжется с вами.' },
+                    dogrulanamadi: { title: 'Проверка платежа', desc: 'Мы проверяем статус вашего платежа. Скоро с вами свяжемся.' }
+                }
+            };
+            var set = texts[window.SITE_LANG] || texts.tr;
+            var info = set[odeme];
+            if (!info) return;
+            var modal = document.getElementById('successModal');
+            if (modal) {
+                var titleEl = modal.querySelector('h3');
+                var descEl = modal.querySelector('p[data-i18n-html]');
+                var summaryEl = document.getElementById('modalSummary');
+                if (titleEl) titleEl.textContent = info.title;
+                if (descEl) descEl.innerHTML = info.desc;
+                if (summaryEl) summaryEl.innerHTML = '';
+                modal.classList.add('open');
+            }
+            // URL'i temizle ki sayfa yenilenince modal tekrar açılmasın
+            window.history.replaceState({}, document.title, window.location.pathname);
         })();
 
         // --- SES DOSYASINI OYNATMA FONKSİYONU ---
@@ -2570,6 +2668,26 @@
                     bankOption.classList.add('selected');
                 }
             }
+            // Ödeme yöntemi seçimi (havale / kredi kartı) — havale seçiliyse banka
+            // IBAN listesini göster, kart seçiliyse gizle (kart bilgisi PayPas'ın kendi
+            // sayfasında girilir, bizde banka detayına gerek yok).
+            var payOption = e.target.closest('.payment-option');
+            if(payOption) {
+                var payRadio = payOption.querySelector('input[type="radio"]');
+                if(payRadio) {
+                    payRadio.checked = true;
+                    var payParent = payOption.closest('.payment-method-options');
+                    payParent.querySelectorAll('.payment-option').forEach(function(opt) {
+                        opt.classList.remove('selected');
+                    });
+                    payOption.classList.add('selected');
+                    var prefix = payRadio.name.split('-')[0]; // 'transfer' veya 'tahsis'
+                    var bankDetails = document.getElementById(prefix + '-bank-details');
+                    if(bankDetails) {
+                        bankDetails.style.display = (payRadio.value === 'kart') ? 'none' : '';
+                    }
+                }
+            }
         });
 
         // Hızlı Rezervasyon butonu — rota seçim modalını göster
@@ -2982,8 +3100,9 @@
                 if(selectedPickupLng !== null) payload.pickupLng = selectedPickupLng;
             }
 
-            // Ödeme yöntemi — şu an yalnızca banka havalesi / EFT aktif
-            payload.paymentMethod = 'havale';
+            // Ödeme yöntemi — havale (varsayılan) veya kredi kartı (PayPas online)
+            var payRadio = document.querySelector('input[name="' + formType + '-paymethod"]:checked');
+            payload.paymentMethod = payRadio ? payRadio.value : 'havale';
 
             // Ziyaretçi session ID — identity matching için
             if (typeof gulizTracker !== 'undefined' && gulizTracker.sessionId) {
@@ -3033,6 +3152,31 @@
                     if (typeof gtag_report_conversion === 'function') {
                         gtag_report_conversion(undefined, String(data.reservation.id));
                     }
+
+                    if (payload.paymentMethod === 'kart') {
+                        // Kredi kartı seçildi — rezervasyon oluşturuldu, şimdi PayPas'ın
+                        // ödeme oturumunu açıp müşteriyi kart bilgisi girmesi için oraya
+                        // yönlendiriyoruz. Kart bilgisi hiçbir zaman bize gelmiyor.
+                        if(btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + t('form.payRedirecting'); }
+                        return fetch('/api/payments/paypas/create-session', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reservationId: data.reservation.id })
+                        })
+                        .then(function(r2) { return r2.json(); })
+                        .then(function(data2) {
+                            if (data2.success && data2.url) {
+                                window.location.href = data2.url;
+                            } else {
+                                // Ödeme sayfası açılamadı ama rezervasyon zaten kaydedildi —
+                                // müşteriyi bilgilendirip normal başarı modalını gösteriyoruz,
+                                // ekibimiz havale/manuel ödeme için iletişime geçebilir.
+                                alert(t('form.payFailed') + (data2.error || t('alerts.unknownError')));
+                                document.getElementById('successModal').classList.add('open');
+                            }
+                        });
+                    }
+
                     document.getElementById('successModal').classList.add('open');
                 } else {
                     alert(t('alerts.reservationFailed') + (data.error || t('alerts.unknownError')));

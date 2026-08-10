@@ -2920,6 +2920,64 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
+        if path == "/api/payments/paypas/create-session":
+            # Müşteri rezervasyon formunda "Kredi Kartı" seçtiğinde çağrılır — kimlik
+            # doğrulaması YOK (public), ama tutar HİÇBİR ZAMAN istemciden alınmaz;
+            # her zaman sunucudaki rezervasyonun kendi price/currency alanından okunur
+            # (aksi halde biri isteği değiştirip 1₺ ödeyebilirdi).
+            try:
+                body = json.loads(self._read_body())
+                res_id = body.get("reservationId")
+                target = None
+                for r in RESERVATIONS:
+                    if r.get("id") == res_id:
+                        target = r
+                        break
+                if target is None:
+                    self._send_error("Rezervasyon bulunamadı.", 404)
+                    return
+                if not (PAYPAS_MERCHANT_KEY and PAYPAS_SECRET_KEY):
+                    self._send_error("Online kart ödemesi şu anda kullanılamıyor. Lütfen banka havalesini seçin.", 503)
+                    return
+                if target.get("paymentStatus") == "paid":
+                    self._send_error("Bu rezervasyon zaten ödenmiş.", 400)
+                    return
+                amount = target.get("price", 0)
+                try:
+                    amount = float(amount)
+                except (TypeError, ValueError):
+                    amount = 0
+                if amount <= 0:
+                    self._send_error("Geçersiz tutar.", 400)
+                    return
+                currency = (target.get("currency") or "TRY").upper()
+                link_info = _generate_payment_link(target, amount, currency, "paypas")
+                with reservations_lock:
+                    target["currency"] = currency
+                    target["paymentMethod"] = "kredi_karti"
+                    target["paymentLink"] = link_info["url"]
+                    target["stripePaymentIntentId"] = link_info.get("intentId", "")
+                    target["paymentStatus"] = "link_created"
+                save_reservations()
+                try:
+                    db.update_reservation_in_db(res_id, {
+                        "currency": currency, "paymentMethod": "kredi_karti",
+                        "paymentLink": link_info["url"],
+                        "stripePaymentIntentId": link_info.get("intentId", ""),
+                        "paymentStatus": "link_created",
+                    })
+                except Exception:
+                    pass
+                self._send_json({"success": True, "url": link_info["url"]})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except RuntimeError as e:
+                # _generate_payment_link PayPas API hatasında bunu fırlatır
+                print(f"[!] PayPas session oluşturma hatası: {e}")
+                self._send_error("Ödeme sayfası açılamadı, lütfen tekrar deneyin veya banka havalesini seçin.", 502)
+            except Exception as e:
+                self._send_error(str(e), 500)
+            return
         if path == "/api/admin/telegram/test":
             user = self._authenticate()
             if not user:
