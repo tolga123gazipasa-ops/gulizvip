@@ -329,6 +329,22 @@ def _render_lang_page(lang):
         'content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından Alanya, Side, Manavgat, Belek ve Kemer\'e 7/24 VIP transfer."',
         f'content="{meta["twitter_description"]}"'
     )
+    # Canonical ve og:url: her dil sürümü kendi URL'sini işaret etmeli, aksi halde
+    # Google /en/ ve /ru/ sayfalarını ana sayfanın kopyası sanıp ayrı indekslemez.
+    lang_url = f"{BASE_URL}/{lang}/"
+    html = html.replace(
+        '<link rel="canonical" href="https://gulizvip.com.tr/">',
+        f'<link rel="canonical" href="{lang_url}">'
+    )
+    html = html.replace(
+        '<meta property="og:url" content="https://gulizvip.com.tr/">',
+        f'<meta property="og:url" content="{lang_url}">'
+    )
+    og_locale = {"en": "en_US", "ru": "ru_RU"}.get(lang, "tr_TR")
+    html = html.replace(
+        '<meta property="og:locale" content="tr_TR">',
+        f'<meta property="og:locale" content="{og_locale}">'
+    )
     return html
 
 

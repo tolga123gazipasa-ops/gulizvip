@@ -42,12 +42,12 @@
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://gulizvip.com.tr/">
 
-    <!-- Hreflang: şu an sitenin tek gerçek (sunucu taraflı) sürümü Türkçe. Dil değiştirici
-         (EN/RU) yalnızca istemci tarafında metin çeviriyor, ayrı bir URL üretmiyor — bu yüzden
-         en/de/ru için hreflang eklemek Google Search Console'da "eşleşen dönüş etiketi yok"
-         hatası üretir ve zarar verir. tr + x-default ile başlıyoruz; /en/, /de/, /ru/ gibi
-         gerçek, sunucu taraflı dil sürümleri açıldığında buraya karşılıklı hreflang eklenecek. -->
+    <!-- Hreflang: /en/ ve /ru/ artık gerçek, sunucu taraflı dil sürümleri (bkz. server.py
+         _render_lang_page). Karşılıklı (reciprocal) hreflang seti — bu üçlü tr/en/ru/x-default
+         hem ana sayfada hem /en/ hem /ru/ sürümünde aynı şekilde yer alır. -->
     <link rel="alternate" hreflang="tr" href="https://gulizvip.com.tr/">
+    <link rel="alternate" hreflang="en" href="https://gulizvip.com.tr/en/">
+    <link rel="alternate" hreflang="ru" href="https://gulizvip.com.tr/ru/">
     <link rel="alternate" hreflang="x-default" href="https://gulizvip.com.tr/">
 
     <meta property="og:title" content="Gazipaşa & Antalya Havalimanı VIP Transfer Hizmetleri | Güliz VIP">
