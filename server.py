@@ -1164,14 +1164,27 @@ def _paypas_request(method, endpoint, payload=None):
     }
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    # KRİTİK: server.py http.server.HTTPServer kullanıyor (tek thread'li — bkz. __main__).
+    # Bu istek yavaş/askıda kalırsa TÜM SİTE o süre boyunca kilitlenir, ayrıca Cloudflare/
+    # Railway gateway'i bizim kendi hata JSON'umuzu dönmemize fırsat kalmadan 502 HTML sayfası
+    # döner (canlıda gözlemlenen "yönlendiriliyor diyor ama yönlendirmiyor" belirtisinin sebebi
+    # muhtemelen bu — DNS çözümlemesi urlopen'in timeout parametresine her zaman uymayabildiği
+    # için socket.setdefaulttimeout ile ek bir güvenlik katmanı ekleniyor). Timeout kısa
+    # tutuluyor ki müşteri en geç birkaç saniyede anlamlı bir hata mesajı görsün.
+    old_timeout = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(8)
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return json.loads(resp.read(2_000_000).decode("utf-8"))
     except urllib.error.HTTPError as e:
-        err_body = e.read().decode("utf-8", errors="replace")
+        err_body = e.read(5000).decode("utf-8", errors="replace")
         raise RuntimeError(f"PayPas API hatası ({e.code}): {err_body}")
     except urllib.error.URLError as e:
         raise RuntimeError(f"PayPas API'sine ulaşılamadı: {e.reason}")
+    except socket.timeout:
+        raise RuntimeError("PayPas API zaman aşımına uğradı (8sn) — ağ erişimi ya da DNS sorunlu olabilir.")
+    finally:
+        socket.setdefaulttimeout(old_timeout)
 
 
 def _paypas_create_checkout_session(reservation, amount, currency):
