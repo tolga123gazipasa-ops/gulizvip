@@ -10,6 +10,22 @@
 
       gtag('config', 'AW-18372593815');
     </script>
+    <!-- Event snippet for Satın alma işlemi conversion page -->
+    <script>
+    function gtag_report_conversion(url, transactionId) {
+      var callback = function () {
+        if (typeof(url) != 'undefined') {
+          window.location = url;
+        }
+      };
+      gtag('event', 'conversion', {
+          'send_to': 'AW-18372593815/pIgSCLajjd8cEJeR3rhE',
+          'transaction_id': transactionId || '',
+          'event_callback': callback
+      });
+      return false;
+    }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#1B2B4C">
@@ -2639,6 +2655,10 @@
                     // --- Görünmez Ajan: rezervasyon başarılı ---
                     if (typeof gulizTracker !== 'undefined') {
                         gulizTracker.trackEvent('Rezervasyon Tamamlandi', '#' + data.reservation.id + ' | ' + payload.pickup + ' -> ' + (payload.destination || payload.duration || ''), true);
+                    }
+                    // --- Google Ads: dönüşüm (satın alma/rezervasyon) bildirimi ---
+                    if (typeof gtag_report_conversion === 'function') {
+                        gtag_report_conversion(undefined, String(data.reservation.id));
                     }
                     document.getElementById('successModal').classList.add('open');
                 } else {
