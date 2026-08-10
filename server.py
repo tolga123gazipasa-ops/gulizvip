@@ -1929,7 +1929,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         if info.get("payment_status") == "paid" and same_ref:
                             verified_paid = True
                     except Exception as e:
-                        print(f"[!] PayPas session doğrulama hatası: {e}")
+                        print(f"[!] PayPas session doğrulama hatası: {e}", flush=True)
                 if target is not None and verified_paid:
                     already_paid = target.get("paymentStatus") == "paid"
                     if not already_paid:
@@ -2950,7 +2950,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Rezervasyon bulunamadı.", 404)
                     return
                 if not (PAYPAS_MERCHANT_KEY and PAYPAS_SECRET_KEY):
-                    self._send_error("Online kart ödemesi şu anda kullanılamıyor. Lütfen banka havalesini seçin.", 503)
+                    # NOT: 503 KASITLI OLARAK KULLANILMIYOR — Cloudflare 502/503/504 gibi
+                    # "bağlantı" durum kodlarını gördüğünde orijin sunucunun gövdesini KENDİ
+                    # genel hata sayfasıyla DEĞİŞTİRİYOR (canlıda tespit edildi: bizim JSON
+                    # mesajımız yerine Cloudflare'ın HTML sayfası geliyordu). 400 gibi normal
+                    # bir istemci hata kodu Cloudflare tarafından hiç dokunulmadan geçiriliyor.
+                    self._send_error("Online kart ödemesi şu anda kullanılamıyor. Lütfen banka havalesini seçin.", 400)
                     return
                 if target.get("paymentStatus") == "paid":
                     self._send_error("Bu rezervasyon zaten ödenmiş.", 400)
@@ -2985,11 +2990,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             except RuntimeError as e:
-                # _generate_payment_link PayPas API hatasında bunu fırlatır
-                print(f"[!] PayPas session oluşturma hatası: {e}")
-                self._send_error("Ödeme sayfası açılamadı, lütfen tekrar deneyin veya banka havalesini seçin.", 502)
+                # _generate_payment_link PayPas API hatasında bunu fırlatır.
+                # 502 DEĞİL 400 dönüyoruz — bkz. yukarıdaki NOT (Cloudflare 502'yi kendi
+                # hata sayfasıyla değiştiriyor, bizim asıl mesajımız hiç ulaşmıyordu).
+                print(f"[!] PayPas session oluşturma hatası: {e}", flush=True)
+                self._send_error("Ödeme sayfası açılamadı, lütfen tekrar deneyin veya banka havalesini seçin.", 400)
             except Exception as e:
-                self._send_error(str(e), 500)
+                print(f"[!] create-session beklenmeyen hata: {e}", flush=True)
+                self._send_error(str(e), 400)
             return
         if path == "/api/admin/telegram/test":
             user = self._authenticate()
