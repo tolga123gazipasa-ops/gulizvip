@@ -229,6 +229,17 @@ def _render_route_seo_page(slug):
         '<link rel="canonical" href="https://gulizvip.com.tr/">',
         f'<link rel="canonical" href="{page_url}">'
     )
+    # Bu rota sayfalarının EN/RU karşılığı yok (görünür içerik TR kalıyor, sadece
+    # meta çevrilmiyor) — hreflang tr/en/ru bloğunu bırakmak yanlış sinyal verir
+    # (canonical rota URL'sini gösterirken hreflang="tr" ana sayfayı gösterir).
+    # Tek dilli sayfa için sade, kendine referans veren tek hreflang yeterli.
+    html = html.replace(
+        '<link rel="alternate" hreflang="tr" href="https://gulizvip.com.tr/">\n'
+        '    <link rel="alternate" hreflang="en" href="https://gulizvip.com.tr/en/">\n'
+        '    <link rel="alternate" hreflang="ru" href="https://gulizvip.com.tr/ru/">\n'
+        '    <link rel="alternate" hreflang="x-default" href="https://gulizvip.com.tr/">',
+        f'<link rel="alternate" hreflang="tr" href="{page_url}">'
+    )
     html = html.replace(
         'content="Gazipaşa & Antalya Havalimanı VIP Transfer Hizmetleri | Güliz VIP"',
         f'content="{new_title}"'
@@ -1221,6 +1232,17 @@ def send_confirmation_email(reservation):
         return False
 
 
+def _looks_like_ip(value):
+    """value gerçekten geçerli bir IPv4/IPv6 adresi mi? (Formatsız/zararlı string'lerin
+    IP alanına sızmasını önlemek için biçimsel doğrulama — özel/yerel IP'lere de izin verir,
+    sadece "bu hiç bir IP değil" durumunu eler.)"""
+    try:
+        ipaddress.ip_address(value)
+        return True
+    except ValueError:
+        return False
+
+
 def _is_public_ip(ip):
     """Bir IP'nin genel (internet üzerinden erişilebilir/coğrafi olarak konumlandırılabilir)
     olup olmadığını kontrol eder. Özel/yerel/rezerve aralıklar (10.x, 172.16-31.x, 192.168.x,
@@ -1250,13 +1272,18 @@ def _get_visitor_ip(handler):
     Bu yüzden X-Forwarded-For zincirindeki IP'ler soldan sağa taranır ve İLK GEÇERLİ GENEL
     (public) IP seçilir; sadece dahili/özel IP'ler bulunursa zincirdeki ilk değere geri dönülür.
     """
-    cf_ip = handler.headers.get("CF-Connecting-IP", "")
-    if cf_ip:
-        return cf_ip.strip()
+    # Not: CF-Connecting-IP/True-Client-IP başlıkları yalnızca gerçek trafik Cloudflare
+    # üzerinden geçtiğinde güvenilirdir; Railway origin'i doğrudan (Cloudflare'ı atlayarak)
+    # erişilebilirse bu başlıklar teorik olarak sahteleneiblir. Buradaki tek pratik önlem —
+    # tam bir Cloudflare IP-aralığı listesi tutmadan — biçimsel geçerlilik kontrolüdür: en
+    # azından rastgele/zararlı bir string'in IP alanına (loglara, admin panele) sızmasını önler.
+    cf_ip = handler.headers.get("CF-Connecting-IP", "").strip()
+    if cf_ip and _looks_like_ip(cf_ip):
+        return cf_ip
 
-    true_client_ip = handler.headers.get("True-Client-IP", "")
-    if true_client_ip:
-        return true_client_ip.strip()
+    true_client_ip = handler.headers.get("True-Client-IP", "").strip()
+    if true_client_ip and _looks_like_ip(true_client_ip):
+        return true_client_ip
 
     forwarded = handler.headers.get("X-Forwarded-For", "")
     if forwarded:
@@ -1391,16 +1418,51 @@ def _send_telegram_agent_report(session_id, event_type, data):
     return True
 
 
-def _send_telegram_visitor_identify(visitor):
-    """Send Telegram notification when a visitor is identified."""
+def _resolve_geo_and_notify_contact(contact_id, ip, name, phone, email, message, timestamp):
+    """Arka plan thread'i: /api/contact için konum tespitini yapar, hem bellekteki
+    CONTACT_MESSAGES kaydını hem DB'yi günceller, ardından Telegram bildirimini gönderir."""
+    city, country, region = _lookup_geo(ip)
+    for m in CONTACT_MESSAGES:
+        if m.get("id") == contact_id:
+            m["city"] = city
+            m["country"] = country
+            m["region"] = region
+            break
+    save_contact_messages()
+    try:
+        db.update_contact_message_in_db(contact_id, {"city": city, "country": country, "region": region})
+    except Exception:
+        pass
+    tg_msg = "📬 <b>Yeni Iletisim Mesaji</b>\n"
+    tg_msg += "👤 <b>Isim:</b> " + name + "\n"
+    tg_msg += "📞 <b>Telefon:</b> " + phone + "\n"
+    tg_msg += "📧 <b>E-posta:</b> " + (email or "Belirtilmemis") + "\n"
+    tg_msg += "📍 <b>Konum:</b> " + (f"{city}, {country}" if city else "Bilinmiyor") + "\n"
+    tg_msg += "💬 <b>Mesaj:</b> " + (message[:200] + ("..." if len(message) > 200 else "")) + "\n"
+    tg_msg += "🕐 <b>Saat:</b> " + timestamp
+    send_telegram(tg_msg)
+
+
+def _resolve_geo_and_notify_visitor(session_id, ip):
+    """Arka plan thread'i: konum tespitini (ip-api.com) yapar, VISITOR_SESSIONS'taki
+    kaydı günceller (hâlâ mevcutsa) ve ardından Telegram bildirimini gönderir.
+    Bu iş request thread'ini bloklamasın diye ayrı thread'de çalışır."""
+    city, country, region = _lookup_geo(ip)
+    with visitor_lock:
+        visitor = VISITOR_SESSIONS.get(session_id)
+        if visitor:
+            visitor["city"] = city
+            visitor["country"] = country
+            visitor["region"] = region
+        visitor_snapshot = dict(visitor) if visitor else {"ip": ip, "city": city, "country": country}
     msg = (
         f"\U0001f441 <b>Görünmez Ajan — Yeni Ziyaretçi</b>\n"
-        f"\U0001f310 <b>IP:</b> {visitor.get('ip', '?')}\n"
-        f"\U0001f4cd <b>Konum:</b> {visitor.get('city', '?')}, {visitor.get('country', '?')}\n"
-        f"\U0001f4f1 <b>Cihaz:</b> {visitor.get('device', '?')} / {visitor.get('os', '?')}\n"
-        f"\U0001f30d <b>Tarayıcı:</b> {visitor.get('browser', '?')}\n"
-        f"\U0001f6aa <b>Giriş:</b> {visitor.get('entryPage', '?')}\n"
-        f"\U0001f517 <b>Yönlendiren:</b> {visitor.get('referrer', 'Doğrudan')}\n"
+        f"\U0001f310 <b>IP:</b> {visitor_snapshot.get('ip', '?')}\n"
+        f"\U0001f4cd <b>Konum:</b> {city or '?'}, {country or '?'}\n"
+        f"\U0001f4f1 <b>Cihaz:</b> {visitor_snapshot.get('device', '?')} / {visitor_snapshot.get('os', '?')}\n"
+        f"\U0001f30d <b>Tarayıcı:</b> {visitor_snapshot.get('browser', '?')}\n"
+        f"\U0001f6aa <b>Giriş:</b> {visitor_snapshot.get('entryPage', '?')}\n"
+        f"\U0001f517 <b>Yönlendiren:</b> {visitor_snapshot.get('referrer', 'Doğrudan')}\n"
         f"\U0001f550 <b>Saat:</b> {datetime.now().isoformat()}"
     )
     send_telegram(msg)
@@ -1545,6 +1607,11 @@ MIME_TYPES = {
     ".webp": "image/webp",
 }
 
+# _serve_static() için izin verilen tek statik dosya uzantısı listesi. .json BİLEREK yok —
+# tüm gerçek veri (rezervasyon, iletişim mesajı vb.) API endpoint'leri üzerinden auth ile
+# sunulur, ham .json dosyaları WORKSPACE'te backend veri/config olarak durur.
+PUBLIC_STATIC_EXTENSIONS = {".html", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp"}
+
 class GulizHandler(http.server.BaseHTTPRequestHandler):
 
     def _send_json(self, data, status=200):
@@ -1600,11 +1667,25 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
         return None
 
     def _serve_static(self, filepath, extra_headers=None):
-        full_path = os.path.join(WORKSPACE, filepath)
+        # Path traversal koruması (_serve_upload ile aynı desen)
+        filepath = filepath.lstrip("/")
+        full_path = os.path.normpath(os.path.join(WORKSPACE, filepath))
+        if not full_path.startswith(os.path.normpath(WORKSPACE)):
+            self._send_error("Geçersiz yol.", 400)
+            return
+        ext = os.path.splitext(filepath)[1].lower()
+        # KRİTİK: WORKSPACE, server.py/db.py (kaynak kod — ADMIN_PASS/SECRET_KEY/API
+        # anahtarları içerir) ve reservations.json/contact_messages.json gibi müşteri
+        # verisi içeren dosyalarla AYNI dizin. Path traversal koruması tek başına yeterli
+        # değil — traversal olmadan doğrudan "GET /server.py" bile dosyayı sızdırırdı.
+        # Bu yüzden yalnızca gerçekten genel (public) statik varlık uzantılarına izin
+        # veriliyor; .json dahil geri kalan her şey (kaynak kod, veri dosyaları, config) reddedilir.
+        if ext not in PUBLIC_STATIC_EXTENSIONS:
+            self._send_error("Dosya bulunamadı", 404)
+            return
         if not os.path.exists(full_path) or os.path.isdir(full_path):
             self._send_error("Dosya bulunamadı", 404)
             return
-        ext = os.path.splitext(filepath)[1].lower()
         mime = MIME_TYPES.get(ext, "application/octet-stream")
         with open(full_path, "rb") as f:
             data = f.read()
@@ -2364,6 +2445,19 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if rendered:
                     self._send_html(rendered)
                     return
+            # /en/<rota-slug> veya /ru/<rota-slug> gibi birleşik adresler (örn. eski/dış
+            # bağlantılar) — rota sayfalarının çevirisi yok, 404 yerine sade dil sayfasına
+            # yönlendir (bkz. index.html switchLanguage() artık bu tarz URL üretmiyor).
+            lang_path_parts = lang_path.split("/")
+            if len(lang_path_parts) == 2 and (
+                (lang_path_parts[0] in ("en", "ru") and lang_path_parts[1] in ROUTE_SEO_PAGES) or
+                (lang_path_parts[1] in ("en", "ru") and lang_path_parts[0] in ROUTE_SEO_PAGES)
+            ):
+                redirect_lang = lang_path_parts[0] if lang_path_parts[0] in ("en", "ru") else lang_path_parts[1]
+                self.send_response(302)
+                self.send_header("Location", f"/{redirect_lang}/")
+                self.end_headers()
+                return
             route_slug = path.lstrip("/")
             if route_slug in ROUTE_SEO_PAGES:
                 rendered = _render_route_seo_page(route_slug)
@@ -2526,6 +2620,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     _reservations_insert(reservation)
                     RESERVATION_ID += 1
                     save_reservations()
+                    if os.environ.get("DATABASE_URL"):
+                        # DATABASE_URL tanımlıyken (yani DB kullanılması bekleniyorken) yazma
+                        # başarısız oldu — bu gerçek bir sorun. DATABASE_URL hiç yoksa (bilinçli
+                        # JSON-only mod) bildirim atma, o normal bir çalışma şeklidir.
+                        _push_dashboard_notification(
+                            f"⚠️ Rezervasyon #{reservation['id']} DB'ye yazılamadı, sadece yedek dosyada (JSON) kayıtlı — DB bağlantısını kontrol edin.",
+                            ntype="system", reservation_id=reservation["id"]
+                        )
                 self._send_json({"success": True, "reservation": reservation})
                 telegram_msg = (
                     f"📌 <b>Manuel Rezervasyon Eklendi #{reservation['id']}</b>\n"
@@ -2638,6 +2740,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     _reservations_insert(reservation)
                     RESERVATION_ID += 1
                     save_reservations()
+                    if os.environ.get("DATABASE_URL"):
+                        # DATABASE_URL tanımlıyken (yani DB kullanılması bekleniyorken) yazma
+                        # başarısız oldu — bu gerçek bir sorun. DATABASE_URL hiç yoksa (bilinçli
+                        # JSON-only mod) bildirim atma, o normal bir çalışma şeklidir.
+                        _push_dashboard_notification(
+                            f"⚠️ Rezervasyon #{reservation['id']} DB'ye yazılamadı, sadece yedek dosyada (JSON) kayıtlı — DB bağlantısını kontrol edin.",
+                            ntype="system", reservation_id=reservation["id"]
+                        )
                 self._send_json({
                     "success": True,
                     "reservation": reservation,
@@ -2747,27 +2857,32 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
 
                 if is_success:
-                    with reservations_lock:
-                        target["paymentStatus"] = "paid"
-                    save_reservations()
-                    try:
-                        db.update_reservation_in_db(target["id"], {"paymentStatus": "paid"})
-                    except Exception:
-                        pass
-                    if target.get("customerId"):
+                    # İdempotency: sağlayıcı aynı olayı tekrar gönderirse (retry) rezervasyon
+                    # zaten "paid" ise bildirim/sayaç tekrar işlenmesin — çift Telegram bildirimi
+                    # ve müşteri booking sayacının yanlış artmasını önler.
+                    already_paid = target.get("paymentStatus") == "paid"
+                    if not already_paid:
+                        with reservations_lock:
+                            target["paymentStatus"] = "paid"
+                        save_reservations()
                         try:
-                            db.register_customer_booking(target["customerId"], 0)
+                            db.update_reservation_in_db(target["id"], {"paymentStatus": "paid"})
                         except Exception:
                             pass
-                    _push_dashboard_notification(
-                        f"💳 Ödeme alındı: {target.get('customerName', '')} — Rezervasyon #{target['id']}",
-                        ntype="payment", reservation_id=target["id"]
-                    )
-                    send_telegram(
-                        f"💳 <b>Ödeme Alındı</b>\n👤 {target.get('customerName', '')}\n"
-                        f"🆔 Rezervasyon #{target['id']}\n💰 {target.get('price', 0)} {target.get('currency', 'TRY')}\n"
-                        f"🔌 Sağlayıcı: {provider_name}"
-                    )
+                        if target.get("customerId"):
+                            try:
+                                db.register_customer_booking(target["customerId"], target.get("price", 0))
+                            except Exception:
+                                pass
+                        _push_dashboard_notification(
+                            f"💳 Ödeme alındı: {target.get('customerName', '')} — Rezervasyon #{target['id']}",
+                            ntype="payment", reservation_id=target["id"]
+                        )
+                        send_telegram(
+                            f"💳 <b>Ödeme Alındı</b>\n👤 {target.get('customerName', '')}\n"
+                            f"🆔 Rezervasyon #{target['id']}\n💰 {target.get('price', 0)} {target.get('currency', 'TRY')}\n"
+                            f"🔌 Sağlayıcı: {provider_name}"
+                        )
                 self._send_json({"success": True})
             except Exception as e:
                 print(f"[!] Webhook hatası ({provider_name}): {e}")
@@ -2985,16 +3100,18 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("sessionId gerekli.", 400)
                     return
                 ip = _get_visitor_ip(self)
-                city, country, region = _lookup_geo(ip)
+                # Not: konum tespiti (ip-api.com) dış ağ isteği, sunucu tek thread'li
+                # çalıştığı için burada senkron çağrılmaz — arka plan thread'inde yapılır,
+                # ziyaretçi hemen yanıt alır, konum bilgisi birazdan Telegram'a düşer.
                 visitor = {
                     "sessionId": session_id,
                     "ip": ip,
                     "device": body.get("device", ""),
                     "os": body.get("os", ""),
                     "browser": body.get("browser", ""),
-                    "city": city,
-                    "country": country,
-                    "region": region,
+                    "city": "",
+                    "country": "",
+                    "region": "",
                     "referrer": body.get("referrer", ""),
                     "entryPage": body.get("entryPage", ""),
                     "currentPage": body.get("entryPage", ""),
@@ -3009,10 +3126,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 }
                 with visitor_lock:
                     VISITOR_SESSIONS[session_id] = visitor
-                print(f"[tracking] Yeni ziyaretçi: {ip} / {city or '?'} / {body.get('device', '?')} "
+                print(f"[tracking] Yeni ziyaretçi: {ip} / {body.get('device', '?')} "
                       f"| CF-Connecting-IP={self.headers.get('CF-Connecting-IP', '-')} "
                       f"XFF={self.headers.get('X-Forwarded-For', '-')}")
-                threading.Thread(target=_send_telegram_visitor_identify, args=(visitor,), daemon=True).start()
+                threading.Thread(target=_resolve_geo_and_notify_visitor, args=(session_id, ip), daemon=True).start()
                 self._send_json({"success": True, "visitorId": session_id})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
@@ -3135,7 +3252,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
                 global CONTACT_ID, CONTACT_MESSAGES
                 visitor_ip = _get_visitor_ip(self)
-                geo_city, geo_country, geo_region = _lookup_geo(visitor_ip)
+                # Not: konum tespiti + Telegram gönderimi dış ağ istekleri, sunucu tek
+                # thread'li çalıştığı için burada senkron yapılmaz — kaydı boş konumla
+                # oluşturup hemen yanıt veriyoruz, konum arka planda çözülüp kayda işleniyor.
                 contact = {
                     "id": CONTACT_ID,
                     "name": name,
@@ -3143,9 +3262,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "email": email,
                     "message": message,
                     "ipAddress": visitor_ip,
-                    "city": geo_city,
-                    "country": geo_country,
-                    "region": geo_region,
+                    "city": "",
+                    "country": "",
+                    "region": "",
                     "userAgent": self.headers.get("User-Agent", ""),
                     "status": "new",
                     "adminNote": "",
@@ -3164,17 +3283,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     ntype="contact",
                     reservation_id=None
                 )
-                tg_msg = "📬 <b>Yeni Iletisim Mesaji</b>\n"
-                tg_msg += "👤 <b>Isim:</b> " + name + "\n"
-                tg_msg += "📞 <b>Telefon:</b> " + phone + "\n"
-                tg_msg += "📧 <b>E-posta:</b> " + (email or "Belirtilmemis") + "\n"
-                tg_msg += "💬 <b>Mesaj:</b> " + (message[:200] + ("..." if len(message) > 200 else "")) + "\n"
-                tg_msg += "🕐 <b>Saat:</b> " + contact["timestamp"]
-                send_telegram(tg_msg)
-                print(f"[contact] Yeni iletisim formu: {name} / {phone} / IP={visitor_ip} / {geo_city or '?'} "
+                print(f"[contact] Yeni iletisim formu: {name} / {phone} / IP={visitor_ip} "
                       f"| CF-Connecting-IP={self.headers.get('CF-Connecting-IP', '-')} "
                       f"XFF={self.headers.get('X-Forwarded-For', '-')}")
                 self._send_json({"success": True, "message": "Mesajiniz alindi."})
+                threading.Thread(target=_resolve_geo_and_notify_contact, args=(contact["id"], visitor_ip, name, phone, email, message, contact["timestamp"]), daemon=True).start()
             except json.JSONDecodeError:
                 self._send_error("Gecersiz JSON.", 400)
             return

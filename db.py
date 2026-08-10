@@ -830,6 +830,7 @@ def update_contact_message_in_db(message_id, fields):
     allowed = {
         "name": "name", "phone": "phone", "email": "email", "message": "message",
         "status": "status", "adminNote": "admin_note",
+        "city": "city", "country": "country", "region": "region",
     }
     set_parts = []
     values = []

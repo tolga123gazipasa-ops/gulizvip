@@ -2415,14 +2415,16 @@
         }
 
         function switchLanguage(lang) {
-            var currentUrl = window.location.href;
-            var baseUrl = currentUrl.replace(/\/[a-z]{2}(\/|$)/, '/');
+            // Rota SEO sayfalarının (örn. /gazipasa-alanya-transfer) İngilizce/Rusça
+            // karşılığı yok — bu yüzden dil değişince her zaman site köküne (/, /en/,
+            // /ru/) gidilir, geçerli rota korunmaya çalışılmaz (aksi halde
+            // /rota-adi/en/ gibi 404 veren birleşik adresler üretilirdi).
             if (lang === 'tr') {
-                window.location.href = baseUrl;
+                window.location.href = '/';
             } else if (lang === 'en') {
-                window.location.href = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + 'en/';
+                window.location.href = '/en/';
             } else if (lang === 'ru') {
-                window.location.href = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + 'ru/';
+                window.location.href = '/ru/';
             }
         }
 
