@@ -331,6 +331,24 @@ EMAIL_TEMPLATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "
 RESERVATIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reservations.json")
 RESERVATIONS = []
 RESERVATION_ID = 1000
+# RESERVATIONS listesine yazma (insert/delete/toplu değiştirme) yapan tüm noktalar bu kilidi
+# kullanır — chat_messages/visitor_sessions'ın zaten kullandığı korumayla tutarlı olsun ve
+# sunucu ileride threaded bir modele geçerse (şu an tekil-threadli http.server.HTTPServer)
+# veri bozulmasına karşı baştan korunmuş olsun diye eklendi.
+reservations_lock = threading.Lock()
+
+
+def _reservations_insert(reservation):
+    """RESERVATIONS listesine kilit altında ekleme yapar (bkz. reservations_lock tanımı)."""
+    with reservations_lock:
+        RESERVATIONS.insert(0, reservation)
+
+
+def _reservations_replace(new_list):
+    """RESERVATIONS listesinin tamamını kilit altında değiştirir (ör. silme sonrası filtrelenmiş liste)."""
+    global RESERVATIONS
+    with reservations_lock:
+        RESERVATIONS = new_list
 
 # ─── Canlı Destek / İletişim / Bildirim JSON Fallback Dosyaları ─────────────────
 # DB varsa asıl veri PostgreSQL'dedir; bu dosyalar sadece DATABASE_URL yokken
@@ -2408,9 +2426,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if db_id:
                     reservation["id"] = db_id
                     RESERVATION_ID = db_id + 1
-                    RESERVATIONS.insert(0, reservation)  # in-memory önbelleği de senkron tut (admin/takvim buradan okuyor)
+                    _reservations_insert(reservation)  # in-memory önbelleği de senkron tut (admin/takvim buradan okuyor)
                 else:
-                    RESERVATIONS.insert(0, reservation)
+                    _reservations_insert(reservation)
                     RESERVATION_ID += 1
                     save_reservations()
                 self._send_json({"success": True, "reservation": reservation})
@@ -2520,9 +2538,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if db_id:
                     reservation["id"] = db_id
                     RESERVATION_ID = db_id + 1
-                    RESERVATIONS.insert(0, reservation)  # in-memory önbelleği de senkron tut (admin/takvim buradan okuyor)
+                    _reservations_insert(reservation)  # in-memory önbelleği de senkron tut (admin/takvim buradan okuyor)
                 else:
-                    RESERVATIONS.insert(0, reservation)
+                    _reservations_insert(reservation)
                     RESERVATION_ID += 1
                     save_reservations()
                 self._send_json({
@@ -2634,7 +2652,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
 
                 if is_success:
-                    target["paymentStatus"] = "paid"
+                    with reservations_lock:
+                        target["paymentStatus"] = "paid"
                     save_reservations()
                     try:
                         db.update_reservation_in_db(target["id"], {"paymentStatus": "paid"})
@@ -2692,10 +2711,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Rezervasyon bulunamadı.", 404)
                     return
                 link_info = _generate_payment_link(target, amount, currency, provider)
-                target["currency"] = currency
-                target["paymentLink"] = link_info["url"]
-                target["stripePaymentIntentId"] = link_info.get("intentId", "")
-                target["paymentStatus"] = "link_created"
+                with reservations_lock:
+                    target["currency"] = currency
+                    target["paymentLink"] = link_info["url"]
+                    target["stripePaymentIntentId"] = link_info.get("intentId", "")
+                    target["paymentStatus"] = "link_created"
                 save_reservations()
                 try:
                     db.update_reservation_in_db(res_id, {
@@ -3244,13 +3264,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         if r.get("id") == res_id:
                             # Not: alan adları reservation dict'iyle aynı (camelCase) olmalı —
                             # önceki snake_case liste hiçbir zaman eşleşmiyordu (sessiz bug, düzeltildi).
-                            for key in ("status", "customerName", "customerPhone", "customerEmail",
-                                        "pickup", "destination", "flightNumber", "date", "time",
-                                        "passengers", "notes", "price", "paymentMethod", "paymentStatus",
-                                        "vehicleUnitId", "bufferMinutes", "estimatedDurationMinutes",
-                                        "distanceKm", "isManual"):
-                                if key in body:
-                                    r[key] = body[key]
+                            with reservations_lock:
+                                for key in ("status", "customerName", "customerPhone", "customerEmail",
+                                            "pickup", "destination", "flightNumber", "date", "time",
+                                            "passengers", "notes", "price", "paymentMethod", "paymentStatus",
+                                            "vehicleUnitId", "bufferMinutes", "estimatedDurationMinutes",
+                                            "distanceKm", "isManual"):
+                                    if key in body:
+                                        r[key] = body[key]
                             save_reservations()
                             # DB'ye de kaydet — INSERT değil UPDATE (tekrar eden kayıt oluşmasın diye)
                             try:
@@ -3269,7 +3290,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         return
                     for r in RESERVATIONS:
                         if r.get("id") == res_id:
-                            r["status"] = new_status
+                            with reservations_lock:
+                                r["status"] = new_status
                             save_reservations()
                             try:
                                 db.update_reservation_status_in_db(res_id, new_status)
@@ -3283,8 +3305,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     if res_id is None:
                         self._send_error("Rezervasyon ID gerekli.", 400)
                         return
-                    RESERVATIONS = [r for r in RESERVATIONS if r.get("id") != res_id]
+                    _reservations_replace([r for r in RESERVATIONS if r.get("id") != res_id])
                     save_reservations()
+                    # DB'den de sil — önceden bu satır eksikti, silinen kayıtlar PostgreSQL'de
+                    # kalıyordu ve sunucu DB'den yeniden yüklendiğinde geri gelebiliyordu.
+                    try:
+                        db.delete_reservation_from_db(res_id)
+                    except Exception:
+                        pass
                     self._send_json({"success": True, "message": "Rezervasyon silindi."})
                 else:
                     self._send_error("Geçersiz aksiyon.", 400)
