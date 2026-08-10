@@ -1057,12 +1057,12 @@
                 <img src="/logo.png" alt="Güliz Premium VIP Logo">
             </a>
             <nav class="nav-menu">
-                <a href="/#hizmetler">Hizmetler</a>
-                <a href="/#filo">Filomuz</a>
-                <a href="/#blog">Bölgeler</a>
-                <a href="/#ucus-ekrani">Canlı Uçuşlar</a>
-                <a href="/#iletisim">İletişim</a>
-                <a href="/#sss">S.S.S</a>
+                <a href="/#hizmetler" data-i18n="nav.hizmetler">Hizmetler</a>
+                <a href="/#filo" data-i18n="nav.filo">Filomuz</a>
+                <a href="/#blog" data-i18n="nav.blog">Bölgeler</a>
+                <a href="/#ucus-ekrani" data-i18n="nav.ucusEkrani">Canlı Uçuşlar</a>
+                <a href="/#iletisim" data-i18n="nav.iletisim">İletişim</a>
+                <a href="/#sss" data-i18n="nav.sss">S.S.S</a>
             </nav>
             <div class="header-actions">
                 <div class="lang-switcher">
@@ -1082,8 +1082,8 @@
                     </div>
                 </div>
                 <a href="tel:+902426062548" class="call-btn"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a>
-                <button class="cta-button" onclick="quickReservation()">Hızlı Rezervasyon</button>
-                <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Menüyü Aç/Kapat"><i class="fa-solid fa-bars"></i></button>
+                <button class="cta-button" onclick="quickReservation()" data-i18n="header.cta">Hızlı Rezervasyon</button>
+                <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Menüyü Aç/Kapat" data-i18n-aria="header.hamburgerAria"><i class="fa-solid fa-bars"></i></button>
             </div>
         </div>
     </header>
@@ -1101,11 +1101,11 @@
         <section class="error-page" id="page-404">
             <div class="error-page-inner">
                 <div class="error-page-icon"><i class="fa-solid fa-map-signs"></i></div>
-                <h2 class="error-page-title"><span class="error-page-code">404</span> - Aradığınız Sayfa Bulunamadı</h2>
-                <p class="error-page-desc">Aradığınız sayfa taşınmış, kaldırılmış ya da hiç var olmamış olabilir.</p>
+                <h2 class="error-page-title"><span class="error-page-code">404</span> - <span data-i18n="errorPages.e404Title">Aradığınız Sayfa Bulunamadı</span></h2>
+                <p class="error-page-desc" data-i18n="errorPages.e404Desc">Aradığınız sayfa taşınmış, kaldırılmış ya da hiç var olmamış olabilir.</p>
                 <div class="error-page-actions">
-                    <a href="#home" class="error-btn error-btn-primary"><i class="fa-solid fa-house"></i> Ana Sayfaya Dön</a>
-                    <a href="https://wa.me/902426062548" target="_blank" rel="noopener" class="error-btn error-btn-outline"><i class="fa-brands fa-whatsapp"></i> 7/24 WhatsApp Destek</a>
+                    <a href="#home" class="error-btn error-btn-primary"><i class="fa-solid fa-house"></i> <span data-i18n="errorPages.homeBtn">Ana Sayfaya Dön</span></a>
+                    <a href="https://wa.me/902426062548" target="_blank" rel="noopener" class="error-btn error-btn-outline"><i class="fa-brands fa-whatsapp"></i> <span data-i18n="errorPages.whatsappBtn">7/24 WhatsApp Destek</span></a>
                 </div>
             </div>
         </section>
@@ -1113,10 +1113,10 @@
         <section class="error-page" id="page-403">
             <div class="error-page-inner">
                 <div class="error-page-icon"><i class="fa-solid fa-lock"></i></div>
-                <h2 class="error-page-title"><span class="error-page-code">403</span> - Bu Alana Erişim Yetkiniz Yok</h2>
-                <p class="error-page-desc">Girmeye çalıştığınız alan güvenlik sebebiyle kısıtlanmıştır.</p>
+                <h2 class="error-page-title"><span class="error-page-code">403</span> - <span data-i18n="errorPages.e403Title">Bu Alana Erişim Yetkiniz Yok</span></h2>
+                <p class="error-page-desc" data-i18n="errorPages.e403Desc">Girmeye çalıştığınız alan güvenlik sebebiyle kısıtlanmıştır.</p>
                 <div class="error-page-actions">
-                    <a href="#home" class="error-btn error-btn-primary"><i class="fa-solid fa-house"></i> Görsel Girişe Dön</a>
+                    <a href="#home" class="error-btn error-btn-primary"><i class="fa-solid fa-house"></i> <span data-i18n="errorPages.visualEntryBtn">Görsel Girişe Dön</span></a>
                 </div>
             </div>
         </section>
@@ -1124,10 +1124,10 @@
         <section class="error-page" id="page-500">
             <div class="error-page-inner">
                 <div class="error-page-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
-                <h2 class="error-page-title"><span class="error-page-code">500</span> - Bağlantı Güncelleniyor</h2>
-                <p class="error-page-desc">Şu anda sistemimizde kısa süreli bir bakım yapılmaktadır. Lütfen birkaç dakika sonra tekrar deneyin.</p>
+                <h2 class="error-page-title"><span class="error-page-code">500</span> - <span data-i18n="errorPages.e500Title">Bağlantı Güncelleniyor</span></h2>
+                <p class="error-page-desc" data-i18n="errorPages.e500Desc">Şu anda sistemimizde kısa süreli bir bakım yapılmaktadır. Lütfen birkaç dakika sonra tekrar deneyin.</p>
                 <div class="error-page-actions">
-                    <button type="button" onclick="location.reload()" class="error-btn error-btn-primary"><i class="fa-solid fa-rotate-right"></i> Sayfayı Yenile</button>
+                    <button type="button" onclick="location.reload()" class="error-btn error-btn-primary"><i class="fa-solid fa-rotate-right"></i> <span data-i18n="errorPages.refreshBtn">Sayfayı Yenile</span></button>
                 </div>
             </div>
         </section>
@@ -1141,40 +1141,40 @@
         
         <div class="booking-engine" id="rezervasyon">
             <div class="tab-header">
-                <div class="tab-btn active" id="tab-transfer" onclick="switchForm('transfer')"><i class="fa-solid fa-route"></i> Havalimanı Transfer</div>
-                <div class="tab-btn" id="tab-tahsis" onclick="switchForm('tahsis')"><i class="fa-solid fa-clock"></i> Şoförlü VIP / Günlük Tahsis</div>
+                <div class="tab-btn active" id="tab-transfer" onclick="switchForm('transfer')"><i class="fa-solid fa-route"></i> <span data-i18n="tabs.transfer">Havalimanı Transfer</span></div>
+                <div class="tab-btn" id="tab-tahsis" onclick="switchForm('tahsis')"><i class="fa-solid fa-clock"></i> <span data-i18n="tabs.tahsis">Şoförlü VIP / Günlük Tahsis</span></div>
             </div>
             
             <form class="form-body active-form" id="form-transfer" onsubmit="return false;">
                 <!-- Step Indicator -->
                 <div class="step-indicator" id="transfer-indicator">
-                    <div class="step-num active" id="transfer-step1-label"><span class="step-num-circle">1</span> Transfer Bilgileri</div>
+                    <div class="step-num active" id="transfer-step1-label"><span class="step-num-circle">1</span> <span data-i18n="steps.info1">Transfer Bilgileri</span></div>
                     <div class="step-sep"></div>
-                    <div class="step-num" id="transfer-step2-label"><span class="step-num-circle">2</span> Kişisel Bilgiler</div>
+                    <div class="step-num" id="transfer-step2-label"><span class="step-num-circle">2</span> <span data-i18n="steps.personal">Kişisel Bilgiler</span></div>
                     <div class="step-sep"></div>
-                    <div class="step-num" id="transfer-step3-label"><span class="step-num-circle">3</span> Ödeme</div>
+                    <div class="step-num" id="transfer-step3-label"><span class="step-num-circle">3</span> <span data-i18n="steps.payment">Ödeme</span></div>
                 </div>
 
                 <div class="form-step" id="transfer-step1" style="display:block;">
                     <div class="form-grid form-grid-3" id="transfer-pickup-grid">
                         <div class="input-group">
-                            <label>Alış Noktası</label>
+                            <label data-i18n="form.pickupLabel">Alış Noktası</label>
                         <div class="input-wrapper"><i class="fa-solid fa-map-pin"></i>
-                            <input type="text" id="pickup-input" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." required oninput="checkServiceArea('pickup-input','pickup-area-warning')">
+                            <input type="text" id="pickup-input" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." data-i18n-placeholder="form.pickupPh" required oninput="checkServiceArea('pickup-input','pickup-area-warning')">
                         </div>
-                        <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</div>
+                        <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div>
                     </div>
-                    <div class="input-group"><label>Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." required oninput="checkServiceArea('dest-input','dest-area-warning')"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</div></div>
-                    <div class="input-group"><label>Uçuş Numarası</label><div class="input-wrapper"><i class="fa-solid fa-plane"></i><input type="text" id="transfer-flight" placeholder="Örn: TK2405 (Opsiyonel)"></div></div>
+                    <div class="input-group"><label data-i18n="form.destLabel">Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." data-i18n-placeholder="form.destPh" required oninput="checkServiceArea('dest-input','dest-area-warning')"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
+                    <div class="input-group"><label data-i18n="form.flightLabel">Uçuş Numarası</label><div class="input-wrapper"><i class="fa-solid fa-plane"></i><input type="text" id="transfer-flight" placeholder="Örn: TK2405 (Opsiyonel)" data-i18n-placeholder="form.flightPh"></div></div>
                 </div>
                 <div class="form-grid">
-                    <div class="input-group"><label>Tarih</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="transfer-date" required onchange="checkAvailability('transfer')"></div></div>
-                    <div class="input-group"><label>Saat</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="transfer-time" required onchange="checkAvailability('transfer')"></div></div>
+                    <div class="input-group"><label data-i18n="form.dateLabel">Tarih</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="transfer-date" required onchange="checkAvailability('transfer')"></div></div>
+                    <div class="input-group"><label data-i18n="form.timeLabel">Saat</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="transfer-time" required onchange="checkAvailability('transfer')"></div></div>
                 </div>
-                <div id="transfer-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</div>
+                <div id="transfer-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.availabilityWarning">Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</span></div>
                 <div class="form-grid">
-                    <div class="input-group"><label>Yolcu</label><div class="input-wrapper"><i class="fa-solid fa-users"></i><select id="transfer-passengers"><option>1 - 9 Kişi (VIP Vito)</option></select></div></div>
-                    <div class="input-group"><label>Notlar (Opsiyonel)</label><div class="input-wrapper"><i class="fa-solid fa-note-sticky"></i><input type="text" id="transfer-notes" placeholder="Özel istek, ek bilgi..."></div></div>
+                    <div class="input-group"><label data-i18n="form.passengersLabel">Yolcu</label><div class="input-wrapper"><i class="fa-solid fa-users"></i><select id="transfer-passengers"><option data-i18n="form.passengersOpt">1 - 9 Kişi (VIP Vito)</option></select></div></div>
+                    <div class="input-group"><label data-i18n="form.notesLabel">Notlar (Opsiyonel)</label><div class="input-wrapper"><i class="fa-solid fa-note-sticky"></i><input type="text" id="transfer-notes" placeholder="Özel istek, ek bilgi..." data-i18n-placeholder="form.notesPh"></div></div>
                 </div>
                 <div class="distance-info" id="distanceInfo" style="display:none;">
                     <div class="distance-detail">
@@ -1187,7 +1187,7 @@
                     </div>
                     <div class="distance-detail highlight">
                         <i class="fa-solid fa-tag"></i>
-                        <span>Tahmini: <strong id="priceEstimate">—</strong></span>
+                        <span><span data-i18n="form.estimatedLabel">Tahmini:</span> <strong id="priceEstimate">—</strong></span>
                     </div>
                 </div>
                 <div class="map-preview" id="mapPreview" style="display:none;">
@@ -1197,32 +1197,32 @@
 
                 <div class="form-nav">
                     <div></div>
-                    <button type="button" class="next-btn" onclick="nextStep('transfer', 1)">Devam Et <i class="fa-solid fa-arrow-right"></i></button>
+                    <button type="button" class="next-btn" onclick="nextStep('transfer', 1)"><span data-i18n="form.continueBtn">Devam Et</span> <i class="fa-solid fa-arrow-right"></i></button>
                 </div>
                 </div>
 
                 <!-- Step 2: Kişisel Bilgiler -->
                 <div class="form-step" id="transfer-step2" style="display:none;">
-                    <div class="payment-section-title">İletişim Bilgileri</div>
+                    <div class="payment-section-title" data-i18n="form.contactInfoTitle">İletişim Bilgileri</div>
                     <div class="form-grid">
-                        <div class="input-group"><label>Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="transfer-name" placeholder="Adınız ve soyadınız" required></div></div>
-                        <div class="input-group"><label>Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="transfer-phone" placeholder="05XX XXX XX XX" required></div></div>
-                        <div class="input-group"><label>E-posta Adresiniz</label><div class="input-wrapper"><i class="fa-solid fa-envelope"></i><input type="email" id="transfer-email" placeholder="ornek@email.com" required></div></div>
+                        <div class="input-group"><label data-i18n="form.nameLabel">Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="transfer-name" placeholder="Adınız ve soyadınız" data-i18n-placeholder="form.namePh" required></div></div>
+                        <div class="input-group"><label data-i18n="form.phoneLabel">Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="transfer-phone" placeholder="05XX XXX XX XX" required></div></div>
+                        <div class="input-group"><label data-i18n="form.emailLabel">E-posta Adresiniz</label><div class="input-wrapper"><i class="fa-solid fa-envelope"></i><input type="email" id="transfer-email" placeholder="ornek@email.com" data-i18n-placeholder="form.emailPh" required></div></div>
                     </div>
                     <div class="form-nav">
-                        <button type="button" class="back-btn" onclick="goToStep('transfer', 1)"><i class="fa-solid fa-arrow-left"></i> Geri</button>
-                        <button type="button" class="next-btn" onclick="nextStep('transfer', 2)">Devam Et <i class="fa-solid fa-arrow-right"></i></button>
+                        <button type="button" class="back-btn" onclick="goToStep('transfer', 1)"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="form.backBtn">Geri</span></button>
+                        <button type="button" class="next-btn" onclick="nextStep('transfer', 2)"><span data-i18n="form.continueBtn">Devam Et</span> <i class="fa-solid fa-arrow-right"></i></button>
                     </div>
                 </div>
 
                 <!-- Step 3: Ödeme -->
                 <div class="form-step" id="transfer-step3" style="display:none;">
-                    <div class="payment-section-title">Ödeme Yöntemi</div>
+                    <div class="payment-section-title" data-i18n="form.paymentMethodTitle">Ödeme Yöntemi</div>
                     <div class="payment-methods">
-                        <div class="payment-methods-label">Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.</div>
+                        <div class="payment-methods-label" data-i18n="form.paymentMethodsLabel">Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.</div>
                     </div>
                     <div class="bank-details" id="transfer-bank-details">
-                        <div class="bank-details-label">Banka Seçiniz</div>
+                        <div class="bank-details-label" data-i18n="form.bankSelectLabel">Banka Seçiniz</div>
                         <div class="bank-options">
                             <label class="bank-option selected" id="transfer-halkbank-label">
                                 <input type="radio" name="transfer-bank" value="halkbank" checked>
@@ -1243,8 +1243,8 @@
                         </div>
                     </div>
                     <div class="form-nav">
-                        <button type="button" class="back-btn" onclick="goToStep('transfer', 2)"><i class="fa-solid fa-arrow-left"></i> Geri</button>
-                        <button type="submit" class="final-btn" onclick="submitForm(event)">Rezervasyonu Tamamla <i class="fa-solid fa-check"></i></button>
+                        <button type="button" class="back-btn" onclick="goToStep('transfer', 2)"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="form.backBtn">Geri</span></button>
+                        <button type="submit" class="final-btn" onclick="submitForm(event)"><span data-i18n="form.completeBtn">Rezervasyonu Tamamla</span> <i class="fa-solid fa-check"></i></button>
                     </div>
                 </div>
             </form>
@@ -1252,63 +1252,63 @@
             <form class="form-body" id="form-tahsis" onsubmit="return false;">
                 <!-- Step Indicator -->
                 <div class="step-indicator" id="tahsis-indicator">
-                    <div class="step-num active" id="tahsis-step1-label"><span class="step-num-circle">1</span> Tahsis Bilgileri</div>
+                    <div class="step-num active" id="tahsis-step1-label"><span class="step-num-circle">1</span> <span data-i18n="steps.info1Tahsis">Tahsis Bilgileri</span></div>
                     <div class="step-sep"></div>
-                    <div class="step-num" id="tahsis-step2-label"><span class="step-num-circle">2</span> Kişisel Bilgiler</div>
+                    <div class="step-num" id="tahsis-step2-label"><span class="step-num-circle">2</span> <span data-i18n="steps.personal">Kişisel Bilgiler</span></div>
                     <div class="step-sep"></div>
-                    <div class="step-num" id="tahsis-step3-label"><span class="step-num-circle">3</span> Ödeme</div>
+                    <div class="step-num" id="tahsis-step3-label"><span class="step-num-circle">3</span> <span data-i18n="steps.payment">Ödeme</span></div>
                 </div>
 
                 <div class="form-step" id="tahsis-step1" style="display:block;">
                     <div class="form-grid">
-                    <div class="input-group"><label>Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa" placeholder="Aracın sizi alacağı konum" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</div></div>
-                    <div class="input-group"><label>Tahsis Süresi</label>
+                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
+                    <div class="input-group"><label data-i18n="form.durationLabel">Tahsis Süresi</label>
                         <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
                             <select id="vDuration" onchange="calculateVipPrice()">
-                                <option value="4" data-price="4000">4 Saatlik (Şehir İçi Tur)</option>
-                                <option value="8" data-price="7000">8 Saatlik (Yarım Günlük Tur)</option>
-                                <option value="12" data-price="9000">12 Saatlik (Uzun Mesafe Tur)</option>
-                                <option value="24" data-price="13000">Tam Gün (24 Saat Şoförlü Tahsis)</option>
+                                <option value="4" data-price="4000" data-i18n="form.duration4">4 Saatlik (Şehir İçi Tur)</option>
+                                <option value="8" data-price="7000" data-i18n="form.duration8">8 Saatlik (Yarım Günlük Tur)</option>
+                                <option value="12" data-price="9000" data-i18n="form.duration12">12 Saatlik (Uzun Mesafe Tur)</option>
+                                <option value="24" data-price="13000" data-i18n="form.duration24">Tam Gün (24 Saat Şoförlü Tahsis)</option>
                             </select>
                         </div>
                     </div>
                 </div>
                 <div class="form-grid form-grid-3">
-                    <div class="input-group"><label>Alış Tarihi</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="tahsis-date" required onchange="checkAvailability('tahsis')"></div></div>
-                    <div class="input-group"><label>Alış Saati</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="tahsis-time" required onchange="checkAvailability('tahsis')"></div></div>
-                    <div class="input-group"><label>Araç Tipi</label><div class="input-wrapper"><i class="fa-solid fa-car"></i><select><option>VIP Mercedes Vito</option></select></div></div>
+                    <div class="input-group"><label data-i18n="form.pickupDateLabel">Alış Tarihi</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="tahsis-date" required onchange="checkAvailability('tahsis')"></div></div>
+                    <div class="input-group"><label data-i18n="form.pickupTimeLabel">Alış Saati</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="tahsis-time" required onchange="checkAvailability('tahsis')"></div></div>
+                    <div class="input-group"><label data-i18n="form.vehicleTypeLabel">Araç Tipi</label><div class="input-wrapper"><i class="fa-solid fa-car"></i><select><option data-i18n="form.vehicleTypeOpt">VIP Mercedes Vito</option></select></div></div>
                 </div>
-                <div id="tahsis-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</div>
-                <div class="vip-summary"><div class="title">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div></div>
+                <div id="tahsis-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.availabilityWarning">Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</span></div>
+                <div class="vip-summary"><div class="title" data-i18n="form.estimatedPriceLabel">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div></div>
 
                 <div class="form-nav">
                     <div></div>
-                    <button type="button" class="next-btn" onclick="nextStep('tahsis', 1)">Devam Et <i class="fa-solid fa-arrow-right"></i></button>
+                    <button type="button" class="next-btn" onclick="nextStep('tahsis', 1)"><span data-i18n="form.continueBtn">Devam Et</span> <i class="fa-solid fa-arrow-right"></i></button>
                 </div>
                 </div>
 
                 <!-- Step 2: Kişisel Bilgiler -->
                 <div class="form-step" id="tahsis-step2" style="display:none;">
-                    <div class="payment-section-title">İletişim Bilgileri</div>
+                    <div class="payment-section-title" data-i18n="form.contactInfoTitle">İletişim Bilgileri</div>
                     <div class="form-grid">
-                        <div class="input-group"><label>Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="tahsis-name" placeholder="Adınız ve soyadınız" required></div></div>
-                        <div class="input-group"><label>Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="tahsis-phone" placeholder="05XX XXX XX XX" required></div></div>
-                        <div class="input-group"><label>E-posta Adresiniz</label><div class="input-wrapper"><i class="fa-solid fa-envelope"></i><input type="email" id="tahsis-email" placeholder="ornek@email.com" required></div></div>
+                        <div class="input-group"><label data-i18n="form.nameLabel">Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="tahsis-name" placeholder="Adınız ve soyadınız" data-i18n-placeholder="form.namePh" required></div></div>
+                        <div class="input-group"><label data-i18n="form.phoneLabel">Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="tahsis-phone" placeholder="05XX XXX XX XX" required></div></div>
+                        <div class="input-group"><label data-i18n="form.emailLabel">E-posta Adresiniz</label><div class="input-wrapper"><i class="fa-solid fa-envelope"></i><input type="email" id="tahsis-email" placeholder="ornek@email.com" data-i18n-placeholder="form.emailPh" required></div></div>
                     </div>
                     <div class="form-nav">
-                        <button type="button" class="back-btn" onclick="goToStep('tahsis', 1)"><i class="fa-solid fa-arrow-left"></i> Geri</button>
-                        <button type="button" class="next-btn" onclick="nextStep('tahsis', 2)">Devam Et <i class="fa-solid fa-arrow-right"></i></button>
+                        <button type="button" class="back-btn" onclick="goToStep('tahsis', 1)"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="form.backBtn">Geri</span></button>
+                        <button type="button" class="next-btn" onclick="nextStep('tahsis', 2)"><span data-i18n="form.continueBtn">Devam Et</span> <i class="fa-solid fa-arrow-right"></i></button>
                     </div>
                 </div>
 
                 <!-- Step 3: Ödeme -->
                 <div class="form-step" id="tahsis-step3" style="display:none;">
-                    <div class="payment-section-title">Ödeme Yöntemi</div>
+                    <div class="payment-section-title" data-i18n="form.paymentMethodTitle">Ödeme Yöntemi</div>
                     <div class="payment-methods">
-                        <div class="payment-methods-label">Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.</div>
+                        <div class="payment-methods-label" data-i18n="form.paymentMethodsLabel">Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.</div>
                     </div>
                     <div class="bank-details" id="tahsis-bank-details">
-                        <div class="bank-details-label">Banka Seçiniz</div>
+                        <div class="bank-details-label" data-i18n="form.bankSelectLabel">Banka Seçiniz</div>
                         <div class="bank-options">
                             <label class="bank-option selected" id="tahsis-halkbank-label">
                                 <input type="radio" name="tahsis-bank" value="halkbank" checked>
@@ -1329,8 +1329,8 @@
                         </div>
                     </div>
                     <div class="form-nav">
-                        <button type="button" class="back-btn" onclick="goToStep('tahsis', 2)"><i class="fa-solid fa-arrow-left"></i> Geri</button>
-                        <button type="submit" class="final-btn" onclick="submitForm(event)">Rezervasyonu Tamamla <i class="fa-solid fa-check"></i></button>
+                        <button type="button" class="back-btn" onclick="goToStep('tahsis', 2)"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="form.backBtn">Geri</span></button>
+                        <button type="submit" class="final-btn" onclick="submitForm(event)"><span data-i18n="form.completeBtn">Rezervasyonu Tamamla</span> <i class="fa-solid fa-check"></i></button>
                     </div>
                 </div>
             </form>
@@ -1340,11 +1340,11 @@
 
     <section class="services-section homepage-section" id="hizmetler">
         <div class="container">
-            <div class="section-title"><h2>Premium Hizmetlerimiz</h2><p>Antalya ve Gazipaşa bölgesinde lüksü, güvenliği ve konforu bir araya getiren ayrıcalıklı ulaşım çözümleri sunuyoruz.</p></div>
+            <div class="section-title"><h2 data-i18n="hizmetler.title">Premium Hizmetlerimiz</h2><p data-i18n="hizmetler.subtitle">Antalya ve Gazipaşa bölgesinde lüksü, güvenliği ve konforu bir araya getiren ayrıcalıklı ulaşım çözümleri sunuyoruz.</p></div>
             <div class="grid-3">
-                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-plane-departure"></i></div><h3>Havalimanı Transfer</h3><p>Antalya (AYT) ve Gazipaşa (GZP) havalimanlarında isimle karşılama ve otelinize direkt, beklemesiz ulaşım.</p></div>
-                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-user-tie"></i></div><h3>Şoförlü VIP Tahsis</h3><p>İster birkaç saatlik şehir turu, ister tam günlük rotalarınız için size özel tahsis edilmiş lüks Vito ve profesyonel şoför.</p></div>
-                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-building"></i></div><h3>Kurumsal Çözümler</h3><p>İş toplantıları, kongreler ve özel VIP etkinlikleriniz için prestijli ve tam zamanında ulaşım planlaması.</p></div>
+                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-plane-departure"></i></div><h3 data-i18n="hizmetler.s1t">Havalimanı Transfer</h3><p data-i18n="hizmetler.s1d">Antalya (AYT) ve Gazipaşa (GZP) havalimanlarında isimle karşılama ve otelinize direkt, beklemesiz ulaşım.</p></div>
+                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-user-tie"></i></div><h3 data-i18n="hizmetler.s2t">Şoförlü VIP Tahsis</h3><p data-i18n="hizmetler.s2d">İster birkaç saatlik şehir turu, ister tam günlük rotalarınız için size özel tahsis edilmiş lüks Vito ve profesyonel şoför.</p></div>
+                <div class="service-card"><div class="service-icon"><i class="fa-solid fa-building"></i></div><h3 data-i18n="hizmetler.s3t">Kurumsal Çözümler</h3><p data-i18n="hizmetler.s3d">İş toplantıları, kongreler ve özel VIP etkinlikleriniz için prestijli ve tam zamanında ulaşım planlaması.</p></div>
             </div>
         </div>
     </section>
@@ -1352,18 +1352,18 @@
     <section class="blog-section homepage-section" id="blog">
         <div class="container">
             <div class="section-title">
-                <h2>Gazipaşa &amp; Antalya Havalimanı VIP Transfer Hizmetleri</h2>
-                <p>Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP ulaşım hizmeti sunuyoruz.</p>
+                <h2 data-i18n-html="blog.title">Gazipaşa &amp; Antalya Havalimanı VIP Transfer Hizmetleri</h2>
+                <p data-i18n="blog.subtitle">Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP ulaşım hizmeti sunuyoruz.</p>
             </div>
             <div class="blog-grid" id="destinations-grid">
                 <div style="grid-column:1/-1;text-align:center;padding:40px;color:#94A3B8;">
                     <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;"></i>
-                    <p style="margin-top:12px;">Turistik bölgeler yükleniyor...</p>
+                    <p style="margin-top:12px;" data-i18n="blog.loading">Turistik bölgeler yükleniyor...</p>
                 </div>
             </div>
             <div style="text-align:center;margin-top:40px;">
                 <button id="loadMoreDestBtn" onclick="loadMoreDestinations()" style="display:none;background:var(--primary-red);color:#fff;border:none;padding:12px 36px;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;">
-                    Daha Fazla Göster <i class="fa-solid fa-chevron-down"></i>
+                    <span data-i18n="blog.loadMore">Daha Fazla Göster</span> <i class="fa-solid fa-chevron-down"></i>
                 </button>
             </div>
         </div>
@@ -1372,8 +1372,8 @@
     	    <section class="fleet-section homepage-section" id="filo">
 	        <div class="container">
 	            <div class="section-title">
-	                <h2>Lüks Araç Filomuz</h2>
-	                <p>Seyahatinizi unutulmaz kılacak, en üst düzey donanıma sahip VIP araçlarla hizmet veriyoruz.</p>
+	                <h2 data-i18n="filo.title">Lüks Araç Filomuz</h2>
+	                <p data-i18n="filo.subtitle">Seyahatinizi unutulmaz kılacak, en üst düzey donanıma sahip VIP araçlarla hizmet veriyoruz.</p>
 	            </div>
 	            <div id="fleetSwitcher" class="fleet-switcher" style="display:none;"></div>
 	            <div class="fleet-showcase">
@@ -1386,20 +1386,20 @@
 	                    </div>
 	                </div>
 	                <div class="fleet-details">
-	                    <h3>Mercedes-Benz Vito VIP</h3>
+	                    <h3 data-i18n="filo.vehicleName">Mercedes-Benz Vito VIP</h3>
 	                    <div class="capacity">
-	                        <span><i class="fa-solid fa-users"></i> 1-6 Yolcu</span>
-	                        <span><i class="fa-solid fa-suitcase"></i> 6 Bavul</span>
+	                        <span><i class="fa-solid fa-users"></i> <span data-i18n="filo.passengers">1-6 Yolcu</span></span>
+	                        <span><i class="fa-solid fa-suitcase"></i> <span data-i18n="filo.luggage">6 Bavul</span></span>
 	                    </div>
 	                    <div class="fleet-features">
-	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Hakiki Deri Koltuklar</div>
-	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Ücretsiz Hızlı Wi-Fi</div>
-	                        <div class="feature-item"><i class="fa-solid fa-check"></i> VIP İkram ve İçecekler</div>
-	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Klima / İklimlendirme</div>
-	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Bebek Koltuğu (Talep Üzerine)</div>
-	                        <div class="feature-item"><i class="fa-solid fa-check"></i> Araçta Kredi Kartı Geçerli</div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="filo.f1">Hakiki Deri Koltuklar</span></div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="filo.f2">Ücretsiz Hızlı Wi-Fi</span></div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="filo.f3">VIP İkram ve İçecekler</span></div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="filo.f4">Klima / İklimlendirme</span></div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="filo.f5">Bebek Koltuğu (Talep Üzerine)</span></div>
+	                        <div class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="filo.f6">Araçta Kredi Kartı Geçerli</span></div>
 	                    </div>
-	                    <button class="cta-button" style="width: fit-content;" onclick="window.scrollTo(0,0);">Hemen Rezervasyon Yap</button>
+	                    <button class="cta-button" style="width: fit-content;" onclick="window.scrollTo(0,0);" data-i18n="filo.reserveBtn">Hemen Rezervasyon Yap</button>
 	                </div>
 	            </div>
 	        </div>
@@ -1407,13 +1407,13 @@
 <section class="how-it-works homepage-section" id="nasil-calisir">
         <div class="container">
             <div class="section-title">
-                <h2>Nasıl Çalışır?</h2>
-                <p>Sıfır sürtünme. 3 basit adımda rezervasyonunuzu tamamlayın, gerisini operasyon ekibimize bırakın.</p>
+                <h2 data-i18n="nasilCalisir.title">Nasıl Çalışır?</h2>
+                <p data-i18n="nasilCalisir.subtitle">Sıfır sürtünme. 3 basit adımda rezervasyonunuzu tamamlayın, gerisini operasyon ekibimize bırakın.</p>
             </div>
             <div class="grid-3">
-                <div class="step-card"><div class="step-number">1</div><h4>Rotanızı Belirleyin</h4><p>Sistem üzerinden alış ve varış noktanızı, uçuş tarihinizi ve yolcu sayınızı seçin.</p></div>
-                <div class="step-card"><div class="step-number">2</div><h4>Onaylayın</h4><p>Şeffaf fiyatlarımızı görün ve kredi kartı veya araçta ödeme seçeneğiyle işlemi tamamlayın.</p></div>
-                <div class="step-card"><div class="step-number">3</div><h4>Keyfini Çıkarın</h4><p>Havalimanında isminizle karşılanın ve VIP aracınızda pürüzsüz yolculuğun tadını çıkarın.</p></div>
+                <div class="step-card"><div class="step-number">1</div><h4 data-i18n="nasilCalisir.s1t">Rotanızı Belirleyin</h4><p data-i18n="nasilCalisir.s1d">Sistem üzerinden alış ve varış noktanızı, uçuş tarihinizi ve yolcu sayınızı seçin.</p></div>
+                <div class="step-card"><div class="step-number">2</div><h4 data-i18n="nasilCalisir.s2t">Onaylayın</h4><p data-i18n="nasilCalisir.s2d">Şeffaf fiyatlarımızı görün ve kredi kartı veya araçta ödeme seçeneğiyle işlemi tamamlayın.</p></div>
+                <div class="step-card"><div class="step-number">3</div><h4 data-i18n="nasilCalisir.s3t">Keyfini Çıkarın</h4><p data-i18n="nasilCalisir.s3d">Havalimanında isminizle karşılanın ve VIP aracınızda pürüzsüz yolculuğun tadını çıkarın.</p></div>
             </div>
         </div>
     </section>
@@ -1421,8 +1421,8 @@
     <section class="flight-board-section homepage-section" id="ucus-ekrani">
         <div class="container">
             <div class="section-title">
-                <h2>Canlı Uçuş Ekranı <span style="font-size: 0.7em; font-weight: 400; color: var(--text-gray);">(GZP & AYT)</span></h2>
-                <p>Gazipaşa-Alanya ve Antalya Havalimanları anlık varış ve kalkış bilgileri. Uçuşunuzu takip edin, transferinizi güvenle planlayın.</p>
+                <h2><span data-i18n="ucus.title">Canlı Uçuş Ekranı</span> <span style="font-size: 0.7em; font-weight: 400; color: var(--text-gray);">(GZP & AYT)</span></h2>
+                <p data-i18n="ucus.subtitle">Gazipaşa-Alanya ve Antalya Havalimanları anlık varış ve kalkış bilgileri. Uçuşunuzu takip edin, transferinizi güvenle planlayın.</p>
             </div>
 
             <div class="flight-board-dual">
@@ -1432,16 +1432,16 @@
                         <i class="fa-solid fa-plane"></i> Gazipaşa (GZP)
                     </div>
                     <div class="flight-tabs">
-                        <div class="f-tab active" onclick="switchGzpTab('gelen')" id="gzp-tab-gelen"><i class="fa-solid fa-plane-arrival"></i> Gelen</div>
-                        <div class="f-tab" onclick="switchGzpTab('giden')" id="gzp-tab-giden"><i class="fa-solid fa-plane-departure"></i> Giden</div>
+                        <div class="f-tab active" onclick="switchGzpTab('gelen')" id="gzp-tab-gelen"><i class="fa-solid fa-plane-arrival"></i> <span data-i18n="ucus.gelen">Gelen</span></div>
+                        <div class="f-tab" onclick="switchGzpTab('giden')" id="gzp-tab-giden"><i class="fa-solid fa-plane-departure"></i> <span data-i18n="ucus.giden">Giden</span></div>
                     </div>
                     <div class="flight-table-container">
                         <table class="flight-table" id="gzp-table-gelen">
-                            <thead><tr><th>Saat</th><th>Uçuş No</th><th>Nereden</th><th>Tür</th><th>Havayolu</th><th>Durum</th></tr></thead>
+                            <thead><tr><th data-i18n="ucus.saat">Saat</th><th data-i18n="ucus.ucusNo">Uçuş No</th><th data-i18n="ucus.nereden">Nereden</th><th data-i18n="ucus.tur">Tür</th><th data-i18n="ucus.havayolu">Havayolu</th><th data-i18n="ucus.durum">Durum</th></tr></thead>
                             <tbody id="gzp-tbody-gelen"></tbody>
                         </table>
                         <table class="flight-table" id="gzp-table-giden" style="display: none;">
-                            <thead><tr><th>Saat</th><th>Uçuş No</th><th>Nereye</th><th>Tür</th><th>Havayolu</th><th>Durum</th></tr></thead>
+                            <thead><tr><th data-i18n="ucus.saat">Saat</th><th data-i18n="ucus.ucusNo">Uçuş No</th><th data-i18n="ucus.nereye">Nereye</th><th data-i18n="ucus.tur">Tür</th><th data-i18n="ucus.havayolu">Havayolu</th><th data-i18n="ucus.durum">Durum</th></tr></thead>
                             <tbody id="gzp-tbody-giden"></tbody>
                         </table>
                     </div>
@@ -1453,16 +1453,16 @@
                         <i class="fa-solid fa-plane"></i> Antalya (AYT)
                     </div>
                     <div class="flight-tabs">
-                        <div class="f-tab active" onclick="switchAytTab('gelen')" id="ayt-tab-gelen"><i class="fa-solid fa-plane-arrival"></i> Gelen</div>
-                        <div class="f-tab" onclick="switchAytTab('giden')" id="ayt-tab-giden"><i class="fa-solid fa-plane-departure"></i> Giden</div>
+                        <div class="f-tab active" onclick="switchAytTab('gelen')" id="ayt-tab-gelen"><i class="fa-solid fa-plane-arrival"></i> <span data-i18n="ucus.gelen">Gelen</span></div>
+                        <div class="f-tab" onclick="switchAytTab('giden')" id="ayt-tab-giden"><i class="fa-solid fa-plane-departure"></i> <span data-i18n="ucus.giden">Giden</span></div>
                     </div>
                     <div class="flight-table-container">
                         <table class="flight-table" id="ayt-table-gelen">
-                            <thead><tr><th>Saat</th><th>Uçuş No</th><th>Nereden</th><th>Tür</th><th>Havayolu</th><th>Durum</th></tr></thead>
+                            <thead><tr><th data-i18n="ucus.saat">Saat</th><th data-i18n="ucus.ucusNo">Uçuş No</th><th data-i18n="ucus.nereden">Nereden</th><th data-i18n="ucus.tur">Tür</th><th data-i18n="ucus.havayolu">Havayolu</th><th data-i18n="ucus.durum">Durum</th></tr></thead>
                             <tbody id="ayt-tbody-gelen"></tbody>
                         </table>
                         <table class="flight-table" id="ayt-table-giden" style="display: none;">
-                            <thead><tr><th>Saat</th><th>Uçuş No</th><th>Nereye</th><th>Tür</th><th>Havayolu</th><th>Durum</th></tr></thead>
+                            <thead><tr><th data-i18n="ucus.saat">Saat</th><th data-i18n="ucus.ucusNo">Uçuş No</th><th data-i18n="ucus.nereye">Nereye</th><th data-i18n="ucus.tur">Tür</th><th data-i18n="ucus.havayolu">Havayolu</th><th data-i18n="ucus.durum">Durum</th></tr></thead>
                             <tbody id="ayt-tbody-giden"></tbody>
                         </table>
                     </div>
@@ -1474,32 +1474,32 @@
     <section class="faq-section homepage-section" id="sss">
         <div class="container">
             <div class="section-title">
-                <h2>Sıkça Sorulan Sorular</h2>
-                <p>Transfer ve kiralama süreçlerimizle ilgili aklınıza takılan tüm detaylar.</p>
+                <h2 data-i18n="sss.title">Sıkça Sorulan Sorular</h2>
+                <p data-i18n="sss.subtitle">Transfer ve kiralama süreçlerimizle ilgili aklınıza takılan tüm detaylar.</p>
             </div>
             <div class="faq-container">
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">Uçağım rötar yaparsa ne olur? Ek ücret öder miyim? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="sss.q1">Uçağım rötar yaparsa ne olur? Ek ücret öder miyim?</span> <i class="fa-solid fa-chevron-down"></i></div>
                     <div class="faq-answer">
-                        <p>Hayır, ek ücret ödemezsiniz. Operasyon ekibimiz uçuşunuzu uçuş numarası üzerinden anlık olarak takip eder. Uçağınız ne kadar rötar yaparsa yapsın, VIP aracımız ve şoförümüz sizi beklemeye devam edecektir.</p>
+                        <p data-i18n="sss.a1">Hayır, ek ücret ödemezsiniz. Operasyon ekibimiz uçuşunuzu uçuş numarası üzerinden anlık olarak takip eder. Uçağınız ne kadar rötar yaparsa yapsın, VIP aracımız ve şoförümüz sizi beklemeye devam edecektir.</p>
                     </div>
                 </div>
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">Ödemeyi nasıl yapabilirim? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="sss.q2">Ödemeyi nasıl yapabilirim?</span> <i class="fa-solid fa-chevron-down"></i></div>
                     <div class="faq-answer">
-                        <p>Ödemelerinizi sistemimiz üzerinden online olarak veya transferiniz sonrasında araç içerisinde nakit/kredi kartı ile güvenle gerçekleştirebilirsiniz.</p>
+                        <p data-i18n="sss.a2">Ödemelerinizi sistemimiz üzerinden online olarak veya transferiniz sonrasında araç içerisinde nakit/kredi kartı ile güvenle gerçekleştirebilirsiniz.</p>
                     </div>
                 </div>
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">Bebek veya çocuk koltuğu sağlıyor musunuz? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="sss.q3">Bebek veya çocuk koltuğu sağlıyor musunuz?</span> <i class="fa-solid fa-chevron-down"></i></div>
                     <div class="faq-answer">
-                        <p>Evet, VIP Vito araçlarımızda rezervasyon esnasında talep etmeniz durumunda ücretsiz olarak hijyenik bebek veya çocuk koltuğu sağlıyoruz.</p>
+                        <p data-i18n="sss.a3">Evet, VIP Vito araçlarımızda rezervasyon esnasında talep etmeniz durumunda ücretsiz olarak hijyenik bebek veya çocuk koltuğu sağlıyoruz.</p>
                     </div>
                 </div>
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">Gece uçuşları için transfer hizmetiniz var mı? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="sss.q4">Gece uçuşları için transfer hizmetiniz var mı?</span> <i class="fa-solid fa-chevron-down"></i></div>
                     <div class="faq-answer">
-                        <p>Evet, hizmetlerimiz 7 gün 24 saat kesintisiz devam etmektedir. Gece yarısı uçuşlarınızda dahi aynı VIP standartlarda karşılanırsınız.</p>
+                        <p data-i18n="sss.a4">Evet, hizmetlerimiz 7 gün 24 saat kesintisiz devam etmektedir. Gece yarısı uçuşlarınızda dahi aynı VIP standartlarda karşılanırsınız.</p>
                     </div>
                 </div>
             </div>
@@ -1509,30 +1509,30 @@
     <section class="iletisim-section homepage-section" id="iletisim">
         <div class="container">
             <div class="section-title">
-                <h2>İletişim</h2>
-                <p>VIP transfer ve şoförlü araç hizmetlerimiz için bize ulaşın. Size en kısa sürede dönüş yapalım.</p>
+                <h2 data-i18n="iletisim.title">İletişim</h2>
+                <p data-i18n="iletisim.subtitle">VIP transfer ve şoförlü araç hizmetlerimiz için bize ulaşın. Size en kısa sürede dönüş yapalım.</p>
             </div>
             <div class="iletisim-grid">
                 <div class="iletisim-info">
                     <div class="iletisim-card">
                         <div class="iletisim-card-icon"><i class="fa-solid fa-phone"></i></div>
                         <div>
-                            <h4>Telefon</h4>
+                            <h4 data-i18n="iletisim.phoneLabel">Telefon</h4>
                             <a href="tel:+902426062548">+90 242 606 25 48</a>
                         </div>
                     </div>
                     <div class="iletisim-card">
                         <div class="iletisim-card-icon"><i class="fa-solid fa-envelope"></i></div>
                         <div>
-                            <h4>E-posta</h4>
+                            <h4 data-i18n="iletisim.emailLabel">E-posta</h4>
                             <a href="mailto:info@gulizvip.com.tr">info@gulizvip.com.tr</a>
                         </div>
                     </div>
                     <div class="iletisim-card">
                         <div class="iletisim-card-icon"><i class="fa-solid fa-location-dot"></i></div>
                         <div>
-                            <h4>Adres</h4>
-                            <p>Gazipaşa / Antalya, Türkiye</p>
+                            <h4 data-i18n="iletisim.addressLabel">Adres</h4>
+                            <p data-i18n="iletisim.addressValue">Gazipaşa / Antalya, Türkiye</p>
                         </div>
                     </div>
                     <div class="iletisim-map">
@@ -1540,29 +1540,29 @@
                     </div>
                 </div>
                 <div class="iletisim-form-wrapper">
-                    <h3>Bize Ulaşın</h3>
-                    <p>Rezervasyon, teklif veya sorularınız için formu doldurun, size hızlıca dönüş yapalım.</p>
+                    <h3 data-i18n="iletisim.formTitle">Bize Ulaşın</h3>
+                    <p data-i18n="iletisim.formSubtitle">Rezervasyon, teklif veya sorularınız için formu doldurun, size hızlıca dönüş yapalım.</p>
                     <form class="iletisim-form" id="iletisimForm" onsubmit="return submitContactForm(event)">
                         <div class="input-wrapper">
                             <i class="fa-solid fa-user"></i>
-                            <input type="text" id="contactName" placeholder="Adınız Soyadınız" required>
+                            <input type="text" id="contactName" placeholder="Adınız Soyadınız" data-i18n-placeholder="iletisim.namePh" required>
                         </div>
                         <div class="input-wrapper">
                             <i class="fa-solid fa-phone"></i>
-                            <input type="tel" id="contactPhone" placeholder="Telefon Numaranız (05XX...)" required>
+                            <input type="tel" id="contactPhone" placeholder="Telefon Numaranız (05XX...)" data-i18n-placeholder="iletisim.phonePh" required>
                         </div>
                         <div class="input-wrapper">
                             <i class="fa-solid fa-envelope"></i>
-                            <input type="email" id="contactEmail" placeholder="E-posta Adresiniz">
+                            <input type="email" id="contactEmail" placeholder="E-posta Adresiniz" data-i18n-placeholder="iletisim.emailPh">
                         </div>
                         <div class="input-wrapper">
                             <i class="fa-solid fa-comment" style="top:18px; transform:none;"></i>
-                            <textarea id="contactMessage" placeholder="Mesajınız..." required></textarea>
+                            <textarea id="contactMessage" placeholder="Mesajınız..." data-i18n-placeholder="iletisim.messagePh" required></textarea>
                         </div>
                         <button type="submit" class="submit-btn" id="contactSubmitBtn">
-                            <i class="fa-solid fa-paper-plane"></i> Mesajı Gönder
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="iletisim.sendBtn">Mesajı Gönder</span>
                         </button>
-                        <div class="iletisim-success" id="iletisimSuccess">Mesajınız alındı. En kısa sürede size dönüş yapacağız.</div>
+                        <div class="iletisim-success" id="iletisimSuccess" data-i18n="iletisim.successMsg">Mesajınız alındı. En kısa sürede size dönüş yapacağız.</div>
                     </form>
                 </div>
             </div>
@@ -1574,7 +1574,7 @@
             <div class="footer-grid">
                 <div class="footer-about">
                     <img src="/logo.png" alt="Güliz VIP" style="height: 50px; margin-bottom: 20px;">
-                    <p>Antalya ve Gazipaşa bölgelerinde lüks, güvenli ve zamanında ulaşım çözümleri sunan premium VIP transfer markası.</p>
+                    <p data-i18n="footer.about">Antalya ve Gazipaşa bölgelerinde lüks, güvenli ve zamanında ulaşım çözümleri sunan premium VIP transfer markası.</p>
                     <div class="footer-social">
                         <a href="https://www.instagram.com/gulizviptransfer/?hl=en-gb" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a>
                         <a href="https://wa.me/902426062548" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
@@ -1582,40 +1582,40 @@
                     </div>
                 </div>
                 <div class="footer-links">
-                    <h4>Hızlı Menü</h4>
+                    <h4 data-i18n="footer.quickMenu">Hızlı Menü</h4>
                     <ul>
-                        <li><a href="/#hizmetler">Hizmetlerimiz</a></li>
-                        <li><a href="/#filo">VIP Filomuz</a></li>
-                        <li><a href="/#blog">Turistik Bölgeler</a></li>
-                        <li><a href="/#iletisim">İletişim</a></li>
-                        <li><a href="/#sss">Sıkça Sorulan Sorular</a></li>
+                        <li><a href="/#hizmetler" data-i18n="footer.servicesLink">Hizmetlerimiz</a></li>
+                        <li><a href="/#filo" data-i18n="footer.fleetLink">VIP Filomuz</a></li>
+                        <li><a href="/#blog" data-i18n="footer.regionsLink">Turistik Bölgeler</a></li>
+                        <li><a href="/#iletisim" data-i18n="footer.contactLink">İletişim</a></li>
+                        <li><a href="/#sss" data-i18n="footer.faqLink">Sıkça Sorulan Sorular</a></li>
                     </ul>
                 </div>
                 <div class="footer-links">
-                    <h4>İletişim & Kurumsal</h4>
+                    <h4 data-i18n="footer.contactCorporate">İletişim & Kurumsal</h4>
                     <ul>
                         <li><a href="tel:+902426062548"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a></li>
                         <li><a href="mailto:operasyon@guliztransfer.com"><i class="fa-solid fa-envelope"></i> operasyon@guliztransfer.com</a></li>
-                        <li><a href="/#iletisim"><i class="fa-solid fa-location-dot"></i> Gazipaşa / Antalya</a></li>
+                        <li><a href="/#iletisim"><i class="fa-solid fa-location-dot"></i> <span data-i18n="footer.addressFooter">Gazipaşa / Antalya</span></a></li>
                         <li style="margin-top:10px;"><ul id="footer-pages-list"></ul></li>
                     </ul>
                 </div>
                 <div class="footer-links">
-                    <h4>Güvenli Ödeme Altyapısı</h4>
+                    <h4 data-i18n="footer.securePayment">Güvenli Ödeme Altyapısı</h4>
                     <ul>
                         <li style="color:#94A3B8;font-size:13px;margin-bottom:8px;">
                             <i class="fa-brands fa-cc-visa" style="font-size:28px;margin-right:8px;color:#fff;"></i>
                             <i class="fa-brands fa-cc-mastercard" style="font-size:28px;color:#fff;"></i>
                         </li>
-                        <li style="color:#94A3B8;font-size:12px;line-height:1.5;">
+                        <li style="color:#94A3B8;font-size:12px;line-height:1.5;" data-i18n="footer.sslText">
                             256-bit SSL sertifikası ile tüm ödeme işlemleriniz güvence altındadır.
                         </li>
                     </ul>
                 </div>
             </div>
-            
+
             <div class="footer-bottom">
-                <p>&copy; 2026 <a href="http://www.gulizlojistik.com" target="_blank" style="color:var(--primary-red); font-weight: 700;">Güliz Lojistik</a> Tüm Hakları Saklıdır.</p>
+                <p>&copy; 2026 <a href="http://www.gulizlojistik.com" target="_blank" style="color:var(--primary-red); font-weight: 700;">Güliz Lojistik</a> <span data-i18n="footer.rights">Tüm Hakları Saklıdır.</span></p>
                 <div class="payment-methods">
                     <i class="fa-brands fa-cc-visa"></i>
                     <i class="fa-brands fa-cc-mastercard"></i>
@@ -1632,28 +1632,28 @@
     <a href="https://wa.me/902426062548" class="whatsapp-float"><i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i> WhatsApp</a>
     
     <button class="chat-trigger" onclick="toggleChat()" id="chatBtn">
-        <i class="fa-solid fa-comment-dots"></i> Canlı Destek
+        <i class="fa-solid fa-comment-dots"></i> <span data-i18n="chat.triggerLabel">Canlı Destek</span>
     </button>
 
     <div class="chat-widget" id="chatWidget">
         <div class="chat-header">
-            <div><i class="fa-solid fa-headset"></i> Güliz Asistan</div>
+            <div><i class="fa-solid fa-headset"></i> <span data-i18n="chat.assistantName">Güliz Asistan</span></div>
             <button onclick="toggleChat()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="chat-info-form" id="chatInfoForm" style="display:none;">
-            <p>Sohbete başlamadan önce size nasıl hitap edelim?</p>
-            <input type="text" id="chatInfoName" placeholder="Adınız Soyadınız" onkeypress="if(event.key==='Enter'){document.getElementById('chatInfoPhone').focus();}">
-            <input type="tel" id="chatInfoPhone" placeholder="Telefon (05XX XXX XX XX)" onkeypress="if(event.key==='Enter'){submitChatInfo();}">
-            <button onclick="submitChatInfo()"><i class="fa-solid fa-comment-dots"></i> Sohbete Başla</button>
+            <p data-i18n="chat.startPrompt">Sohbete başlamadan önce size nasıl hitap edelim?</p>
+            <input type="text" id="chatInfoName" placeholder="Adınız Soyadınız" data-i18n-placeholder="chat.namePh" onkeypress="if(event.key==='Enter'){document.getElementById('chatInfoPhone').focus();}">
+            <input type="tel" id="chatInfoPhone" placeholder="Telefon (05XX XXX XX XX)" data-i18n-placeholder="chat.phonePh" onkeypress="if(event.key==='Enter'){submitChatInfo();}">
+            <button onclick="submitChatInfo()"><i class="fa-solid fa-comment-dots"></i> <span data-i18n="chat.startBtn">Sohbete Başla</span></button>
         </div>
         <div class="chat-user-label" id="chatUserLabel" style="display:none;">
             <span id="chatUserLabelText"></span>
-            <button onclick="editChatInfo()"><i class="fa-solid fa-pen"></i> Düzenle</button>
+            <button onclick="editChatInfo()"><i class="fa-solid fa-pen"></i> <span data-i18n="chat.editBtn">Düzenle</span></button>
         </div>
         <div class="chat-body" id="chatBody">
         </div>
         <div class="chat-footer" id="chatFooter">
-            <input type="text" id="chatInput" placeholder="Mesajınızı yazın..." onkeypress="handleKeyPress(event)">
+            <input type="text" id="chatInput" placeholder="Mesajınızı yazın..." data-i18n-placeholder="chat.messagePh" onkeypress="handleKeyPress(event)">
             <button onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
     </div>
@@ -1668,7 +1668,7 @@
                 <span id="destModalBadge" class="dest-modal-badge"></span>
                 <h3 id="destModalTitle"></h3>
                 <p id="destModalDescription"></p>
-                <button class="dest-modal-cta" onclick="destModalReserve()"><i class="fa-solid fa-calendar-check" style="margin-right:8px;"></i>Bu Bölgeye Rezervasyon Yap</button>
+                <button class="dest-modal-cta" onclick="destModalReserve()"><i class="fa-solid fa-calendar-check" style="margin-right:8px;"></i><span data-i18n="destModal.reserveBtn">Bu Bölgeye Rezervasyon Yap</span></button>
             </div>
         </div>
     </div>
@@ -1677,11 +1677,11 @@
     <div class="modal-overlay" id="routeModal">
         <div class="modal-box" style="max-width:560px;text-align:left;position:relative;">
             <button class="route-modal-close" onclick="closeRouteModal()">&times;</button>
-            <h3 style="margin-bottom:4px;font-size:22px;">Hızlı Rezervasyon</h3>
-            <p style="color:var(--text-gray);font-size:14px;margin-bottom:4px;">Sık kullanılan rotalarımızdan birini seçin veya kendi rotanızı oluşturun.</p>
+            <h3 style="margin-bottom:4px;font-size:22px;" data-i18n="routeModal.title">Hızlı Rezervasyon</h3>
+            <p style="color:var(--text-gray);font-size:14px;margin-bottom:4px;" data-i18n="routeModal.subtitle">Sık kullanılan rotalarımızdan birini seçin veya kendi rotanızı oluşturun.</p>
             <div id="routeGrid" class="route-grid"></div>
             <button class="route-alt" onclick="closeRouteModalAndScroll()">
-                <i class="fa-regular fa-map" style="margin-right:8px;"></i>Farklı Rota Oluştur
+                <i class="fa-regular fa-map" style="margin-right:8px;"></i><span data-i18n="routeModal.altBtn">Farklı Rota Oluştur</span>
             </button>
         </div>
     </div>
@@ -1689,14 +1689,385 @@
     <div class="modal-overlay" id="successModal">
         <div class="modal-box">
             <i class="fa-regular fa-circle-check modal-icon"></i>
-            <h3>Talebiniz Alındı!</h3>
+            <h3 data-i18n="successModal.title">Talebiniz Alındı!</h3>
             <div id="modalSummary" style="text-align:left;background:#F8FAFC;border-radius:8px;padding:16px;margin-bottom:20px;"></div>
-            <p style="margin-bottom:25px;">Müsaitlik onayı ve net fiyat bilgilendirmesi için müşteri temsilcimiz <b>5 dakika içinde</b> sizinle iletişime geçecektir.</p>
-            <button class="modal-close" onclick="closeModal()">Tamam, Teşekkürler</button>
+            <p style="margin-bottom:25px;" data-i18n-html="successModal.desc">Müsaitlik onayı ve net fiyat bilgilendirmesi için müşteri temsilcimiz <b>5 dakika içinde</b> sizinle iletişime geçecektir.</p>
+            <button class="modal-close" onclick="closeModal()" data-i18n="successModal.closeBtn">Tamam, Teşekkürler</button>
         </div>
     </div>
 
     <script>
+        // ═══════════════════════════════════════════════════════════════════
+        // ÇOK DİLLİ DESTEK (TR / EN / RU) — istemci taraflı, veri kaybı olmadan
+        // ═══════════════════════════════════════════════════════════════════
+        // Sunucu /en/ veya /ru/ altında bu SAYFANIN AYNISINI servis eder (bkz.
+        // server.py _render_lang_page — SEO route pattern'iyle aynı yaklaşım),
+        // sadece <html lang>, title/description ve SITE_LANG değişkenini değiştirir.
+        // Görünür metin değişimi tamamen burada, istemci tarafında yapılır.
+        var I18N = {
+        tr: {
+            nav: { hizmetler:"Hizmetler", filo:"Filomuz", blog:"Bölgeler", ucusEkrani:"Canlı Uçuşlar", iletisim:"İletişim", sss:"S.S.S" },
+            header: { cta:"Hızlı Rezervasyon", hamburgerAria:"Menüyü Aç/Kapat" },
+            tabs: { transfer:"Havalimanı Transfer", tahsis:"Şoförlü VIP / Günlük Tahsis" },
+            steps: { info1:"Transfer Bilgileri", info1Tahsis:"Tahsis Bilgileri", personal:"Kişisel Bilgiler", payment:"Ödeme" },
+            form: {
+                pickupLabel:"Alış Noktası", pickupPh:"Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb.",
+                areaWarning:"Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.",
+                destLabel:"Varış Noktası", destPh:"Mahmutlar, Avsallar, Otel Adı vb.",
+                flightLabel:"Uçuş Numarası", flightPh:"Örn: TK2405 (Opsiyonel)",
+                dateLabel:"Tarih", timeLabel:"Saat",
+                availabilityWarning:"Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.",
+                passengersLabel:"Yolcu", passengersOpt:"1 - 9 Kişi (VIP Vito)",
+                notesLabel:"Notlar (Opsiyonel)", notesPh:"Özel istek, ek bilgi...",
+                estimatedLabel:"Tahmini:", continueBtn:"Devam Et", backBtn:"Geri",
+                contactInfoTitle:"İletişim Bilgileri", nameLabel:"Adınız Soyadınız", namePh:"Adınız ve soyadınız",
+                phoneLabel:"Telefon Numaranız", phonePh:"05XX XXX XX XX",
+                emailLabel:"E-posta Adresiniz", emailPh:"ornek@email.com",
+                paymentMethodTitle:"Ödeme Yöntemi",
+                paymentMethodsLabel:"Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.",
+                bankSelectLabel:"Banka Seçiniz", completeBtn:"Rezervasyonu Tamamla",
+                pickupHotelLabel:"Araç Alış Noktası (Otel / Adres)", pickupHotelPh:"Aracın sizi alacağı konum",
+                durationLabel:"Tahsis Süresi",
+                duration4:"4 Saatlik (Şehir İçi Tur)", duration8:"8 Saatlik (Yarım Günlük Tur)",
+                duration12:"12 Saatlik (Uzun Mesafe Tur)", duration24:"Tam Gün (24 Saat Şoförlü Tahsis)",
+                pickupDateLabel:"Alış Tarihi", pickupTimeLabel:"Alış Saati",
+                vehicleTypeLabel:"Araç Tipi", vehicleTypeOpt:"VIP Mercedes Vito",
+                estimatedPriceLabel:"Tahmini Hizmet Bedeli"
+            },
+            hizmetler: {
+                title:"Premium Hizmetlerimiz",
+                subtitle:"Antalya ve Gazipaşa bölgesinde lüksü, güvenliği ve konforu bir araya getiren ayrıcalıklı ulaşım çözümleri sunuyoruz.",
+                s1t:"Havalimanı Transfer", s1d:"Antalya (AYT) ve Gazipaşa (GZP) havalimanlarında isimle karşılama ve otelinize direkt, beklemesiz ulaşım.",
+                s2t:"Şoförlü VIP Tahsis", s2d:"İster birkaç saatlik şehir turu, ister tam günlük rotalarınız için size özel tahsis edilmiş lüks Vito ve profesyonel şoför.",
+                s3t:"Kurumsal Çözümler", s3d:"İş toplantıları, kongreler ve özel VIP etkinlikleriniz için prestijli ve tam zamanında ulaşım planlaması."
+            },
+            blog: {
+                title:"Gazipaşa &amp; Antalya Havalimanı VIP Transfer Hizmetleri",
+                subtitle:"Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP ulaşım hizmeti sunuyoruz.",
+                loading:"Turistik bölgeler yükleniyor...", loadMore:"Daha Fazla Göster"
+            },
+            filo: {
+                title:"Lüks Araç Filomuz",
+                subtitle:"Seyahatinizi unutulmaz kılacak, en üst düzey donanıma sahip VIP araçlarla hizmet veriyoruz.",
+                vehicleName:"Mercedes-Benz Vito VIP", passengers:"1-6 Yolcu", luggage:"6 Bavul",
+                f1:"Hakiki Deri Koltuklar", f2:"Ücretsiz Hızlı Wi-Fi", f3:"VIP İkram ve İçecekler",
+                f4:"Klima / İklimlendirme", f5:"Bebek Koltuğu (Talep Üzerine)", f6:"Araçta Kredi Kartı Geçerli",
+                reserveBtn:"Hemen Rezervasyon Yap"
+            },
+            nasilCalisir: {
+                title:"Nasıl Çalışır?", subtitle:"Sıfır sürtünme. 3 basit adımda rezervasyonunuzu tamamlayın, gerisini operasyon ekibimize bırakın.",
+                s1t:"Rotanızı Belirleyin", s1d:"Sistem üzerinden alış ve varış noktanızı, uçuş tarihinizi ve yolcu sayınızı seçin.",
+                s2t:"Onaylayın", s2d:"Şeffaf fiyatlarımızı görün ve kredi kartı veya araçta ödeme seçeneğiyle işlemi tamamlayın.",
+                s3t:"Keyfini Çıkarın", s3d:"Havalimanında isminizle karşılanın ve VIP aracınızda pürüzsüz yolculuğun tadını çıkarın."
+            },
+            ucus: {
+                title:"Canlı Uçuş Ekranı", subtitle:"Gazipaşa-Alanya ve Antalya Havalimanları anlık varış ve kalkış bilgileri. Uçuşunuzu takip edin, transferinizi güvenle planlayın.",
+                gelen:"Gelen", giden:"Giden", saat:"Saat", ucusNo:"Uçuş No", nereden:"Nereden", nereye:"Nereye", tur:"Tür", havayolu:"Havayolu", durum:"Durum"
+            },
+            sss: {
+                title:"Sıkça Sorulan Sorular", subtitle:"Transfer ve kiralama süreçlerimizle ilgili aklınıza takılan tüm detaylar.",
+                q1:"Uçağım rötar yaparsa ne olur? Ek ücret öder miyim?", a1:"Hayır, ek ücret ödemezsiniz. Operasyon ekibimiz uçuşunuzu uçuş numarası üzerinden anlık olarak takip eder. Uçağınız ne kadar rötar yaparsa yapsın, VIP aracımız ve şoförümüz sizi beklemeye devam edecektir.",
+                q2:"Ödemeyi nasıl yapabilirim?", a2:"Ödemelerinizi sistemimiz üzerinden online olarak veya transferiniz sonrasında araç içerisinde nakit/kredi kartı ile güvenle gerçekleştirebilirsiniz.",
+                q3:"Bebek veya çocuk koltuğu sağlıyor musunuz?", a3:"Evet, VIP Vito araçlarımızda rezervasyon esnasında talep etmeniz durumunda ücretsiz olarak hijyenik bebek veya çocuk koltuğu sağlıyoruz.",
+                q4:"Gece uçuşları için transfer hizmetiniz var mı?", a4:"Evet, hizmetlerimiz 7 gün 24 saat kesintisiz devam etmektedir. Gece yarısı uçuşlarınızda dahi aynı VIP standartlarda karşılanırsınız."
+            },
+            iletisim: {
+                title:"İletişim", subtitle:"VIP transfer ve şoförlü araç hizmetlerimiz için bize ulaşın. Size en kısa sürede dönüş yapalım.",
+                phoneLabel:"Telefon", emailLabel:"E-posta", addressLabel:"Adres", addressValue:"Gazipaşa / Antalya, Türkiye",
+                formTitle:"Bize Ulaşın", formSubtitle:"Rezervasyon, teklif veya sorularınız için formu doldurun, size hızlıca dönüş yapalım.",
+                namePh:"Adınız Soyadınız", phonePh:"Telefon Numaranız (05XX...)", emailPh:"E-posta Adresiniz", messagePh:"Mesajınız...",
+                sendBtn:"Mesajı Gönder", sendingBtn:"Gönderiliyor...", successMsg:"Mesajınız alındı. En kısa sürede size dönüş yapacağız."
+            },
+            footer: {
+                about:"Antalya ve Gazipaşa bölgelerinde lüks, güvenli ve zamanında ulaşım çözümleri sunan premium VIP transfer markası.",
+                quickMenu:"Hızlı Menü", servicesLink:"Hizmetlerimiz", fleetLink:"VIP Filomuz", regionsLink:"Turistik Bölgeler",
+                contactLink:"İletişim", faqLink:"Sıkça Sorulan Sorular", contactCorporate:"İletişim & Kurumsal",
+                addressFooter:"Gazipaşa / Antalya", securePayment:"Güvenli Ödeme Altyapısı",
+                sslText:"256-bit SSL sertifikası ile tüm ödeme işlemleriniz güvence altındadır.",
+                rights:"Tüm Hakları Saklıdır."
+            },
+            errorPages: {
+                e404Title:"Aradığınız Sayfa Bulunamadı", e404Desc:"Aradığınız sayfa taşınmış, kaldırılmış ya da hiç var olmamış olabilir.",
+                homeBtn:"Ana Sayfaya Dön", whatsappBtn:"7/24 WhatsApp Destek",
+                e403Title:"Bu Alana Erişim Yetkiniz Yok", e403Desc:"Girmeye çalıştığınız alan güvenlik sebebiyle kısıtlanmıştır.", visualEntryBtn:"Görsel Girişe Dön",
+                e500Title:"Bağlantı Güncelleniyor", e500Desc:"Şu anda sistemimizde kısa süreli bir bakım yapılmaktadır. Lütfen birkaç dakika sonra tekrar deneyin.", refreshBtn:"Sayfayı Yenile"
+            },
+            chat: {
+                assistantName:"Güliz Asistan", startPrompt:"Sohbete başlamadan önce size nasıl hitap edelim?",
+                namePh:"Adınız Soyadınız", phonePh:"Telefon (05XX XXX XX XX)", startBtn:"Sohbete Başla",
+                editBtn:"Düzenle", messagePh:"Mesajınızı yazın...", triggerLabel:"Canlı Destek"
+            },
+            successModal: { title:"Talebiniz Alındı!", desc:"Müsaitlik onayı ve net fiyat bilgilendirmesi için müşteri temsilcimiz <b>5 dakika içinde</b> sizinle iletişime geçecektir.", closeBtn:"Tamam, Teşekkürler" },
+            routeModal: { title:"Hızlı Rezervasyon", subtitle:"Sık kullanılan rotalarımızdan birini seçin veya kendi rotanızı oluşturun.", altBtn:"Farklı Rota Oluştur" },
+            destModal: { reserveBtn:"Bu Bölgeye Rezervasyon Yap" },
+            alerts: {
+                serviceAreaPickup:"Üzgünüz, bu alış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.",
+                serviceAreaDest:"Üzgünüz, bu varış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.",
+                requiredFields:"Lütfen gerekli alanları doldurunuz.",
+                reservationFailed:"Rezervasyon oluşturulamadı: ", connectionFailed:"Sunucuya bağlanılamadı. Lütfen daha sonra tekrar deneyin.",
+                contactFailed:"Mesaj gönderilemedi: ", contactFailedGeneric:"Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.",
+                unknownError:"Bilinmeyen hata"
+            }
+        },
+        en: {
+            nav: { hizmetler:"Services", filo:"Our Fleet", blog:"Destinations", ucusEkrani:"Live Flights", iletisim:"Contact", sss:"FAQ" },
+            header: { cta:"Quick Booking", hamburgerAria:"Open/Close Menu" },
+            tabs: { transfer:"Airport Transfer", tahsis:"Chauffeured VIP / Daily Hire" },
+            steps: { info1:"Transfer Details", info1Tahsis:"Hire Details", personal:"Personal Details", payment:"Payment" },
+            form: {
+                pickupLabel:"Pickup Location", pickupPh:"Gazipaşa Airport, Antalya Airport, hotel name, etc.",
+                areaWarning:"We do not provide service in this area. We only serve <strong>Gazipaşa, Alanya, Antalya</strong> and surrounding areas.",
+                destLabel:"Destination", destPh:"Mahmutlar, Avsallar, hotel name, etc.",
+                flightLabel:"Flight Number", flightPh:"e.g. TK2405 (Optional)",
+                dateLabel:"Date", timeLabel:"Time",
+                availabilityWarning:"Our vehicles may be busy at this time slot — we can still take your reservation, our team will contact you shortly to confirm.",
+                passengersLabel:"Passengers", passengersOpt:"1 - 9 People (VIP Vito)",
+                notesLabel:"Notes (Optional)", notesPh:"Special request, additional info...",
+                estimatedLabel:"Estimated:", continueBtn:"Continue", backBtn:"Back",
+                contactInfoTitle:"Contact Information", nameLabel:"Full Name", namePh:"Your first and last name",
+                phoneLabel:"Your Phone Number", phonePh:"05XX XXX XX XX",
+                emailLabel:"Your Email Address", emailPh:"example@email.com",
+                paymentMethodTitle:"Payment Method",
+                paymentMethodsLabel:"Payment is made via bank transfer / EFT. Online credit card payment will be available soon.",
+                bankSelectLabel:"Select Bank", completeBtn:"Complete Reservation",
+                pickupHotelLabel:"Vehicle Pickup Location (Hotel / Address)", pickupHotelPh:"The location where the vehicle will pick you up",
+                durationLabel:"Hire Duration",
+                duration4:"4 Hours (City Tour)", duration8:"8 Hours (Half-Day Tour)",
+                duration12:"12 Hours (Long-Distance Tour)", duration24:"Full Day (24-Hour Chauffeured Hire)",
+                pickupDateLabel:"Pickup Date", pickupTimeLabel:"Pickup Time",
+                vehicleTypeLabel:"Vehicle Type", vehicleTypeOpt:"VIP Mercedes Vito",
+                estimatedPriceLabel:"Estimated Service Fee"
+            },
+            hizmetler: {
+                title:"Our Premium Services",
+                subtitle:"We offer exclusive transportation solutions that combine luxury, safety and comfort in the Antalya and Gazipaşa region.",
+                s1t:"Airport Transfer", s1d:"Meet-and-greet service with your name at Antalya (AYT) and Gazipaşa (GZP) airports, with direct, no-wait transport to your hotel.",
+                s2t:"Chauffeured VIP Hire", s2d:"A luxury Vito and professional driver dedicated to you, whether for a few hours in the city or a full-day itinerary.",
+                s3t:"Corporate Solutions", s3d:"Prestigious, punctual transportation planning for your business meetings, conferences and special VIP events."
+            },
+            blog: {
+                title:"Gazipaşa &amp; Antalya Airport VIP Transfer Services",
+                subtitle:"We provide 24/7 comfortable, direct and exclusive VIP transportation from Gazipaşa Airport (GZP) and Antalya Airport (AYT) to Alanya, Side, Manavgat, Belek, Kemer and the entire Mediterranean region.",
+                loading:"Loading destinations...", loadMore:"Show More"
+            },
+            filo: {
+                title:"Our Luxury Fleet",
+                subtitle:"We serve you with top-of-the-line VIP vehicles that will make your journey unforgettable.",
+                vehicleName:"Mercedes-Benz Vito VIP", passengers:"1-6 Passengers", luggage:"6 Suitcases",
+                f1:"Genuine Leather Seats", f2:"Free High-Speed Wi-Fi", f3:"VIP Refreshments & Beverages",
+                f4:"Air Conditioning / Climate Control", f5:"Baby Seat (On Request)", f6:"Credit Card Accepted in Vehicle",
+                reserveBtn:"Book Now"
+            },
+            nasilCalisir: {
+                title:"How It Works", subtitle:"Zero hassle. Complete your reservation in 3 simple steps and leave the rest to our operations team.",
+                s1t:"Choose Your Route", s1d:"Select your pickup and drop-off points, flight date and number of passengers through the system.",
+                s2t:"Confirm", s2d:"See our transparent pricing and complete the process with credit card or in-vehicle payment.",
+                s3t:"Enjoy the Ride", s3d:"Be welcomed by name at the airport and enjoy a smooth journey in your VIP vehicle."
+            },
+            ucus: {
+                title:"Live Flight Board", subtitle:"Real-time arrival and departure information for Gazipaşa-Alanya and Antalya Airports. Track your flight and plan your transfer with confidence.",
+                gelen:"Arrivals", giden:"Departures", saat:"Time", ucusNo:"Flight No", nereden:"From", nereye:"To", tur:"Type", havayolu:"Airline", durum:"Status"
+            },
+            sss: {
+                title:"Frequently Asked Questions", subtitle:"All the details you're curious about regarding our transfer and rental processes.",
+                q1:"What happens if my flight is delayed? Will I pay extra?", a1:"No, you will not pay any extra fee. Our operations team tracks your flight in real time using your flight number. No matter how long your flight is delayed, our VIP vehicle and driver will continue waiting for you.",
+                q2:"How can I make a payment?", a2:"You can make your payment securely online through our system, or in cash/credit card in the vehicle after your transfer.",
+                q3:"Do you provide a baby or child seat?", a3:"Yes, if requested at the time of booking, we provide a free, hygienic baby or child seat in our VIP Vito vehicles.",
+                q4:"Do you offer transfer service for night flights?", a4:"Yes, our services operate 24/7 without interruption. Even for midnight flights, you will be welcomed with the same VIP standards."
+            },
+            iletisim: {
+                title:"Contact", subtitle:"Contact us for our VIP transfer and chauffeured vehicle services. We will get back to you as soon as possible.",
+                phoneLabel:"Phone", emailLabel:"Email", addressLabel:"Address", addressValue:"Gazipaşa / Antalya, Turkey",
+                formTitle:"Get in Touch", formSubtitle:"Fill out the form for reservations, quotes or questions, and we'll get back to you quickly.",
+                namePh:"Your Full Name", phonePh:"Your Phone Number", emailPh:"Your Email Address", messagePh:"Your Message...",
+                sendBtn:"Send Message", sendingBtn:"Sending...", successMsg:"Your message has been received. We will get back to you shortly."
+            },
+            footer: {
+                about:"A premium VIP transfer brand offering luxurious, safe and punctual transportation solutions in the Antalya and Gazipaşa regions.",
+                quickMenu:"Quick Menu", servicesLink:"Our Services", fleetLink:"Our VIP Fleet", regionsLink:"Tourist Destinations",
+                contactLink:"Contact", faqLink:"Frequently Asked Questions", contactCorporate:"Contact & Corporate",
+                addressFooter:"Gazipaşa / Antalya", securePayment:"Secure Payment Infrastructure",
+                sslText:"All your payment transactions are secured with a 256-bit SSL certificate.",
+                rights:"All Rights Reserved."
+            },
+            errorPages: {
+                e404Title:"Page Not Found", e404Desc:"The page you are looking for may have been moved, removed, or never existed.",
+                homeBtn:"Back to Home", whatsappBtn:"24/7 WhatsApp Support",
+                e403Title:"You Don't Have Access to This Area", e403Desc:"The area you are trying to access is restricted for security reasons.", visualEntryBtn:"Back to Home",
+                e500Title:"Connection Updating", e500Desc:"Our system is currently undergoing brief maintenance. Please try again in a few minutes.", refreshBtn:"Refresh Page"
+            },
+            chat: {
+                assistantName:"Güliz Assistant", startPrompt:"Before we start chatting, how should we address you?",
+                namePh:"Your Full Name", phonePh:"Phone (e.g. +90 5XX XXX XX XX)", startBtn:"Start Chat",
+                editBtn:"Edit", messagePh:"Type your message...", triggerLabel:"Live Support"
+            },
+            successModal: { title:"Your Request Has Been Received!", desc:"Our customer representative will contact you <b>within 5 minutes</b> to confirm availability and provide exact pricing.", closeBtn:"OK, Thank You" },
+            routeModal: { title:"Quick Booking", subtitle:"Choose one of our frequently used routes or create your own.", altBtn:"Create a Different Route" },
+            destModal: { reserveBtn:"Book a Transfer to This Area" },
+            alerts: {
+                serviceAreaPickup:"Sorry, this pickup location is outside our service area. We only serve the Gazipaşa, Alanya and Antalya regions.",
+                serviceAreaDest:"Sorry, this destination is outside our service area. We only serve the Gazipaşa, Alanya and Antalya regions.",
+                requiredFields:"Please fill in the required fields.",
+                reservationFailed:"Reservation could not be created: ", connectionFailed:"Could not connect to the server. Please try again later.",
+                contactFailed:"Message could not be sent: ", contactFailedGeneric:"Message could not be sent. Please try again later.",
+                unknownError:"Unknown error"
+            }
+        },
+        ru: {
+            nav: { hizmetler:"Услуги", filo:"Наш парк", blog:"Направления", ucusEkrani:"Рейсы онлайн", iletisim:"Контакты", sss:"Вопросы" },
+            header: { cta:"Быстрое бронирование", hamburgerAria:"Открыть/Закрыть меню" },
+            tabs: { transfer:"Трансфер из аэропорта", tahsis:"VIP с водителем / Аренда на день" },
+            steps: { info1:"Детали трансфера", info1Tahsis:"Детали аренды", personal:"Личные данные", payment:"Оплата" },
+            form: {
+                pickupLabel:"Место посадки", pickupPh:"Аэропорт Газипаша, Аэропорт Анталии, название отеля и т.д.",
+                areaWarning:"Мы не обслуживаем этот район. Мы работаем только в <strong>Газипаше, Алании, Анталии</strong> и их окрестностях.",
+                destLabel:"Пункт назначения", destPh:"Махмутлар, Авсаллар, название отеля и т.д.",
+                flightLabel:"Номер рейса", flightPh:"Напр.: TK2405 (Необязательно)",
+                dateLabel:"Дата", timeLabel:"Время",
+                availabilityWarning:"В это время наши автомобили могут быть заняты — мы всё равно можем принять вашу заявку, наша команда свяжется с вами в ближайшее время для подтверждения.",
+                passengersLabel:"Пассажиры", passengersOpt:"1-9 человек (VIP Vito)",
+                notesLabel:"Примечания (необязательно)", notesPh:"Особые пожелания, доп. информация...",
+                estimatedLabel:"Примерно:", continueBtn:"Продолжить", backBtn:"Назад",
+                contactInfoTitle:"Контактная информация", nameLabel:"Имя и фамилия", namePh:"Ваше имя и фамилия",
+                phoneLabel:"Ваш номер телефона", phonePh:"05XX XXX XX XX",
+                emailLabel:"Ваш адрес эл. почты", emailPh:"example@email.com",
+                paymentMethodTitle:"Способ оплаты",
+                paymentMethodsLabel:"Оплата производится банковским переводом. Онлайн-оплата картой скоро будет доступна.",
+                bankSelectLabel:"Выберите банк", completeBtn:"Завершить бронирование",
+                pickupHotelLabel:"Место подачи автомобиля (отель/адрес)", pickupHotelPh:"Место, где вас заберёт автомобиль",
+                durationLabel:"Продолжительность аренды",
+                duration4:"4 часа (тур по городу)", duration8:"8 часов (тур на полдня)",
+                duration12:"12 часов (тур на дальние расстояния)", duration24:"Полный день (аренда с водителем на 24 часа)",
+                pickupDateLabel:"Дата подачи", pickupTimeLabel:"Время подачи",
+                vehicleTypeLabel:"Тип автомобиля", vehicleTypeOpt:"VIP Mercedes Vito",
+                estimatedPriceLabel:"Примерная стоимость услуги"
+            },
+            hizmetler: {
+                title:"Наши премиум-услуги",
+                subtitle:"Мы предлагаем эксклюзивные транспортные решения, сочетающие роскошь, безопасность и комфорт в регионе Анталии и Газипаши.",
+                s1t:"Трансфер из аэропорта", s1d:"Встреча с табличкой в аэропортах Анталии (AYT) и Газипаши (GZP), прямая доставка до отеля без ожидания.",
+                s2t:"VIP аренда с водителем", s2d:"Роскошный Vito и профессиональный водитель в вашем распоряжении — будь то несколько часов по городу или маршрут на весь день.",
+                s3t:"Корпоративные решения", s3d:"Престижное и пунктуальное транспортное планирование для деловых встреч, конференций и особых VIP-мероприятий."
+            },
+            blog: {
+                title:"VIP-трансфер из аэропортов Газипаша и Анталия",
+                subtitle:"Мы предоставляем комфортный, прямой и эксклюзивный VIP-трансфер 24/7 из аэропорта Газипаша (GZP) и аэропорта Анталии (AYT) в Аланию, Сиде, Манавгат, Белек, Кемер и весь Средиземноморский регион.",
+                loading:"Загрузка направлений...", loadMore:"Показать больше"
+            },
+            filo: {
+                title:"Наш парк роскошных автомобилей",
+                subtitle:"Мы предоставляем VIP-автомобили высочайшего класса, которые сделают вашу поездку незабываемой.",
+                vehicleName:"Mercedes-Benz Vito VIP", passengers:"1-6 пассажиров", luggage:"6 чемоданов",
+                f1:"Кожаные сиденья", f2:"Бесплатный быстрый Wi-Fi", f3:"VIP напитки и угощения",
+                f4:"Кондиционер / климат-контроль", f5:"Детское кресло (по запросу)", f6:"Оплата картой в автомобиле",
+                reserveBtn:"Забронировать сейчас"
+            },
+            nasilCalisir: {
+                title:"Как это работает", subtitle:"Никаких сложностей. Завершите бронирование за 3 простых шага, остальное доверьте нашей операционной команде.",
+                s1t:"Выберите маршрут", s1d:"Выберите точки посадки и высадки, дату рейса и количество пассажиров в системе.",
+                s2t:"Подтвердите", s2d:"Ознакомьтесь с нашими прозрачными ценами и завершите оформление, оплатив картой или в автомобиле.",
+                s3t:"Наслаждайтесь поездкой", s3d:"Вас встретят по имени в аэропорту, и вы насладитесь комфортной поездкой в VIP-автомобиле."
+            },
+            ucus: {
+                title:"Табло рейсов онлайн", subtitle:"Актуальная информация о прилётах и вылетах в аэропортах Газипаша-Алания и Анталия. Отслеживайте свой рейс и уверенно планируйте трансфер.",
+                gelen:"Прилёт", giden:"Вылет", saat:"Время", ucusNo:"№ рейса", nereden:"Откуда", nereye:"Куда", tur:"Тип", havayolu:"Авиакомпания", durum:"Статус"
+            },
+            sss: {
+                title:"Часто задаваемые вопросы", subtitle:"Все детали, которые вас интересуют о трансфере и аренде.",
+                q1:"Что будет, если мой рейс задержится? Придётся ли доплачивать?", a1:"Нет, доплачивать не придётся. Наша операционная команда отслеживает ваш рейс в реальном времени по номеру рейса. Независимо от того, насколько задержится ваш рейс, наш VIP-автомобиль и водитель будут продолжать вас ждать.",
+                q2:"Как я могу произвести оплату?", a2:"Вы можете безопасно оплатить онлайн через нашу систему или наличными/картой в автомобиле после трансфера.",
+                q3:"Предоставляете ли вы детское кресло?", a3:"Да, при запросе во время бронирования мы бесплатно предоставляем гигиеничное детское кресло в наших VIP Vito автомобилях.",
+                q4:"Есть ли у вас трансфер для ночных рейсов?", a4:"Да, наши услуги работают непрерывно 24/7. Даже для полуночных рейсов вас встретят с теми же VIP-стандартами."
+            },
+            iletisim: {
+                title:"Контакты", subtitle:"Свяжитесь с нами по вопросам VIP-трансфера и аренды автомобиля с водителем. Мы ответим вам в кратчайшие сроки.",
+                phoneLabel:"Телефон", emailLabel:"Эл. почта", addressLabel:"Адрес", addressValue:"Газипаша / Анталия, Турция",
+                formTitle:"Свяжитесь с нами", formSubtitle:"Заполните форму для бронирования, запроса цены или вопросов, и мы быстро свяжемся с вами.",
+                namePh:"Ваше имя и фамилия", phonePh:"Ваш номер телефона", emailPh:"Ваш адрес эл. почты", messagePh:"Ваше сообщение...",
+                sendBtn:"Отправить сообщение", sendingBtn:"Отправка...", successMsg:"Ваше сообщение получено. Мы свяжемся с вами в ближайшее время."
+            },
+            footer: {
+                about:"Премиальный бренд VIP-трансфера, предлагающий роскошные, безопасные и пунктуальные транспортные решения в регионах Анталии и Газипаши.",
+                quickMenu:"Быстрое меню", servicesLink:"Наши услуги", fleetLink:"Наш VIP парк", regionsLink:"Туристические направления",
+                contactLink:"Контакты", faqLink:"Часто задаваемые вопросы", contactCorporate:"Контакты и компания",
+                addressFooter:"Газипаша / Анталия", securePayment:"Безопасная платёжная система",
+                sslText:"Все ваши платёжные операции защищены SSL-сертификатом 256-бит.",
+                rights:"Все права защищены."
+            },
+            errorPages: {
+                e404Title:"Страница не найдена", e404Desc:"Страница, которую вы ищете, могла быть перемещена, удалена или никогда не существовала.",
+                homeBtn:"На главную", whatsappBtn:"Поддержка WhatsApp 24/7",
+                e403Title:"У вас нет доступа к этому разделу", e403Desc:"Раздел, к которому вы пытаетесь получить доступ, ограничен из соображений безопасности.", visualEntryBtn:"На главную",
+                e500Title:"Обновление соединения", e500Desc:"В настоящее время в нашей системе проводится кратковременное обслуживание. Пожалуйста, повторите попытку через несколько минут.", refreshBtn:"Обновить страницу"
+            },
+            chat: {
+                assistantName:"Ассистент Güliz", startPrompt:"Прежде чем начать чат, как к вам обращаться?",
+                namePh:"Ваше имя и фамилия", phonePh:"Телефон (напр. +90 5XX XXX XX XX)", startBtn:"Начать чат",
+                editBtn:"Изменить", messagePh:"Введите сообщение...", triggerLabel:"Онлайн-поддержка"
+            },
+            successModal: { title:"Ваша заявка принята!", desc:"Наш представитель свяжется с вами <b>в течение 5 минут</b> для подтверждения наличия мест и точной стоимости.", closeBtn:"Хорошо, спасибо" },
+            routeModal: { title:"Быстрое бронирование", subtitle:"Выберите один из наших популярных маршрутов или создайте свой.", altBtn:"Создать другой маршрут" },
+            destModal: { reserveBtn:"Забронировать трансфер в этот район" },
+            alerts: {
+                serviceAreaPickup:"К сожалению, это место посадки находится за пределами нашей зоны обслуживания. Мы работаем только в регионах Газипаша, Алания и Анталия.",
+                serviceAreaDest:"К сожалению, этот пункт назначения находится за пределами нашей зоны обслуживания. Мы работаем только в регионах Газипаша, Алания и Анталия.",
+                requiredFields:"Пожалуйста, заполните обязательные поля.",
+                reservationFailed:"Не удалось создать бронирование: ", connectionFailed:"Не удалось подключиться к серверу. Пожалуйста, попробуйте позже.",
+                contactFailed:"Не удалось отправить сообщение: ", contactFailedGeneric:"Не удалось отправить сообщение. Пожалуйста, попробуйте позже.",
+                unknownError:"Неизвестная ошибка"
+            }
+        }
+        };
+
+        function t(key) {
+            var lang = window.currentLang || 'tr';
+            var parts = key.split('.');
+            var node = I18N[lang] || I18N.tr;
+            for (var i = 0; i < parts.length; i++) {
+                node = node ? node[parts[i]] : undefined;
+            }
+            if (node === undefined) {
+                // Anahtar seçili dilde yoksa Türkçe'ye düş (eksik çeviri sitenin bozulmasına yol açmasın)
+                node = I18N.tr;
+                for (var j = 0; j < parts.length; j++) { node = node ? node[parts[j]] : undefined; }
+            }
+            return node !== undefined ? node : key;
+        }
+
+        function applyLanguage(lang) {
+            if (!I18N[lang]) lang = 'tr';
+            window.currentLang = lang;
+            document.documentElement.lang = lang;
+            localStorage.setItem('siteLang', lang);
+
+            document.querySelectorAll('[data-i18n]').forEach(function(el) {
+                el.textContent = t(el.getAttribute('data-i18n'));
+            });
+            document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
+                el.innerHTML = t(el.getAttribute('data-i18n-html'));
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+                el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+            });
+            document.querySelectorAll('[data-i18n-aria]').forEach(function(el) {
+                el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
+            });
+
+            var flagSvgs = {
+                tr: '<svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#E30A17"/><circle cx="16" cy="12" r="6" fill="#fff"/><circle cx="18" cy="12" r="5" fill="#E30A17"/><path d="M22 8l-1 4 3-2-3 2 1 4" fill="#fff"/></svg>',
+                en: '<svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#012169"/><path d="M0 0l36 24m0-24L0 24" stroke="#fff" stroke-width="5"/><path d="M0 0l36 24m0-24L0 24" stroke="#C8102E" stroke-width="3"/><path d="M18 0v24M0 12h36" stroke="#fff" stroke-width="6"/><path d="M18 0v24M0 12h36" stroke="#C8102E" stroke-width="3"/></svg>',
+                ru: '<svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#fff"/><rect y="8" width="36" height="8" fill="#0039A6"/><rect y="16" width="36" height="8" fill="#D52B1E"/></svg>'
+            };
+            var trigger = document.querySelector('.lang-switcher .flag-trigger');
+            if (trigger && flagSvgs[lang]) trigger.innerHTML = flagSvgs[lang];
+        }
+
+        (function initLanguage() {
+            // Öncelik sırası: sunucunun /en//ru/ rotasında enjekte ettiği SITE_LANG > hatırlanan tercih > 'tr'
+            var lang = window.SITE_LANG || localStorage.getItem('siteLang') || 'tr';
+            applyLanguage(lang);
+        })();
+
         // --- SES DOSYASINI OYNATMA FONKSİYONU ---
         function playChatSound() {
             var sound = document.getElementById("chatSound");
@@ -2015,7 +2386,7 @@
             var btn = document.getElementById('contactSubmitBtn');
             var successEl = document.getElementById('iletisimSuccess');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + t('iletisim.sendingBtn');
             fetch('/api/contact', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2031,14 +2402,14 @@
                     successEl.style.display = 'block';
                     setTimeout(function() { successEl.style.display = 'none'; }, 5000);
                 } else {
-                    alert('Mesaj gönderilemedi: ' + (data.error || 'Bir hata oluştu.'));
+                    alert(t('alerts.contactFailed') + (data.error || t('alerts.unknownError')));
                 }
             }).catch(function(err) {
-                alert('Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.');
+                alert(t('alerts.contactFailedGeneric'));
                 console.log('Contact form error:', err);
             }).finally(function() {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Mesajı Gönder';
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ' + t('iletisim.sendBtn');
             });
             return false;
         }
@@ -2537,7 +2908,7 @@
                     });
                     if(!valid) {
                         e.preventDefault();
-                        alert('Lütfen gerekli alanları doldurunuz.');
+                        alert(t('alerts.requiredFields'));
                     }
                 });
             });
@@ -2567,11 +2938,11 @@
 
                 // Son güvenlik: hizmet bölgesi kontrolü — transfer
                 if (!isInServiceArea(payload.pickup)) {
-                    alert('Üzgünüz, bu alış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.');
+                    alert(t('alerts.serviceAreaPickup'));
                     return;
                 }
                 if (payload.destination && !isInServiceArea(payload.destination)) {
-                    alert('Üzgünüz, bu varış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.');
+                    alert(t('alerts.serviceAreaDest'));
                     return;
                 }
                 payload.flightNumber = document.getElementById('transfer-flight').value;
@@ -2596,7 +2967,7 @@
 
                 // Son güvenlik: hizmet bölgesi kontrolü — tahsis
                 if (!isInServiceArea(payload.pickup)) {
-                    alert('Üzgünüz, bu alış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.');
+                    alert(t('alerts.serviceAreaPickup'));
                     return;
                 }
                 payload.date = document.getElementById('tahsis-date').value;
@@ -2662,11 +3033,11 @@
                     }
                     document.getElementById('successModal').classList.add('open');
                 } else {
-                    alert('Rezervasyon oluşturulamadı: ' + (data.error || 'Bilinmeyen hata'));
+                    alert(t('alerts.reservationFailed') + (data.error || t('alerts.unknownError')));
                 }
             })
             .catch(function(err) {
-                alert('Sunucuya bağlanılamadı. Lütfen daha sonra tekrar deneyin.');
+                alert(t('alerts.connectionFailed'));
             })
             .finally(function() {
                 if(btn) { btn.innerHTML = originalText; btn.disabled = false; }

@@ -261,6 +261,77 @@ def _render_route_seo_page(slug):
     return html
 
 
+# İngilizce/Rusça meta çevirileri — /en/ ve /ru/ rotaları için. Görünür sayfa içeriği
+# (data-i18n) tamamen istemci tarafında index.html içindeki I18N sözlüğüyle değişiyor;
+# burada sadece arama motorlarının/paylaşım kartlarının gördüğü <title>/<meta> ve
+# <html lang> değiştiriliyor, artı sayfaya window.SITE_LANG enjekte ediliyor ki
+# istemci script'i doğru dille açılsın (localStorage'a bakmadan önce).
+LANG_META = {
+    "en": {
+        "title": "Gazipaşa & Antalya Airport VIP Transfer | Güliz VIP Transfer",
+        "description": "We offer 24/7 comfortable, direct and exclusive VIP transfer service from Gazipaşa Airport (GZP) and Antalya Airport (AYT) to Alanya, Side, Manavgat, Belek, Kemer and the entire Mediterranean region.",
+        "og_title": "Gazipaşa & Antalya Airport VIP Transfer Services | Güliz VIP",
+        "og_description": "24/7 uninterrupted VIP Vito transfer privilege from Gazipaşa (GZP) and Antalya (AYT) airports to Alanya, Side, Manavgat, Belek, Kemer and the entire Mediterranean region.",
+        "twitter_title": "Gazipaşa & Antalya Airport VIP Transfer | Güliz VIP",
+        "twitter_description": "24/7 VIP transfer from Gazipaşa (GZP) and Antalya (AYT) airports to Alanya, Side, Manavgat, Belek and Kemer.",
+    },
+    "ru": {
+        "title": "VIP-трансфер из аэропортов Газипаша и Анталия | Güliz VIP Transfer",
+        "description": "Комфортный, прямой и эксклюзивный VIP-трансфер 24/7 из аэропорта Газипаша (GZP) и аэропорта Анталии (AYT) в Аланию, Сиде, Манавгат, Белек, Кемер и весь Средиземноморский регион.",
+        "og_title": "VIP-трансфер из аэропортов Газипаша и Анталия | Güliz VIP",
+        "og_description": "Непрерывный VIP-трансфер на автомобиле Vito 24/7 из аэропортов Газипаша (GZP) и Анталия (AYT) в Аланию, Сиде, Манавгат, Белек, Кемер и весь Средиземноморский регион.",
+        "twitter_title": "VIP-трансфер из аэропортов Газипаша и Анталия | Güliz VIP",
+        "twitter_description": "VIP-трансфер 24/7 из аэропортов Газипаша (GZP) и Анталия (AYT) в Аланию, Сиде, Манавгат, Белек и Кемер.",
+    },
+}
+
+
+def _render_lang_page(lang):
+    """/en/ veya /ru/ için index.html'i okur, <html lang>, title/meta/OG/Twitter
+    etiketlerini o dile çevirir ve window.SITE_LANG enjekte eder. Görünür içerik
+    aynı index.html'den geldiği için istemci tarafındaki I18N motoru sayfayı
+    yüklenir yüklenmez tamamen o dile çevirir (bkz. index.html applyLanguage())."""
+    meta = LANG_META.get(lang)
+    if not meta:
+        return None
+    index_path = os.path.join(WORKSPACE, "index.html")
+    if not os.path.exists(index_path):
+        return None
+    with open(index_path, "r", encoding="utf-8") as f:
+        html = f.read()
+    html = html.replace('<html lang="tr">', f'<html lang="{lang}">', 1)
+    html = html.replace(
+        "<head>",
+        f"<head>\n    <script>window.SITE_LANG = '{lang}';</script>",
+        1
+    )
+    html = html.replace(
+        "<title>Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP Transfer</title>",
+        f"<title>{meta['title']}</title>"
+    )
+    html = html.replace(
+        'content="Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı\'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP transfer hizmeti sunuyoruz."',
+        f'content="{meta["description"]}"'
+    )
+    html = html.replace(
+        'content="Gazipaşa & Antalya Havalimanı VIP Transfer Hizmetleri | Güliz VIP"',
+        f'content="{meta["og_title"]}"'
+    )
+    html = html.replace(
+        'content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından; Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 kesintisiz VIP Vito transfer ayrıcalığı."',
+        f'content="{meta["og_description"]}"'
+    )
+    html = html.replace(
+        'content="Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP">',
+        f'content="{meta["twitter_title"]}">'
+    )
+    html = html.replace(
+        'content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından Alanya, Side, Manavgat, Belek ve Kemer\'e 7/24 VIP transfer."',
+        f'content="{meta["twitter_description"]}"'
+    )
+    return html
+
+
 # Ana sayfa slider görselleri — varsayılan 3 görsel (kalıcı: slider_images.json)
 SLIDER_IMAGES = [
     {"src": "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&w=2074&q=80", "alt": "Gazipaşa Havalimanı"},
@@ -2269,6 +2340,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 xml_parts.append("</urlset>")
                 self._send_text("".join(xml_parts), content_type="application/xml; charset=utf-8")
                 return
+            lang_path = path.strip("/")
+            if lang_path in ("en", "ru"):
+                rendered = _render_lang_page(lang_path)
+                if rendered:
+                    self._send_html(rendered)
+                    return
             route_slug = path.lstrip("/")
             if route_slug in ROUTE_SEO_PAGES:
                 rendered = _render_route_seo_page(route_slug)
