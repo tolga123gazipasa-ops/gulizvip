@@ -1161,6 +1161,12 @@ def _paypas_request(method, endpoint, payload=None):
         "Authorization": f"Bearer {PAYPAS_MERCHANT_KEY}",
         "X-SECRET-KEY": PAYPAS_SECRET_KEY,
         "Content-Type": "application/json",
+        # KRİTİK: paypas.com.tr da Cloudflare arkasında — User-Agent göndermezsek Python'ın
+        # varsayılan "Python-urllib/3.x" imzası bot olarak işaretlenip Cloudflare error 1010
+        # ("Access Denied") ile reddediliyor (canlıda tam olarak bu görüldü: "PayPas API hatası
+        # (403): error code: 1010"). Aynı sorun GZP/AYT uçuş scraping'inde de vardı, aynı çözüm
+        # (gerçek tarayıcı User-Agent'ı) kullanılıyor — bkz. SCRAPE_USER_AGENT.
+        "User-Agent": SCRAPE_USER_AGENT,
     }
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
