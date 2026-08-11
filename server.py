@@ -1184,6 +1184,23 @@ def _paypas_request(method, endpoint, payload=None):
             return json.loads(resp.read(2_000_000).decode("utf-8"))
     except urllib.error.HTTPError as e:
         err_body = e.read(5000).decode("utf-8", errors="replace")
+        # 401 "Invalid API credentials" sürekli tekrarlanıyorsa muhtemel sebep Railway
+        # Variables'a anahtarlar yapıştırılırken araya sızan görünmez boşluk/satır sonu.
+        # Gerçek anahtar değerini LOGLAMIYORUZ (güvenlik) — sadece uzunluk + baş/son 2
+        # karakter + boşluk var mı bilgisini maskeli şekilde ekliyoruz ki Tolga Railway'deki
+        # değeri bununla karşılaştırıp hatayı bulabilsin.
+        if e.code == 401:
+            def _mask(k):
+                if not k:
+                    return "(BOŞ/TANIMSIZ)"
+                stripped = k.strip()
+                has_ws = stripped != k
+                shown = f"{k[:3]}...{k[-3:]}" if len(k) > 6 else "***"
+                return f"{shown} (uzunluk={len(k)}, baştaki/sondaki boşluk={'VAR — SORUN BU OLABİLİR' if has_ws else 'yok'})"
+            err_body += (
+                f" | DEBUG merchant_key={_mask(PAYPAS_MERCHANT_KEY)}"
+                f" secret_key={_mask(PAYPAS_SECRET_KEY)}"
+            )
         raise RuntimeError(f"PayPas API hatası ({e.code}): {err_body}")
     except urllib.error.URLError as e:
         raise RuntimeError(f"PayPas API'sine ulaşılamadı: {e.reason}")
