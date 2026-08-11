@@ -1157,19 +1157,25 @@ def _paypas_request(method, endpoint, payload=None):
     (çağıran taraf bunu yakalayıp admin'e anlamlı bir hata döner — sessizce
     sahte bir link üretilmez, çünkü bu gerçek para akışı)."""
     url = f"{PAYPAS_BASE_URL}{endpoint}"
-    headers = {
-        "Authorization": f"Bearer {PAYPAS_MERCHANT_KEY}",
-        "X-SECRET-KEY": PAYPAS_SECRET_KEY,
-        "Content-Type": "application/json",
-        # KRİTİK: paypas.com.tr da Cloudflare arkasında — User-Agent göndermezsek Python'ın
-        # varsayılan "Python-urllib/3.x" imzası bot olarak işaretlenip Cloudflare error 1010
-        # ("Access Denied") ile reddediliyor (canlıda tam olarak bu görüldü: "PayPas API hatası
-        # (403): error code: 1010"). Aynı sorun GZP/AYT uçuş scraping'inde de vardı, aynı çözüm
-        # (gerçek tarayıcı User-Agent'ı) kullanılıyor — bkz. SCRAPE_USER_AGENT.
-        "User-Agent": SCRAPE_USER_AGENT,
-    }
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    # KRİTİK BUG (401 "Invalid API credentials" sebebi buymuş): urllib.request.Request'e
+    # header'lar `headers=` kwarg'ı ile verilirse, Request.add_header() her key'e Python'ın
+    # str.capitalize()'ını uyguluyor — "X-SECRET-KEY" sessizce "X-secret-key" olarak
+    # gönderiliyor! Standart header'lar (Authorization, Content-Type) için sorun olmuyor
+    # çünkü HTTP header'ları RFC gereği case-insensitive ve her framework öyle davranır,
+    # ama PayPas'ın özel "X-SECRET-KEY" header'ı için sunucu tarafı muhtemelen case-sensitive
+    # bir kontrol yapıyor ve eşleşmeyince "geçersiz kimlik bilgisi" dönüyor. Çözüm: Request'i
+    # header'sız oluşturup `req.headers` dict'ine DOĞRUDAN atama yapmak — bu, add_header()'ı
+    # (ve capitalize() mangling'ini) devre dışı bırakıp gönderilen ismi harfiyen koruyor.
+    req = urllib.request.Request(url, data=data, method=method)
+    req.headers["Authorization"] = f"Bearer {PAYPAS_MERCHANT_KEY}"
+    req.headers["X-SECRET-KEY"] = PAYPAS_SECRET_KEY
+    req.headers["Content-Type"] = "application/json"
+    # paypas.com.tr da Cloudflare arkasında — User-Agent göndermezsek Python'ın varsayılan
+    # "Python-urllib/3.x" imzası bot olarak işaretlenip Cloudflare error 1010 ("Access Denied")
+    # ile reddediliyor (canlıda görüldü). Aynı sorun GZP/AYT uçuş scraping'inde de vardı,
+    # aynı çözüm kullanılıyor — bkz. SCRAPE_USER_AGENT.
+    req.headers["User-Agent"] = SCRAPE_USER_AGENT
     # KRİTİK: server.py http.server.HTTPServer kullanıyor (tek thread'li — bkz. __main__).
     # Bu istek yavaş/askıda kalırsa TÜM SİTE o süre boyunca kilitlenir, ayrıca Cloudflare/
     # Railway gateway'i bizim kendi hata JSON'umuzu dönmemize fırsat kalmadan 502 HTML sayfası
