@@ -1,22 +1,18 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-10 (akşam — PayPas debug oturumu)
+Son güncelleme: 2026-08-11
 
-## ŞU AN AÇIK SORUN: PayPas "Invalid API credentials" (401)
+## PayPas "Invalid API credentials" (401) — muhtemelen ÇÖZÜLDÜ, canlı doğrulama bekleniyor
 
-Kredi kartı akışı canlıda kuruldu, iki gerçek bug bulunup düzeltildi (aşağıda), ama
-son adımda hâlâ takılıyor:
+Kredi kartı akışı kurulurken sırasıyla 3 gerçek bug bulunup düzeltildi:
 
-1. ✅ Çözüldü — Cloudflare 502'yi kendi hata sayfasıyla değiştiriyordu → hata kodları 400'e çekildi (commit `b95bf63`)
-2. ✅ Çözüldü — paypas.com.tr da Cloudflare arkasında, Python'ın User-Agent'sız isteği bot sanılıp 403/error 1010 ile reddediliyordu → `SCRAPE_USER_AGENT` eklendi (commit `f725db2`)
-3. ❌ **AÇIK** — Artık PayPas'a gerçekten ulaşıyoruz ama PayPas `401 {"error":{"message":"Invalid API credentials","type":"authentication_error"}}` dönüyor.
+1. ✅ Cloudflare 502'yi kendi hata sayfasıyla değiştiriyordu → hata kodları 400'e çekildi (commit `b95bf63`)
+2. ✅ paypas.com.tr da Cloudflare arkasında, Python'ın User-Agent'sız isteği bot sanılıp 403/error 1010 ile reddediliyordu → `SCRAPE_USER_AGENT` eklendi (commit `f725db2`)
+3. ✅ (muhtemel asıl sebep) **`urllib.request.Request(..., headers={...})` özel header isimlerini sessizce küçük harfe çeviriyordu** — `X-SECRET-KEY` aslında `X-secret-key` olarak gidiyordu, PayPas'ın sunucusu muhtemelen case-sensitive kontrol yaptığı için "Invalid API credentials" dönüyordu. `req.headers[...]` ile doğrudan atama yapılarak (add_header() atlanarak) düzeltildi, yerel testte header'ın artık doğru case ile gittiği doğrulandı (commit `05a70a1`).
 
-**Olası sebepler (Tolga'nın kontrol etmesi gerekiyor, ben PayPas paneline/Railway'e giremem):**
-- PayPas panelinde mağaza durumu "Beklemede" (onay bekliyor) — onaylanmadan API çalışmıyor olabilir
-- Railway'deki `PAYPAS_MERCHANT_KEY` / `PAYPAS_SECRET_KEY` değerlerinde kopyala-yapıştır kaynaklı fazladan boşluk/satır sonu olabilir — panelden tekrar kopyalayıp yapıştırması istendi
-- Not: PayPas panelindeki API Bilgileri modalında mod "TEST" seçiliydi (LIVE gri) — o ekrandaki Merchant ID/Secret Key muhtemelen test moduna ait
+Anahtarlarda boşluk/kopyala-yapıştır sorunu YOKTU (maskeli teşhis logu bunu netleştirdi — uzunluklar ve baş/son karakterler tam eşleşiyordu), mağaza da onaylıydı — demek ki hep bu header case sorunuymuş.
 
-Sıradaki adım: Tolga PayPas panelini/Railway değişkenlerini kontrol edip sonucu bildirecek.
+**Sıradaki adım:** Tolga push edip tekrar deneyecek. Eğer 401 hâlâ devam ederse, bir sonraki şüpheli: PayPas'ın "Beklemede" ekranındaki Merchant ID/Secret Key'in TEST moduna ait olması, mağaza onaylandıktan sonra panelde YENİ (LIVE) anahtarlar üretilmiş olabilir — panelden tekrar kontrol edilmeli.
 
 ## PayPas Sanal POS Entegrasyonu — Teknik Özet
 
