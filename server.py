@@ -3080,6 +3080,15 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     digest_data = "".join(data.get(p, "") or "" for p in param_names) + GARANTI_STORE_KEY
                     calculated = _garanti_sha512_hex(digest_data)
                     verified = (calculated == response_hash.upper())
+                    if not verified:
+                        # GEÇİCİ TEŞHİS LOGU — kart bilgisi YOK, sadece hash'e giren alanlar
+                        # (sipariş/provizyon meta verisi). Root cause bulununca kaldırılacak.
+                        field_dump = " | ".join(f"{p}='{data.get(p, '')}'" for p in param_names)
+                        print(f"[DEBUG-HASH] hashparams='{hashparams}'", flush=True)
+                        print(f"[DEBUG-HASH] alanlar: {field_dump}", flush=True)
+                        print(f"[DEBUG-HASH] digest_data(storekey haric)='{digest_data[:-len(GARANTI_STORE_KEY)]}' uzunluk={len(digest_data)}", flush=True)
+                        print(f"[DEBUG-HASH] hesapladigim={calculated}", flush=True)
+                        print(f"[DEBUG-HASH] Garanti'nin gonderdigi={response_hash.upper()}", flush=True)
                 target = next((r for r in RESERVATIONS if r.get("garantiOrderId") == order_id), None)
                 if target is not None and verified and proc_return_code == "00":
                     outcome = "basarili"
