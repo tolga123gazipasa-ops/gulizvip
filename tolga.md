@@ -1,8 +1,70 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-11
+Son güncelleme: 2026-08-12
 
-## PayPas "Invalid API credentials" (401) — muhtemelen ÇÖZÜLDÜ, canlı doğrulama bekleniyor
+## GÜNCEL: PayPas iptal edildi, Garanti BBVA Sanal POS'a geçildi
+
+PayPas'ta 401 "Invalid API credentials" hatası mağaza onaylandıktan ve anahtarlar
+teyit edildikten sonra bile çözülemedi (PayPas desteğine yönlendirilmişti). Senin
+kararınla PayPas tamamen kaldırıldı, yerine **Garanti BBVA Sanal POS** (3D'li Peşin,
+https://dev.garantibbva.com.tr/sanalpos-satis-pesin-3dli) entegre edildi — commit `8fa5d1a`.
+
+### Nasıl çalışıyor
+Garanti'nin modeli PayPas'tan tamamen farklı: PayPas'ta müşteriyi onların hazır ödeme
+sayfasına yönlendiriyorduk. Garanti'de kart formu (isim/numara/SKT/CVV) **bizim
+sitemizde** — ama kart bilgisi hiçbir zaman bizim sunucumuza uğramıyor: tarayıcı,
+bizim ürettiğimiz "gizli" banka alanlarıyla (hash dahil) birlikte kart bilgisini
+DOĞRUDAN Garanti'nin sunucusuna post ediyor.
+
+- Müşteri booking formunda "Kredi Kartı (Online)" seçip rezervasyonu tamamladığında
+  `/odeme/garanti/<rezervasyonId>` sayfasına yönlendiriliyor — orada kart formu var.
+- Admin panelindeki "Ödeme Linki Oluştur" / "WhatsApp'tan Gönder" özelliği de aynı
+  `/odeme/garanti/<id>` linkini üretiyor — müşteriye WhatsApp'tan gönderilebilir.
+- Kart formu gönderildiğinde: `/api/payments/garanti/prepare` gizli alanları + hash'i
+  üretir → tarayıcı bunları kart bilgisiyle birleştirip gerçek bir HTML form-post ile
+  doğrudan Garanti'ye gönderir → Garanti işlemi yapıp `/api/payments/garanti/result`
+  adresine geri post eder → biz `hash`/`hashparams`'ı StoreKey ile YENİDEN hesaplayıp
+  doğruluyoruz (sahte istekler bu adımda elenir) → geçerliyse rezervasyon `paid`
+  işaretlenir + dashboard bildirimi + Telegram mesajı gider → müşteri anasayfaya
+  `?odeme=basarili|basarisiz|dogrulanamadi` ile döner.
+
+### Doğrulama durumu
+- Hash algoritması resmi dokümantasyondaki PHP/C# örnekleriyle birebir karşılaştırıldı
+  (hashedPassword = SHA1(provizyon şifresi + terminal ID'nin 9 haneye tamamlanmış hali))
+- Local mock testte: doğru hash ile gönderilen sahte "ödeme sonucu" rezervasyonu
+  `paid` işaretledi + bildirim/Telegram tetikledi; bozuk/sahte hash ile gönderilen
+  istek reddedildi (log: "hash doğrulaması BAŞARISIZ")
+- **Henüz gerçek Garanti test sunucusuyla (sanalposprovtest.garantibbva.com.tr) uçtan
+  uca denenmedi** — bunun için gerçek bir tarayıcıdan `/odeme/garanti/<id>` sayfasını
+  açıp resmi test kartıyla (`4282209004348015`, SKT `08/27`, CVV `123`, 3D şifre her
+  zaman `147852`) ödeme yapman gerekiyor.
+
+### Aktifleştirmek İçin Yapman Gerekenler (Railway → Variables)
+Kod, tanımlanmazsa Garanti'nin **TEST ortamı** resmi öntanımlı değerleriyle çalışır
+(gerçek para geçmez). Gerçek/canlı ödeme almak için Railway'e ekle:
+1. `GARANTI_MODE` = `PROD`
+2. `GARANTI_MERCHANT_ID` = gerçek üye işyeri numaran
+3. `GARANTI_TERMINAL_ID` = gerçek terminal numaran
+4. `GARANTI_PROV_USER_ID` = provizyon kullanıcı adın (genelde `PROVAUT`)
+5. `GARANTI_TERMINAL_USER_ID` = banka sana verdiyse o değer (varsayılan `GARANTI`)
+6. `GARANTI_PROVISION_PASSWORD` = provizyon şifren
+7. `GARANTI_STORE_KEY` = 3D Secure mağaza anahtarın (storekey)
+
+Bu bilgileri ben giremem/göremem — güvenlik kuralı gereği API anahtarlarını hiçbir
+zaman kendim bir forma/panele girmiyorum, Railway Variables'a kendin eklemelisin.
+
+### Hemen Yapılması Gereken
+```
+cd C:\proje\gulizvip
+git push origin main
+```
+Push edince Railway otomatik deploy edecek. Sonra TEST modunda (env var eklemeden,
+varsayılan değerlerle) resmi test kartıyla bir kere uçtan uca dene, çalışırsa yukarıdaki
+7 env var'ı ekleyip `GARANTI_MODE=PROD` ile canlıya geç.
+
+---
+
+## ESKİ (artık geçersiz) — PayPas "Invalid API credentials" (401) notları
 
 Kredi kartı akışı kurulurken sırasıyla 3 gerçek bug bulunup düzeltildi:
 
