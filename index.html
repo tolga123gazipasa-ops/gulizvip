@@ -465,10 +465,11 @@
                     if(!acct) return;
                     var nameEl = document.querySelector('#' + formType + '-' + key + '-label .bank-name');
                     var ibanEl = document.querySelector('#' + formType + '-' + key + '-label .bank-iban');
-                    var logoEl = document.getElementById(formType + '-' + key + '-logo');
+                    var holderEl = document.querySelector('#' + formType + '-' + key + '-label .bank-account-holder');
                     if(nameEl) nameEl.textContent = acct.name;
                     if(ibanEl) ibanEl.textContent = acct.iban;
-                    // Logo sabit — statik dosyadan (halkbank.png / vakifbank.png)
+                    if(holderEl && acct.accountHolder) holderEl.textContent = acct.accountHolder;
+                    // Logo sabit — statik ikon (fa-building-columns), banka logosu görseli yok
                 });
             });
         }
@@ -1247,20 +1248,13 @@
                     <div class="bank-details" id="transfer-bank-details">
                         <div class="bank-details-label" data-i18n="form.bankSelectLabel">Banka Seçiniz</div>
                         <div class="bank-options">
-                            <label class="bank-option selected" id="transfer-halkbank-label">
-                                <input type="radio" name="transfer-bank" value="halkbank" checked>
-                                <img class="bank-logo" id="transfer-halkbank-logo" loading="lazy" src="/halkbank.png" alt="Halkbank" style="width:40px;height:40px;object-fit:contain;">
+                            <label class="bank-option selected" id="transfer-garantibbva-label">
+                                <input type="radio" name="transfer-bank" value="garantibbva" checked>
+                                <i class="fa-solid fa-building-columns" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--primary-navy);flex-shrink:0;"></i>
                                 <div class="bank-info">
-                                    <div class="bank-name">Halkbank</div>
-                                    <div class="bank-iban">TR12 0001 2009 4321 1234 5678 90</div>
-                                </div>
-                            </label>
-                            <label class="bank-option" id="transfer-vakifbank-label">
-                                <input type="radio" name="transfer-bank" value="vakifbank">
-                                <img class="bank-logo" id="transfer-vakifbank-logo" loading="lazy" src="/vakifbank.png" alt="VakıfBank" style="width:40px;height:40px;object-fit:contain;">
-                                <div class="bank-info">
-                                    <div class="bank-name">VakıfBank</div>
-                                    <div class="bank-iban">TR34 0001 5001 2345 6789 0123 45</div>
+                                    <div class="bank-name">Garanti BBVA</div>
+                                    <div class="bank-account-holder" style="font-size:12px;color:var(--text-gray);margin:2px 0;">GÜLİZ LOJİSTİK MİMARLIK SANAYİ VE TİC.LTD.ŞTİ</div>
+                                    <div class="bank-iban">TR34 0006 2001 1370 0006 2935 07</div>
                                 </div>
                             </label>
                         </div>
@@ -1348,20 +1342,13 @@
                     <div class="bank-details" id="tahsis-bank-details">
                         <div class="bank-details-label" data-i18n="form.bankSelectLabel">Banka Seçiniz</div>
                         <div class="bank-options">
-                            <label class="bank-option selected" id="tahsis-halkbank-label">
-                                <input type="radio" name="tahsis-bank" value="halkbank" checked>
-                                <img class="bank-logo" id="tahsis-halkbank-logo" loading="lazy" src="/halkbank.png" alt="Halkbank" style="width:40px;height:40px;object-fit:contain;">
+                            <label class="bank-option selected" id="tahsis-garantibbva-label">
+                                <input type="radio" name="tahsis-bank" value="garantibbva" checked>
+                                <i class="fa-solid fa-building-columns" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--primary-navy);flex-shrink:0;"></i>
                                 <div class="bank-info">
-                                    <div class="bank-name">Halkbank</div>
-                                    <div class="bank-iban">TR12 0001 2009 4321 1234 5678 90</div>
-                                </div>
-                            </label>
-                            <label class="bank-option" id="tahsis-vakifbank-label">
-                                <input type="radio" name="tahsis-bank" value="vakifbank">
-                                <img class="bank-logo" id="tahsis-vakifbank-logo" loading="lazy" src="/vakifbank.png" alt="VakıfBank" style="width:40px;height:40px;object-fit:contain;">
-                                <div class="bank-info">
-                                    <div class="bank-name">VakıfBank</div>
-                                    <div class="bank-iban">TR34 0001 5001 2345 6789 0123 45</div>
+                                    <div class="bank-name">Garanti BBVA</div>
+                                    <div class="bank-account-holder" style="font-size:12px;color:var(--text-gray);margin:2px 0;">GÜLİZ LOJİSTİK MİMARLIK SANAYİ VE TİC.LTD.ŞTİ</div>
+                                    <div class="bank-iban">TR34 0006 2001 1370 0006 2935 07</div>
                                 </div>
                             </label>
                         </div>

@@ -1252,7 +1252,7 @@
                     <div class="section-header"><h3>İletişim ve API Ayarları</h3></div>
                     <div class="form-row">
                         <div class="form-group"><label>WhatsApp Destek Hattı</label><input type="text" value="+90 242 606 25 48"></div>
-                        <div class="form-group"><label>Operasyon Email</label><input type="email" value="operasyon@guliztransfer.com"></div>
+                        <div class="form-group"><label>Operasyon Email</label><input type="email" value="info@gulizvip.com.tr"></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>Netgsm API Key (SMS Bildirimleri İçin)</label><input type="password" value="************************"></div>
@@ -3192,23 +3192,28 @@
         function renderBankAccounts(accounts) {
         var container = document.getElementById('bank-accounts-form');
         var html = '';
-        var order = ['halkbank', 'vakifbank'];
+        var order = ['garantibbva'];
         var bankLabels = {
-            'halkbank': 'Halkbank',
-            'vakifbank': 'VakıfBank'
+            'garantibbva': 'Garanti BBVA'
         };
         for(var i = 0; i < order.length; i++) {
             var key = order[i];
-            var acct = accounts[key] || {name: '', iban: '', logo: ''};
+            var acct = accounts[key] || {name: '', accountHolder: '', iban: ''};
             html += '<div class="panel-section" style="margin-bottom:16px;">' +
                 '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
-                '<img src="' + key + '.png" style="width:40px;height:40px;object-fit:contain;border-radius:6px;border:1px solid var(--border);padding:4px;background:#fff;" onerror="this.style.display=\'none\'">' +
+                '<i class="fa-solid fa-building-columns" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--primary-navy,#1B2B4C);border-radius:6px;border:1px solid var(--border);background:#fff;"></i>' +
                 '<h4 style="margin:0;font-size:16px;font-weight:700;">' + (bankLabels[key] || key) + '</h4></div>' +
                 '<div class="form-row">' +
                 '<div class="form-group" style="flex:1;"><label>Banka Adı</label>' +
-                '<input type="text" id="bank-name-' + key + '" value="' + escapeHtml(acct.name) + '" style="font-size:16px;font-weight:600;padding:10px 12px;" placeholder="Örn: Halkbank"></div>' +
+                '<input type="text" id="bank-name-' + key + '" value="' + escapeHtml(acct.name) + '" style="font-size:16px;font-weight:600;padding:10px 12px;" placeholder="Örn: Garanti BBVA"></div>' +
+                '</div>' +
+                '<div class="form-row">' +
+                '<div class="form-group" style="flex:1;"><label>Hesap Sahibi</label>' +
+                '<input type="text" id="bank-holder-' + key + '" value="' + escapeHtml(acct.accountHolder || '') + '" style="font-size:15px;padding:10px 12px;" placeholder="Örn: GÜLİZ LOJİSTİK MİMARLIK SANAYİ VE TİC.LTD.ŞTİ"></div>' +
+                '</div>' +
+                '<div class="form-row">' +
                 '<div class="form-group" style="flex:2;"><label>IBAN</label>' +
-                '<input type="text" id="bank-iban-' + key + '" value="' + escapeHtml(acct.iban) + '" style="font-size:16px;font-family:\'Courier New\',monospace;letter-spacing:0.5px;padding:10px 12px;" placeholder="TR12 0001 2009 4321 1234 5678 90"></div>' +
+                '<input type="text" id="bank-iban-' + key + '" value="' + escapeHtml(acct.iban) + '" style="font-size:16px;font-family:\'Courier New\',monospace;letter-spacing:0.5px;padding:10px 12px;" placeholder="TR34 0006 2001 1370 0006 2935 07"></div>' +
                 '</div></div>';
         }
         container.innerHTML = html;
@@ -3223,21 +3228,14 @@
 
     function adminSaveBankAccounts() {
         var accounts = {
-            halkbank: {
-                name: document.getElementById('bank-name-halkbank').value.trim(),
-                iban: document.getElementById('bank-iban-halkbank').value.trim()
-            },
-            vakifbank: {
-                name: document.getElementById('bank-name-vakifbank').value.trim(),
-                iban: document.getElementById('bank-iban-vakifbank').value.trim()
+            garantibbva: {
+                name: document.getElementById('bank-name-garantibbva').value.trim(),
+                accountHolder: document.getElementById('bank-holder-garantibbva').value.trim(),
+                iban: document.getElementById('bank-iban-garantibbva').value.trim()
             }
         };
-        if(!accounts.halkbank.name || !accounts.halkbank.iban) {
-            alert('Halkbank bilgilerini eksiksiz girin.');
-            return;
-        }
-        if(!accounts.vakifbank.name || !accounts.vakifbank.iban) {
-            alert('VakıfBank bilgilerini eksiksiz girin.');
+        if(!accounts.garantibbva.name || !accounts.garantibbva.iban) {
+            alert('Garanti BBVA bilgilerini eksiksiz girin.');
             return;
         }
         var token = getToken();

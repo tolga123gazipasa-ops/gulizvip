@@ -397,13 +397,10 @@ def save_slider_images():
 
 # Banka hesap bilgileri — admin panelden güncellenebilir
 BANK_ACCOUNTS = {
-    "halkbank": {
-        "name": "Halkbank",
-        "iban": "TR12 0001 2009 4321 1234 5678 90"
-    },
-    "vakifbank": {
-        "name": "VakıfBank",
-        "iban": "TR34 0001 5001 2345 6789 0123 45"
+    "garantibbva": {
+        "name": "Garanti BBVA",
+        "accountHolder": "GÜLİZ LOJİSTİK MİMARLIK SANAYİ VE TİC.LTD.ŞTİ",
+        "iban": "TR34 0006 2001 1370 0006 2935 07"
     }
 }
 # ─── Visitor Tracking (Görünmez Ajan) ────────────────────────────────────────
