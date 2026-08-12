@@ -3,12 +3,40 @@ Güliz VIP — PostgreSQL Veritabanı Modülü
 psycopg2-binary ile PostgreSQL bağlantısı, tablo yönetimi, CRUD işlemleri
 """
 import os
+import re
 import json
 import time
 from datetime import datetime
 
 DESTINATIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "destinations.json")
 ADMIN_CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "admin_config.json")
+
+
+def _coerce_passenger_count(value, default=1):
+    """'passengers' alanı bazen sayısal değil, açıklayıcı bir metin olabilir
+    (örn. frontend'deki tek seçenekli bilgilendirme select'inden gelen
+    "1 - 9 Kişi (VIP Vito)" gibi bir string — bkz. index.html #transfer-passengers).
+    PostgreSQL'deki passengers sütunu INTEGER olduğu için ham metin doğrudan
+    yazılırsa "invalid input syntax for type integer" hatasıyla INSERT/UPDATE
+    başarısız olur (canlıda tespit edildi). Burada metinden İLK sayıyı çıkarıp
+    veritabanına onu yazıyoruz; e-posta/Telegram/admin gösterimlerinde kullanılan
+    orijinal metin (reservation dict / JSON / RESERVATIONS listesi) DEĞİŞMİYOR,
+    sadece bu fonksiyondan geçen değer veritabanı sütununa gidiyor."""
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if value is None:
+        return default
+    match = re.search(r"\d+", str(value))
+    if match:
+        try:
+            return int(match.group())
+        except ValueError:
+            return default
+    return default
 
 try:
     import psycopg2
@@ -272,7 +300,7 @@ def save_reservation_to_db(reservation):
                     reservation.get("flightNumber", ""),
                     reservation.get("date", ""),
                     reservation.get("time", ""),
-                    reservation.get("passengers", 1),
+                    _coerce_passenger_count(reservation.get("passengers", 1)),
                     reservation.get("duration", ""),
                     reservation.get("notes", ""),
                     reservation.get("price", 0),
@@ -411,7 +439,10 @@ def update_reservation_in_db(res_id, fields):
         for json_key, db_col in field_map.items():
             if json_key in fields:
                 set_parts.append(f"{db_col} = %s")
-                values.append(fields[json_key])
+                val = fields[json_key]
+                if json_key == "passengers":
+                    val = _coerce_passenger_count(val)
+                values.append(val)
         if not set_parts:
             return False
         set_parts.append("updated_at = CURRENT_TIMESTAMP")
