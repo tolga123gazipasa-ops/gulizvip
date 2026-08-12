@@ -28,16 +28,24 @@ DOĞRUDAN Garanti'nin sunucusuna post ediyor.
   işaretlenir + dashboard bildirimi + Telegram mesajı gider → müşteri anasayfaya
   `?odeme=basarili|basarisiz|dogrulanamadi` ile döner.
 
-### Doğrulama durumu
-- Hash algoritması resmi dokümantasyondaki PHP/C# örnekleriyle birebir karşılaştırıldı
-  (hashedPassword = SHA1(provizyon şifresi + terminal ID'nin 9 haneye tamamlanmış hali))
-- Local mock testte: doğru hash ile gönderilen sahte "ödeme sonucu" rezervasyonu
-  `paid` işaretledi + bildirim/Telegram tetikledi; bozuk/sahte hash ile gönderilen
-  istek reddedildi (log: "hash doğrulaması BAŞARISIZ")
-- **Henüz gerçek Garanti test sunucusuyla (sanalposprovtest.garantibbva.com.tr) uçtan
-  uca denenmedi** — bunun için gerçek bir tarayıcıdan `/odeme/garanti/<id>` sayfasını
-  açıp resmi test kartıyla (`4282209004348015`, SKT `08/27`, CVV `123`, 3D şifre her
-  zaman `147852`) ödeme yapman gerekiyor.
+### Doğrulama durumu — ✅ UÇTAN UCA BAŞARILI (12 Ağustos, canlı TEST ortamında)
+Hash algoritması resmi dokümantasyondaki PHP/C# örnekleriyle karşılaştırıldı ve
+local mock testlerden geçti, ama gerçek Garanti test sunucusuyla ilk denemelerde
+`secure3dhash` sürekli reddediliyordu (procreturncode=99, "Güvenlik Kodu hatalı",
+3D ekranına hiç ulaşmadan). Kök neden: hash hesaplamasında taksit sayısı (installment
+count) alanı `0` olarak kullanılıyordu ama form alanına gönderilen gerçek değer boş
+string (`""`) idi — Garanti hash'i form alanlarıyla karşılaştırdığı için tutmuyordu.
+Bağımsız, çalışan bir prod referans entegrasyonu (github.com/bsevgin/garantipos)
+incelenerek düzeltildi: artık hash ve form alanı aynı değeri paylaşıyor (commit `12e58a5`).
+
+Düzeltme sonrası canlı TEST ortamında (resmi test kartı `4282209004348015`) tam bir
+ödeme denemesi yapıldı: `mdstatus=1` (tam doğrulama), `procreturncode=00` (onaylandı),
+hash doğrulandı, rezervasyon `paid` işaretlendi, dashboard bildirimi + Telegram mesajı
+gitti, müşteri `?odeme=basarili` ile anasayfaya döndü. **Entegrasyon çalışıyor.**
+
+Not: Test kartında 3D Secure OTP ekranı hiç çıkmadı — bu normal, Garanti'nin test
+kartı "sürtünmesiz" (frictionless) modda otomatik doğruluyor. Gerçek müşteri
+kartlarında normal şartlarda SMS/OTP ekranı çıkacaktır.
 
 ### Aktifleştirmek İçin Yapman Gerekenler (Railway → Variables)
 Kod, tanımlanmazsa Garanti'nin **TEST ortamı** resmi öntanımlı değerleriyle çalışır

@@ -3071,11 +3071,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             outcome = "dogrulanamadi"
             try:
                 raw = self._read_body()
-                # GEÇİCİ TEŞHİS LOGU — Garanti'den gelen HAM (ayrıştırılmamış) gövde ve
-                # Content-Type. Kart bilgisi İÇERMEZ (bu callback'te zaten kart verisi yok,
-                # sadece işlem sonucu/hash meta verisi var). Root cause bulununca kaldırılacak.
-                print(f"[DEBUG-HASH] Content-Type='{self.headers.get('Content-Type', '')}'", flush=True)
-                print(f"[DEBUG-HASH] RAW BODY='{raw}'", flush=True)
                 try:
                     data = json.loads(raw) if raw else {}
                 except json.JSONDecodeError:
@@ -3096,14 +3091,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     calculated = _garanti_sha512_hex(digest_data)
                     verified = (calculated == response_hash.upper())
                     if not verified:
-                        # GEÇİCİ TEŞHİS LOGU — kart bilgisi YOK, sadece hash'e giren alanlar
-                        # (sipariş/provizyon meta verisi). Root cause bulununca kaldırılacak.
+                        # Hash mevcut ama tutmuyor — bu GERÇEKTEN şüpheli bir durum (sahte istek
+                        # ya da StoreKey/terminal yanlış), o yüzden kalıcı olarak loglanıyor.
+                        # Kart bilgisi İÇERMEZ, sadece hash'e giren sipariş/provizyon meta verisi.
                         field_dump = " | ".join(f"{p}='{data.get(p, '')}'" for p in param_names)
-                        print(f"[DEBUG-HASH] hashparams='{hashparams}'", flush=True)
-                        print(f"[DEBUG-HASH] alanlar: {field_dump}", flush=True)
-                        print(f"[DEBUG-HASH] digest_data(storekey haric)='{digest_data[:-len(GARANTI_STORE_KEY)]}' uzunluk={len(digest_data)}", flush=True)
-                        print(f"[DEBUG-HASH] hesapladigim={calculated}", flush=True)
-                        print(f"[DEBUG-HASH] Garanti'nin gonderdigi={response_hash.upper()}", flush=True)
+                        print(f"[!] Garanti hash uyuşmazlığı — hashparams='{hashparams}' | alanlar: {field_dump}", flush=True)
+                        print(f"[!] Garanti hash uyuşmazlığı — hesapladığım={calculated} | gönderilen={response_hash.upper()}", flush=True)
                 target = next((r for r in RESERVATIONS if r.get("garantiOrderId") == order_id), None)
                 if target is not None and verified and proc_return_code == "00":
                     outcome = "basarili"
