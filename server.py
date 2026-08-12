@@ -1202,9 +1202,14 @@ def _garanti_prepare_form(reservation, currency="TRY"):
     currency_code = GARANTI_CURRENCY_CODES.get((currency or "TRY").upper(), "949")
     txn_type = "sales"
     installment_count = ""  # peşin — form alanı boş
-    # Dokümantasyondaki resmi PHP/Java/C# örneklerinde hash hesaplamasında installmentCount
-    # AÇIKÇA 0 (integer) olarak kullanılıyor, form alanındaki boş string'den FARKLI.
-    secure3dhash = _garanti_secure3dhash(order_id, amount_minor, currency_code, result_url, result_url, txn_type, 0)
+    # DÜZELTME: İlk canlı testte hash hep reddedildi (3D adımına hiç ulaşmadan "Güvenlik
+    # Kodu hatalı"/procreturncode=99). Dokümantasyondaki jenerik PHP örneği installmentCount'u
+    # hash'te literal 0 (integer) kullanıyordu ama bu genel bir örnekti, "peşin" işlemine özel
+    # değildi. Bağımsız, çalışan bir prod referans entegrasyonunda (GitHub: bsevgin/garantipos)
+    # hash'e giren installmentCount değeri HER ZAMAN form alanına gönderilen DEĞERİN AYNISI
+    # (peşin için boş string "") — iki ayrı değer kullanılmıyor. Hash artık form alanıyla
+    # birebir aynı değeri (boş string) kullanıyor.
+    secure3dhash = _garanti_secure3dhash(order_id, amount_minor, currency_code, result_url, result_url, txn_type, installment_count)
     return {
         "postUrl": GARANTI_POST_URL,
         "mode": GARANTI_MODE,
@@ -3080,7 +3085,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 response_hash = data.get("hash", "")
                 hashparams = data.get("hashparams", "")
                 verified = False
-                if hashparams and response_hash:
+                # ÖNEMLİ: hash/hashparams alanları SADECE 3D Secure doğrulaması başarıyla
+                # tamamlanıp provizyon adımına ulaşıldığında gönderilir. 3D adımında
+                # reddedilen (ör. yanlış OTP/güvenlik kodu) işlemlerde bu alanlar HİÇ
+                # gelmez — bu durum "sahte istek" değil, normal bir başarısız ödemedir.
+                hash_present = bool(hashparams and response_hash)
+                if hash_present:
                     param_names = [p for p in hashparams.split(":") if p]
                     digest_data = "".join(data.get(p, "") or "" for p in param_names) + GARANTI_STORE_KEY
                     calculated = _garanti_sha512_hex(digest_data)
@@ -3123,6 +3133,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 elif target is None:
                     outcome = "dogrulanamadi"
                     print(f"[!] Garanti result: eşleşen rezervasyon bulunamadı (orderid={order_id})", flush=True)
+                elif not hash_present:
+                    # 3D Secure adımında reddedildi/iptal edildi — hash hiç üretilmedi.
+                    # Şüpheli DEĞİL, normal bir başarısız ödeme senaryosu.
+                    outcome = "basarisiz"
+                    mdstatus = data.get("mdstatus", "")
+                    md_error = data.get("mderrormessage") or data.get("errmsg") or ""
+                    print(f"[i] Garanti result: 3D Secure tamamlanmadı (orderid={order_id}, mdstatus={mdstatus}, procreturncode={proc_return_code}, mesaj='{md_error}')", flush=True)
                 elif not verified:
                     outcome = "dogrulanamadi"
                     print(f"[!] Garanti result: hash doğrulaması BAŞARISIZ (orderid={order_id}) — sahte istek olabilir!", flush=True)
