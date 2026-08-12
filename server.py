@@ -3066,6 +3066,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             outcome = "dogrulanamadi"
             try:
                 raw = self._read_body()
+                # GEÇİCİ TEŞHİS LOGU — Garanti'den gelen HAM (ayrıştırılmamış) gövde ve
+                # Content-Type. Kart bilgisi İÇERMEZ (bu callback'te zaten kart verisi yok,
+                # sadece işlem sonucu/hash meta verisi var). Root cause bulununca kaldırılacak.
+                print(f"[DEBUG-HASH] Content-Type='{self.headers.get('Content-Type', '')}'", flush=True)
+                print(f"[DEBUG-HASH] RAW BODY='{raw}'", flush=True)
                 try:
                     data = json.loads(raw) if raw else {}
                 except json.JSONDecodeError:
