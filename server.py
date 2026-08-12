@@ -1131,150 +1131,237 @@ def _push_dashboard_notification(message, ntype="info", reservation_id=None):
         save_dashboard_notifications()
     return notif
 
-# ─── Ödeme (Dövizli Ödeme Linki) — Provider-agnostic altyapı ──────────────────────
-# NOT: Sağlayıcı olarak PayPas (paypas.com.tr) seçildi ve aşağıda gerçek entegrasyon var.
-# Stripe/PayTR dalları hâlâ iskelet — gerçek anahtar tanımlanmadıkça devre dışıdır.
-#   1) PAYMENT_PROVIDER = "paypas" (Railway env var)
-#   2) PAYPAS_MERCHANT_KEY / PAYPAS_SECRET_KEY env var'ları Railway'de tanımlanmalı
-#      (gerçek değerleri Tolga kendisi Railway → Variables'tan girmeli, koda yazılmaz)
-#   4) /api/webhooks/stripe veya /api/webhooks/paytr imza doğrulamasını gerçek
-#      secret ile yapacak şekilde güncellenir (şu an sadece iskelet/log var)
-PAYMENT_PROVIDER = os.environ.get("PAYMENT_PROVIDER", "manual")  # "paypas" | "stripe" | "paytr" | "manual"
-STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-PAYTR_MERCHANT_ID = os.environ.get("PAYTR_MERCHANT_ID", "")
-PAYTR_MERCHANT_KEY = os.environ.get("PAYTR_MERCHANT_KEY", "")
-PAYTR_MERCHANT_SALT = os.environ.get("PAYTR_MERCHANT_SALT", "")
-
-# PayPas sanal POS — https://www.paypas.com.tr/api
-PAYPAS_BASE_URL = os.environ.get("PAYPAS_BASE_URL", "https://paypas.com.tr/api/v1")
-PAYPAS_MERCHANT_KEY = os.environ.get("PAYPAS_MERCHANT_KEY", "")  # Authorization: Bearer ...
-PAYPAS_SECRET_KEY = os.environ.get("PAYPAS_SECRET_KEY", "")      # X-SECRET-KEY
-
-
-def _paypas_request(method, endpoint, payload=None):
-    """PayPas API'sine imzalı istek atar. Hata durumunda RuntimeError fırlatır
-    (çağıran taraf bunu yakalayıp admin'e anlamlı bir hata döner — sessizce
-    sahte bir link üretilmez, çünkü bu gerçek para akışı)."""
-    url = f"{PAYPAS_BASE_URL}{endpoint}"
-    data = json.dumps(payload).encode("utf-8") if payload is not None else None
-    # KRİTİK BUG (401 "Invalid API credentials" sebebi buymuş): urllib.request.Request'e
-    # header'lar `headers=` kwarg'ı ile verilirse, Request.add_header() her key'e Python'ın
-    # str.capitalize()'ını uyguluyor — "X-SECRET-KEY" sessizce "X-secret-key" olarak
-    # gönderiliyor! Standart header'lar (Authorization, Content-Type) için sorun olmuyor
-    # çünkü HTTP header'ları RFC gereği case-insensitive ve her framework öyle davranır,
-    # ama PayPas'ın özel "X-SECRET-KEY" header'ı için sunucu tarafı muhtemelen case-sensitive
-    # bir kontrol yapıyor ve eşleşmeyince "geçersiz kimlik bilgisi" dönüyor. Çözüm: Request'i
-    # header'sız oluşturup `req.headers` dict'ine DOĞRUDAN atama yapmak — bu, add_header()'ı
-    # (ve capitalize() mangling'ini) devre dışı bırakıp gönderilen ismi harfiyen koruyor.
-    req = urllib.request.Request(url, data=data, method=method)
-    req.headers["Authorization"] = f"Bearer {PAYPAS_MERCHANT_KEY}"
-    req.headers["X-SECRET-KEY"] = PAYPAS_SECRET_KEY
-    req.headers["Content-Type"] = "application/json"
-    # paypas.com.tr da Cloudflare arkasında — User-Agent göndermezsek Python'ın varsayılan
-    # "Python-urllib/3.x" imzası bot olarak işaretlenip Cloudflare error 1010 ("Access Denied")
-    # ile reddediliyor (canlıda görüldü). Aynı sorun GZP/AYT uçuş scraping'inde de vardı,
-    # aynı çözüm kullanılıyor — bkz. SCRAPE_USER_AGENT.
-    req.headers["User-Agent"] = SCRAPE_USER_AGENT
-    # KRİTİK: server.py http.server.HTTPServer kullanıyor (tek thread'li — bkz. __main__).
-    # Bu istek yavaş/askıda kalırsa TÜM SİTE o süre boyunca kilitlenir, ayrıca Cloudflare/
-    # Railway gateway'i bizim kendi hata JSON'umuzu dönmemize fırsat kalmadan 502 HTML sayfası
-    # döner (canlıda gözlemlenen "yönlendiriliyor diyor ama yönlendirmiyor" belirtisinin sebebi
-    # muhtemelen bu — DNS çözümlemesi urlopen'in timeout parametresine her zaman uymayabildiği
-    # için socket.setdefaulttimeout ile ek bir güvenlik katmanı ekleniyor). Timeout kısa
-    # tutuluyor ki müşteri en geç birkaç saniyede anlamlı bir hata mesajı görsün.
-    old_timeout = socket.getdefaulttimeout()
-    socket.setdefaulttimeout(8)
-    try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            return json.loads(resp.read(2_000_000).decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        err_body = e.read(5000).decode("utf-8", errors="replace")
-        # 401 "Invalid API credentials" sürekli tekrarlanıyorsa muhtemel sebep Railway
-        # Variables'a anahtarlar yapıştırılırken araya sızan görünmez boşluk/satır sonu.
-        # Gerçek anahtar değerini LOGLAMIYORUZ (güvenlik) — sadece uzunluk + baş/son 2
-        # karakter + boşluk var mı bilgisini maskeli şekilde ekliyoruz ki Tolga Railway'deki
-        # değeri bununla karşılaştırıp hatayı bulabilsin.
-        if e.code == 401:
-            def _mask(k):
-                if not k:
-                    return "(BOŞ/TANIMSIZ)"
-                stripped = k.strip()
-                has_ws = stripped != k
-                shown = f"{k[:3]}...{k[-3:]}" if len(k) > 6 else "***"
-                return f"{shown} (uzunluk={len(k)}, baştaki/sondaki boşluk={'VAR — SORUN BU OLABİLİR' if has_ws else 'yok'})"
-            err_body += (
-                f" | DEBUG merchant_key={_mask(PAYPAS_MERCHANT_KEY)}"
-                f" secret_key={_mask(PAYPAS_SECRET_KEY)}"
-            )
-        raise RuntimeError(f"PayPas API hatası ({e.code}): {err_body}")
-    except urllib.error.URLError as e:
-        raise RuntimeError(f"PayPas API'sine ulaşılamadı: {e.reason}")
-    except socket.timeout:
-        raise RuntimeError("PayPas API zaman aşımına uğradı (8sn) — ağ erişimi ya da DNS sorunlu olabilir.")
-    finally:
-        socket.setdefaulttimeout(old_timeout)
+# ─── Ödeme — Garanti BBVA Sanal POS (3D'li Peşin Satış) ────────────────────────────
+# https://dev.garantibbva.com.tr/sanalpos-satis-pesin-3dli
+# PayPas tamamen kaldırıldı (Tolga kararı) — Garanti tek ödeme sağlayıcısı.
+#
+# Model PayPas'tan TAMAMEN FARKLI: PayPas'ta müşteriyi onların hazır ödeme sayfasına
+# yönlendiriyorduk, kart bilgisini hiç görmüyorduk. Garanti'nin klasik Sanal POS'unda
+# kart formu (isim/numara/SKT/CVV) BİZİM SİTEMİZDE — kart alanları müşterinin
+# tarayıcısında kalıp, bizim ürettiğimiz "gizli" banka alanlarıyla BİRLİKTE aynı HTML
+# formu içinde DOĞRUDAN Garanti'nin sunucusuna post edilir (tarayıcı → Garanti, bizim
+# sunucumuza kart verisi hiç uğramaz). Biz sadece o gizli alanları (hash dahil) üretiriz.
+#
+# Railway env var'ları (Tolga gerçek değerleri kendisi girecek):
+#   GARANTI_MODE              "TEST" | "PROD" (öntanımlı TEST)
+#   GARANTI_MERCHANT_ID       Üye işyeri numarası
+#   GARANTI_TERMINAL_ID       Terminal numarası
+#   GARANTI_PROV_USER_ID      Provizyon kullanıcı adı (satış için genelde "PROVAUT")
+#   GARANTI_TERMINAL_USER_ID  Terminal kullanıcı adı (resmi form şablonunda örnek değer "GARANTI" —
+#                              banka Tolga'ya farklı bir değer verdiyse onunla değiştirilmeli)
+#   GARANTI_PROVISION_PASSWORD  Provizyon şifresi
+#   GARANTI_STORE_KEY         3D Secure mağaza anahtarı (storekey)
+# Tanımlanmazlarsa Garanti'nin resmi dokümantasyonundaki TEST ortamı öntanımlı
+# değerleriyle çalışır (gerçek para geçmez, sadece test kartlarıyla denenebilir).
+GARANTI_MODE = os.environ.get("GARANTI_MODE", "TEST").upper()
+GARANTI_MERCHANT_ID = os.environ.get("GARANTI_MERCHANT_ID", "7000679")
+GARANTI_TERMINAL_ID = os.environ.get("GARANTI_TERMINAL_ID", "30691297")
+GARANTI_PROV_USER_ID = os.environ.get("GARANTI_PROV_USER_ID", "PROVAUT")
+GARANTI_TERMINAL_USER_ID = os.environ.get("GARANTI_TERMINAL_USER_ID", "GARANTI")
+GARANTI_PROVISION_PASSWORD = os.environ.get("GARANTI_PROVISION_PASSWORD", "123qweASD/")
+GARANTI_STORE_KEY = os.environ.get("GARANTI_STORE_KEY", "12345678")
+GARANTI_POST_URL = (
+    "https://sanalposprov.garanti.com.tr/servlet/gt3dengine" if GARANTI_MODE == "PROD"
+    else "https://sanalposprovtest.garantibbva.com.tr/servlet/gt3dengine"
+)
+GARANTI_CURRENCY_CODES = {"TRY": "949", "USD": "840", "EUR": "978", "GBP": "826", "JPY": "392"}
 
 
-def _paypas_create_checkout_session(reservation, amount, currency):
-    """PayPas 'Ödeme Oturumu Oluşturma' (POST /checkout/sessions) çağrısı.
-    Tutar kuruş/cent cinsinden (unit_amount) gönderilir."""
-    base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+def _garanti_sha1_hex(text):
+    """Dokümantasyondaki hash algoritması ISO-8859-9 (Türkçe) encoding + SHA1, büyük harf hex ister."""
+    return hashlib.sha1(text.encode("iso-8859-9", errors="replace")).hexdigest().upper()
+
+
+def _garanti_sha512_hex(text):
+    return hashlib.sha512(text.encode("iso-8859-9", errors="replace")).hexdigest().upper()
+
+
+def _garanti_secure3dhash(order_id, amount_minor, currency_code, success_url, error_url, txn_type, installment_count):
+    """secure3dhash = SHA512(terminalId + orderId + amount + currencyCode + successUrl +
+    errorUrl + type + installmentCount + storeKey + hashedPassword). hashedPassword =
+    SHA1(provisionPassword + terminalId'nin 9 haneye SOLDAN SIFIRLA doldurulmuş hali) —
+    resmi PHP örneğinden doğrulandı (str_pad($terminalId, 9, '0', STR_PAD_LEFT))."""
+    hashed_password = _garanti_sha1_hex(GARANTI_PROVISION_PASSWORD + GARANTI_TERMINAL_ID.zfill(9))
+    data = (
+        f"{GARANTI_TERMINAL_ID}{order_id}{amount_minor}{currency_code}"
+        f"{success_url}{error_url}{txn_type}{installment_count}{GARANTI_STORE_KEY}{hashed_password}"
+    )
+    return _garanti_sha512_hex(data)
+
+
+def _garanti_prepare_form(reservation, currency="TRY"):
+    """Rezervasyon için Garanti 3D'li Peşin satış formunun GİZLİ (hidden) alanlarını ve
+    hash'ini üretir. Kart bilgisi burada YOK — form istemci tarafında bu alanlarla
+    birleştirilip doğrudan Garanti'ye post edilir."""
     res_id = reservation.get("id")
-    unit_amount = int(round(float(amount) * 100))
-    payload = {
-        "mode": "payment",
-        "success_url": f"{base_url}/api/payments/paypas/success/{res_id}",
-        "cancel_url": f"{base_url}/api/payments/paypas/cancel/{res_id}",
-        "client_reference_id": str(res_id),
-        "customer": {
-            "name": reservation.get("customerName", ""),
-            "email": reservation.get("customerEmail", ""),
-            "phone": reservation.get("customerPhone", ""),
-        },
-        "line_items": [{
-            "price_data": {
-                "currency": currency,
-                "unit_amount": unit_amount,
-                "product_data": {"name": f"Güliz VIP Transfer — Rezervasyon #{res_id}"},
-            },
-            "quantity": 1,
-        }],
+    order_id = f"GULIZ{res_id}-{uuid.uuid4().hex[:8]}".upper()
+    base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+    result_url = f"{base_url}/api/payments/garanti/result"
+    amount = float(reservation.get("price", 0) or 0)
+    amount_minor = int(round(amount * 100))  # kuruş/cent
+    currency_code = GARANTI_CURRENCY_CODES.get((currency or "TRY").upper(), "949")
+    txn_type = "sales"
+    installment_count = ""  # peşin — form alanı boş
+    # Dokümantasyondaki resmi PHP/Java/C# örneklerinde hash hesaplamasında installmentCount
+    # AÇIKÇA 0 (integer) olarak kullanılıyor, form alanındaki boş string'den FARKLI.
+    secure3dhash = _garanti_secure3dhash(order_id, amount_minor, currency_code, result_url, result_url, txn_type, 0)
+    return {
+        "postUrl": GARANTI_POST_URL,
+        "mode": GARANTI_MODE,
+        "apiversion": "512",
+        "secure3dsecuritylevel": "3D_PAY",
+        "terminalprovuserid": GARANTI_PROV_USER_ID,
+        "terminaluserid": GARANTI_TERMINAL_USER_ID,
+        "terminalmerchantid": GARANTI_MERCHANT_ID,
+        "terminalid": GARANTI_TERMINAL_ID,
+        "orderid": order_id,
+        "successurl": result_url,
+        "errorurl": result_url,
+        "customeremailaddress": reservation.get("customerEmail", "") or "musteri@gulizvip.com.tr",
+        "companyname": "Guliz VIP Transfer",
+        "lang": "tr",
+        "txntimestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "refreshtime": "1",
+        "secure3dhash": secure3dhash,
+        "txnamount": str(amount_minor),
+        "txntype": txn_type,
+        "txncurrencycode": currency_code,
+        "txninstallmentcount": installment_count,
+        "reservationId": res_id,
     }
-    return _paypas_request("POST", "/checkout/sessions", payload)
-
-
-def _paypas_get_session(session_id):
-    """PayPas 'Ödeme Sorgulama' (GET /checkout/sessions/{session_id})."""
-    return _paypas_request("GET", f"/checkout/sessions/{urllib.parse.quote(session_id)}")
 
 
 def _generate_payment_link(reservation, amount, currency, provider):
-    """Rezervasyon için ödeme linki üretir.
-    - provider == 'paypas' ve anahtarlar tanımlıysa: gerçek PayPas checkout session açılır,
-      müşteri kart bilgisini PayPas'ın kendi ödeme sayfasında girer (biz hiç görmeyiz).
-    - Stripe/PayTR henüz gerçek entegre değil (anahtar yoksa manuel moda düşer).
-    - Hiçbiri yoksa: operasyon ekibinin ilettiği izlenebilir 'manual' referans linki."""
+    """Rezervasyon için ödeme linki üretir (admin panelindeki 'Ödeme Linki Oluştur' /
+    WhatsApp'tan gönder özelliği için). Garanti'de tek bir 'checkout URL' yok — kart
+    formu bizim sitemizde olduğu için link, kendi sunucumuzdaki bir sayfaya işaret eder
+    (bkz. GET /odeme/garanti/<id> — orada kart formu + otomatik Garanti'ye post var)."""
     ref = uuid.uuid4().hex[:12]
-    if provider == "paypas" and PAYPAS_MERCHANT_KEY and PAYPAS_SECRET_KEY:
-        session = _paypas_create_checkout_session(reservation, amount, currency)
-        checkout_url = session.get("url")
-        session_id = session.get("id", "")
-        if not checkout_url:
-            raise RuntimeError(f"PayPas beklenmeyen yanıt döndü (url yok): {session}")
-        return {"url": checkout_url, "intentId": session_id, "provider": "paypas"}
-    if provider == "stripe" and STRIPE_SECRET_KEY:
-        # TODO: stripe.checkout.Session.create(...) ile gerçek link üret.
-        # Şimdilik anahtar tanımlı değilse manuel moda düşer.
-        pass
-    elif provider == "paytr" and PAYTR_MERCHANT_ID:
-        # TODO: PayTR "Ödeme Linki" API'siyle gerçek link üret.
-        pass
+    if provider == "garanti":
+        base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+        url = f"{base_url}/odeme/garanti/{reservation.get('id')}"
+        return {"url": url, "intentId": f"garanti_{ref}", "provider": "garanti"}
     # Manuel/placeholder mod: operasyon ekibinin müşteriye ilettiği izlenebilir bir
     # referans linki — gerçek ödeme sayfasına yönlendirmez, sadece altyapıyı hazırlar.
     base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
     url = f"{base_url}/odeme/{ref}?rez={reservation.get('id')}&tutar={amount}&para={currency}"
     return {"url": url, "intentId": f"manual_{ref}", "provider": provider}
+
+
+def _render_garanti_payment_page(reservation):
+    """Admin'in ürettiği ödeme linki (GET /odeme/garanti/<id>) açıldığında gösterilen,
+    kendi başına ayakta duran kart formu sayfası. Kart alanları HİÇBİR ZAMAN bizim
+    sunucumuza post edilmez — JS, /api/payments/garanti/prepare'den aldığı gizli
+    alanları müşterinin girdiği kart bilgileriyle birleştirip DOĞRUDAN Garanti'nin
+    sunucusuna (postUrl) post eder."""
+    res_id = reservation.get("id")
+    amount = reservation.get("price", 0)
+    currency = reservation.get("currency", "TRY")
+    customer_name = (reservation.get("customerName", "") or "").replace("<", "&lt;").replace(">", "&gt;")
+    return f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Güvenli Ödeme — Güliz VIP Transfer</title>
+<style>
+  * {{ box-sizing: border-box; }}
+  body {{ margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:#0f172a; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }}
+  .card {{ background:#fff; border-radius:16px; padding:32px; max-width:420px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.35); }}
+  .card h2 {{ margin:0 0 4px; font-size:20px; color:#0f172a; }}
+  .card .sub {{ color:#64748b; font-size:14px; margin:0 0 20px; }}
+  .amount {{ font-size:28px; font-weight:700; color:#b8860b; margin:0 0 24px; }}
+  label {{ display:block; font-size:13px; color:#334155; margin:14px 0 6px; font-weight:600; }}
+  input {{ width:100%; padding:12px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px; }}
+  input:focus {{ outline:none; border-color:#b8860b; }}
+  .row {{ display:flex; gap:10px; }}
+  .row > div {{ flex:1; }}
+  button {{ width:100%; margin-top:22px; padding:14px; border:none; border-radius:8px; background:#b8860b; color:#fff; font-size:16px; font-weight:600; cursor:pointer; }}
+  button:disabled {{ opacity:.6; cursor:not-allowed; }}
+  .err {{ color:#dc2626; font-size:13px; margin-top:10px; display:none; }}
+  .secure {{ text-align:center; color:#94a3b8; font-size:12px; margin-top:16px; }}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2>Güvenli Kart ile Ödeme</h2>
+    <p class="sub">{customer_name} — Rezervasyon #{res_id}</p>
+    <p class="amount">{amount} {currency}</p>
+    <form id="cardForm">
+      <label>Kart Üzerindeki İsim</label>
+      <input id="cardName" required autocomplete="cc-name" placeholder="Ad Soyad">
+      <label>Kart Numarası</label>
+      <input id="cardNumber" required autocomplete="cc-number" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000">
+      <div class="row">
+        <div>
+          <label>Ay</label>
+          <input id="cardMonth" required autocomplete="cc-exp-month" inputmode="numeric" maxlength="2" placeholder="AA">
+        </div>
+        <div>
+          <label>Yıl</label>
+          <input id="cardYear" required autocomplete="cc-exp-year" inputmode="numeric" maxlength="2" placeholder="YY">
+        </div>
+        <div>
+          <label>CVV</label>
+          <input id="cardCvv" required autocomplete="cc-csc" inputmode="numeric" maxlength="4" placeholder="000">
+        </div>
+      </div>
+      <button type="submit" id="payBtn">Öde</button>
+      <div class="err" id="errBox"></div>
+      <p class="secure">🔒 Kart bilgileriniz doğrudan Garanti BBVA'nın güvenli sunucusuna iletilir.</p>
+    </form>
+  </div>
+<script>
+document.getElementById('cardForm').addEventListener('submit', function(e) {{
+  e.preventDefault();
+  var btn = document.getElementById('payBtn');
+  var errBox = document.getElementById('errBox');
+  errBox.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Yönlendiriliyor...';
+  fetch('/api/payments/garanti/prepare', {{
+    method: 'POST',
+    headers: {{ 'Content-Type': 'application/json' }},
+    body: JSON.stringify({{ reservationId: {res_id} }})
+  }})
+  .then(function(r) {{ return r.json(); }})
+  .then(function(data) {{
+    if (!data.success || !data.form) {{
+      throw new Error(data.error || 'Ödeme formu hazırlanamadı.');
+    }}
+    var f = data.form;
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = f.postUrl;
+    function addField(name, value) {{
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    }}
+    Object.keys(f).forEach(function(k) {{
+      if (k !== 'postUrl') addField(k, f[k]);
+    }});
+    addField('cardholdername', document.getElementById('cardName').value.trim());
+    addField('cardnumber', document.getElementById('cardNumber').value.replace(/\\s+/g, ''));
+    addField('cardexpiredatemonth', document.getElementById('cardMonth').value.trim().padStart(2, '0'));
+    addField('cardexpiredateyear', document.getElementById('cardYear').value.trim().padStart(2, '0'));
+    addField('cardcvv2', document.getElementById('cardCvv').value.trim());
+    document.body.appendChild(form);
+    form.submit();
+  }})
+  .catch(function(err) {{
+    errBox.textContent = err.message || 'Bir hata oluştu, lütfen tekrar deneyin.';
+    errBox.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Öde';
+  }});
+}});
+</script>
+</body>
+</html>"""
 
 
 # ─── Telegram Bot ─────────────────────────────────────────────────────────────────
@@ -1938,67 +2025,21 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             if path == "/api/unit-price":
                 self._send_json({"success": True, "unitPrice": UNIT_PRICE})
                 return
-            if path.startswith("/api/payments/paypas/success/"):
-                # PayPas ödeme sayfasından dönüşte tarayıcı buraya yönlenir
-                # (?session_id=... otomatik eklenir). Session'ı PayPas'a sorup
-                # gerçekten ödendiğini doğrulamadan rezervasyonu 'paid' işaretlemiyoruz.
-                base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
-                res_id_str = path[len("/api/payments/paypas/success/"):].strip("/")
-                session_id = params.get("session_id", "")
+            if path.startswith("/odeme/garanti/"):
+                # Admin panelindeki "Ödeme Linki Oluştur" / WhatsApp'tan gönder özelliğiyle
+                # üretilen link buraya işaret eder — kart formu içeren bağımsız bir sayfa.
+                # Ayrıca müşterinin kendi rezervasyon akışındaki kart adımı da aynı
+                # /api/payments/garanti/prepare endpoint'ini kullanır (bkz. index.html).
+                res_id_str = path[len("/odeme/garanti/"):].strip("/")
                 try:
                     res_id = int(res_id_str)
                 except ValueError:
                     res_id = None
                 target = next((r for r in RESERVATIONS if r.get("id") == res_id), None) if res_id is not None else None
-                verified_paid = False
-                if session_id and PAYPAS_MERCHANT_KEY and PAYPAS_SECRET_KEY:
-                    try:
-                        info = _paypas_get_session(session_id)
-                        same_ref = str(info.get("client_reference_id", "")) == str(res_id)
-                        if info.get("payment_status") == "paid" and same_ref:
-                            verified_paid = True
-                    except Exception as e:
-                        print(f"[!] PayPas session doğrulama hatası: {e}", flush=True)
-                if target is not None and verified_paid:
-                    already_paid = target.get("paymentStatus") == "paid"
-                    if not already_paid:
-                        with reservations_lock:
-                            target["paymentStatus"] = "paid"
-                        save_reservations()
-                        try:
-                            db.update_reservation_in_db(target["id"], {"paymentStatus": "paid"})
-                        except Exception:
-                            pass
-                        if target.get("customerId"):
-                            try:
-                                db.register_customer_booking(target["customerId"], target.get("price", 0))
-                            except Exception:
-                                pass
-                        _push_dashboard_notification(
-                            f"💳 Ödeme alındı: {target.get('customerName', '')} — Rezervasyon #{target['id']}",
-                            ntype="payment", reservation_id=target["id"]
-                        )
-                        send_telegram(
-                            f"💳 <b>Ödeme Alındı</b>\n👤 {target.get('customerName', '')}\n"
-                            f"🆔 Rezervasyon #{target['id']}\n💰 {target.get('price', 0)} {target.get('currency', 'TRY')}\n"
-                            f"🔌 Sağlayıcı: paypas"
-                        )
-                    self.send_response(302)
-                    self.send_header("Location", f"{base_url}/?odeme=basarili")
-                    self.end_headers()
-                else:
-                    # Doğrulanamadı — yine de ödeme muhtemelen alınmıştır (PayPas success_url'e
-                    # sadece başarılı ödemede yönlendirir), ama biz teyit edemedik. Kullanıcıyı
-                    # "kontrol ediliyor" mesajına yönlendir, admin panelinden manuel bakılabilir.
-                    self.send_response(302)
-                    self.send_header("Location", f"{base_url}/?odeme=dogrulanamadi")
-                    self.end_headers()
-                return
-            if path.startswith("/api/payments/paypas/cancel/"):
-                base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
-                self.send_response(302)
-                self.send_header("Location", f"{base_url}/?odeme=iptal")
-                self.end_headers()
+                if target is None:
+                    self._send_html("<h2>Rezervasyon bulunamadı.</h2>", 404)
+                    return
+                self._send_html(_render_garanti_payment_page(target))
                 return
             if path == "/api/availability":
                 # FAZ 3: Sitede müsaitlik göstergesi. Filo tanımlı değilse (henüz araç birimi
@@ -2962,11 +3003,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             return
-        if path == "/api/payments/paypas/create-session":
-            # Müşteri rezervasyon formunda "Kredi Kartı" seçtiğinde çağrılır — kimlik
-            # doğrulaması YOK (public), ama tutar HİÇBİR ZAMAN istemciden alınmaz;
-            # her zaman sunucudaki rezervasyonun kendi price/currency alanından okunur
-            # (aksi halde biri isteği değiştirip 1₺ ödeyebilirdi).
+        if path == "/api/payments/garanti/prepare":
+            # Müşteri rezervasyon formunda "Kredi Kartı" seçtiğinde (veya admin'in ürettiği
+            # /odeme/garanti/<id> sayfası açıldığında) çağrılır — kimlik doğrulaması YOK
+            # (public), ama tutar HİÇBİR ZAMAN istemciden alınmaz; her zaman sunucudaki
+            # rezervasyonun kendi price/currency alanından okunur (aksi halde biri isteği
+            # değiştirip 1₺ ödeyebilirdi). Kart numarası/CVV BURADA YOK — sadece Garanti'nin
+            # istediği gizli form alanlarını (hash dahil) üretip döneriz, tarayıcı bu
+            # alanları kendi girdiği kart bilgileriyle birleştirip DOĞRUDAN Garanti'ye postlar.
             try:
                 body = json.loads(self._read_body())
                 res_id = body.get("reservationId")
@@ -2977,14 +3021,6 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         break
                 if target is None:
                     self._send_error("Rezervasyon bulunamadı.", 404)
-                    return
-                if not (PAYPAS_MERCHANT_KEY and PAYPAS_SECRET_KEY):
-                    # NOT: 503 KASITLI OLARAK KULLANILMIYOR — Cloudflare 502/503/504 gibi
-                    # "bağlantı" durum kodlarını gördüğünde orijin sunucunun gövdesini KENDİ
-                    # genel hata sayfasıyla DEĞİŞTİRİYOR (canlıda tespit edildi: bizim JSON
-                    # mesajımız yerine Cloudflare'ın HTML sayfası geliyordu). 400 gibi normal
-                    # bir istemci hata kodu Cloudflare tarafından hiç dokunulmadan geçiriliyor.
-                    self._send_error("Online kart ödemesi şu anda kullanılamıyor. Lütfen banka havalesini seçin.", 400)
                     return
                 if target.get("paymentStatus") == "paid":
                     self._send_error("Bu rezervasyon zaten ödenmiş.", 400)
@@ -2998,35 +3034,93 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Geçersiz tutar.", 400)
                     return
                 currency = (target.get("currency") or "TRY").upper()
-                link_info = _generate_payment_link(target, amount, currency, "paypas")
+                form = _garanti_prepare_form(target, currency)
+                form["customeripaddress"] = self.client_address[0] if self.client_address else "0.0.0.0"
                 with reservations_lock:
                     target["currency"] = currency
                     target["paymentMethod"] = "kredi_karti"
-                    target["paymentLink"] = link_info["url"]
-                    target["stripePaymentIntentId"] = link_info.get("intentId", "")
+                    target["garantiOrderId"] = form["orderid"]
                     target["paymentStatus"] = "link_created"
                 save_reservations()
                 try:
                     db.update_reservation_in_db(res_id, {
                         "currency": currency, "paymentMethod": "kredi_karti",
-                        "paymentLink": link_info["url"],
-                        "stripePaymentIntentId": link_info.get("intentId", ""),
                         "paymentStatus": "link_created",
                     })
                 except Exception:
                     pass
-                self._send_json({"success": True, "url": link_info["url"]})
+                self._send_json({"success": True, "form": form})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
-            except RuntimeError as e:
-                # _generate_payment_link PayPas API hatasında bunu fırlatır.
-                # 502 DEĞİL 400 dönüyoruz — bkz. yukarıdaki NOT (Cloudflare 502'yi kendi
-                # hata sayfasıyla değiştiriyor, bizim asıl mesajımız hiç ulaşmıyordu).
-                print(f"[!] PayPas session oluşturma hatası: {e}", flush=True)
-                self._send_error("Ödeme sayfası açılamadı, lütfen tekrar deneyin veya banka havalesini seçin.", 400)
             except Exception as e:
-                print(f"[!] create-session beklenmeyen hata: {e}", flush=True)
-                self._send_error(str(e), 400)
+                print(f"[!] Garanti prepare hatası: {e}", flush=True)
+                self._send_error("Ödeme formu hazırlanamadı, lütfen tekrar deneyin veya banka havalesini seçin.", 400)
+            return
+        if path == "/api/payments/garanti/result":
+            # Garanti, kart formunu işledikten sonra tarayıcıyı BU adrese form-post ile
+            # geri gönderir (successurl == errorurl == burası; başarı/hata alanlarına
+            # 'procreturncode'/'mdstatus' üzerinden bakılır). Kimlik doğrulama YOK — bunun
+            # yerine 'hash'/'hashparams' alanları StoreKey ile YENİDEN hesaplanıp doğrulanır;
+            # bu adım atlanırsa herkes sahte bir "ödendi" isteği gönderebilir.
+            base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+            outcome = "dogrulanamadi"
+            try:
+                raw = self._read_body()
+                try:
+                    data = json.loads(raw) if raw else {}
+                except json.JSONDecodeError:
+                    data = dict(urllib.parse.parse_qsl(raw))
+                order_id = data.get("oid") or data.get("orderid") or ""
+                proc_return_code = data.get("procreturncode", "")
+                response_hash = data.get("hash", "")
+                hashparams = data.get("hashparams", "")
+                verified = False
+                if hashparams and response_hash:
+                    param_names = [p for p in hashparams.split(":") if p]
+                    digest_data = "".join(data.get(p, "") or "" for p in param_names) + GARANTI_STORE_KEY
+                    calculated = _garanti_sha512_hex(digest_data)
+                    verified = (calculated == response_hash.upper())
+                target = next((r for r in RESERVATIONS if r.get("garantiOrderId") == order_id), None)
+                if target is not None and verified and proc_return_code == "00":
+                    outcome = "basarili"
+                    already_paid = target.get("paymentStatus") == "paid"
+                    if not already_paid:
+                        with reservations_lock:
+                            target["paymentStatus"] = "paid"
+                        save_reservations()
+                        try:
+                            db.update_reservation_in_db(target["id"], {"paymentStatus": "paid"})
+                        except Exception:
+                            pass
+                        if target.get("customerId"):
+                            try:
+                                db.register_customer_booking(target["customerId"], target.get("price", 0))
+                            except Exception:
+                                pass
+                        _push_dashboard_notification(
+                            f"💳 Ödeme alındı: {target.get('customerName', '')} — Rezervasyon #{target['id']}",
+                            ntype="payment", reservation_id=target["id"]
+                        )
+                        send_telegram(
+                            f"💳 <b>Ödeme Alındı</b>\n👤 {target.get('customerName', '')}\n"
+                            f"🆔 Rezervasyon #{target['id']}\n💰 {target.get('price', 0)} {target.get('currency', 'TRY')}\n"
+                            f"🔌 Sağlayıcı: garanti"
+                        )
+                elif target is None:
+                    outcome = "dogrulanamadi"
+                    print(f"[!] Garanti result: eşleşen rezervasyon bulunamadı (orderid={order_id})", flush=True)
+                elif not verified:
+                    outcome = "dogrulanamadi"
+                    print(f"[!] Garanti result: hash doğrulaması BAŞARISIZ (orderid={order_id}) — sahte istek olabilir!", flush=True)
+                else:
+                    outcome = "basarisiz"
+                    print(f"[!] Garanti result: ödeme reddedildi (orderid={order_id}, procreturncode={proc_return_code})", flush=True)
+            except Exception as e:
+                print(f"[!] Garanti result işleme hatası: {e}", flush=True)
+                outcome = "dogrulanamadi"
+            self.send_response(302)
+            self.send_header("Location", f"{base_url}/?odeme={outcome}")
+            self.end_headers()
             return
         if path == "/api/admin/telegram/test":
             user = self._authenticate()

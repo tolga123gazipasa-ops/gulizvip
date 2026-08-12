@@ -2126,25 +2126,29 @@
         })();
 
         (function handlePaymentReturn() {
-            // PayPas ödeme sayfasından dönüşte server.py bizi "/?odeme=basarili|iptal|dogrulanamadi"
-            // ile buraya yönlendirir (bkz. GET /api/payments/paypas/success|cancel/<id>).
-            // Mevcut successModal'ı yeniden kullanıp içeriğini duruma göre değiştiriyoruz.
+            // Garanti BBVA kart formu sayfasından (/odeme/garanti/<id>) dönüşte server.py
+            // bizi "/?odeme=basarili|basarisiz|iptal|dogrulanamadi" ile buraya yönlendirir
+            // (bkz. POST /api/payments/garanti/result). Mevcut successModal'ı yeniden
+            // kullanıp içeriğini duruma göre değiştiriyoruz.
             var params = new URLSearchParams(window.location.search);
             var odeme = params.get('odeme');
             if (!odeme) return;
             var texts = {
                 tr: {
                     basarili: { title: 'Ödemeniz Alındı!', desc: 'Kredi kartı ödemeniz başarıyla tamamlandı. Rezervasyonunuz onaylanmıştır, teşekkür ederiz.' },
+                    basarisiz: { title: 'Ödeme Gerçekleştirilemedi', desc: 'Kartınızdan ödeme alınamadı (banka reddetti). Rezervasyonunuz banka havalesi ile de tamamlanabilir, ekibimiz sizinle iletişime geçecektir.' },
                     iptal: { title: 'Ödeme İptal Edildi', desc: 'Ödeme işlemini tamamlamadınız. Rezervasyonunuz banka havalesi ile de tamamlanabilir, ekibimiz sizinle iletişime geçecektir.' },
                     dogrulanamadi: { title: 'Ödeme Kontrol Ediliyor', desc: 'Ödemenizin durumunu doğruluyoruz. Kısa süre içinde size dönüş yapılacaktır.' }
                 },
                 en: {
                     basarili: { title: 'Payment Received!', desc: 'Your credit card payment was completed successfully. Your reservation is confirmed, thank you.' },
+                    basarisiz: { title: 'Payment Failed', desc: 'Your card payment could not be completed (declined by your bank). Your reservation can also be completed via bank transfer, our team will contact you.' },
                     iptal: { title: 'Payment Cancelled', desc: 'You did not complete the payment. Your reservation can also be completed via bank transfer, our team will contact you.' },
                     dogrulanamadi: { title: 'Verifying Payment', desc: 'We are verifying your payment status. We will get back to you shortly.' }
                 },
                 ru: {
                     basarili: { title: 'Оплата получена!', desc: 'Оплата картой прошла успешно. Ваше бронирование подтверждено, спасибо.' },
+                    basarisiz: { title: 'Оплата не прошла', desc: 'Оплата картой не была завершена (банк отклонил операцию). Бронирование можно завершить банковским переводом, наша команда свяжется с вами.' },
                     iptal: { title: 'Оплата отменена', desc: 'Вы не завершили оплату. Бронирование можно завершить банковским переводом, наша команда свяжется с вами.' },
                     dogrulanamadi: { title: 'Проверка платежа', desc: 'Мы проверяем статус вашего платежа. Скоро с вами свяжемся.' }
                 }
@@ -2669,8 +2673,8 @@
                 }
             }
             // Ödeme yöntemi seçimi (havale / kredi kartı) — havale seçiliyse banka
-            // IBAN listesini göster, kart seçiliyse gizle (kart bilgisi PayPas'ın kendi
-            // sayfasında girilir, bizde banka detayına gerek yok).
+            // IBAN listesini göster, kart seçiliyse gizle (kart bilgisi Garanti'nin kart
+            // formu sayfasında girilir, bizde banka detayına gerek yok).
             var payOption = e.target.closest('.payment-option');
             if(payOption) {
                 var payRadio = payOption.querySelector('input[type="radio"]');
@@ -3100,7 +3104,7 @@
                 if(selectedPickupLng !== null) payload.pickupLng = selectedPickupLng;
             }
 
-            // Ödeme yöntemi — havale (varsayılan) veya kredi kartı (PayPas online)
+            // Ödeme yöntemi — havale (varsayılan) veya kredi kartı (Garanti BBVA online)
             var payRadio = document.querySelector('input[name="' + formType + '-paymethod"]:checked');
             payload.paymentMethod = payRadio ? payRadio.value : 'havale';
 
@@ -3154,27 +3158,13 @@
                     }
 
                     if (payload.paymentMethod === 'kart') {
-                        // Kredi kartı seçildi — rezervasyon oluşturuldu, şimdi PayPas'ın
-                        // ödeme oturumunu açıp müşteriyi kart bilgisi girmesi için oraya
-                        // yönlendiriyoruz. Kart bilgisi hiçbir zaman bize gelmiyor.
+                        // Kredi kartı seçildi — rezervasyon oluşturuldu, şimdi Garanti BBVA
+                        // kart formu sayfamıza (/odeme/garanti/<id>) yönlendiriyoruz. Kart
+                        // bilgisi orada girilir ve tarayıcıdan DOĞRUDAN Garanti'ye postlanır,
+                        // bize hiç uğramaz.
                         if(btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + t('form.payRedirecting'); }
-                        return fetch('/api/payments/paypas/create-session', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ reservationId: data.reservation.id })
-                        })
-                        .then(function(r2) { return r2.json(); })
-                        .then(function(data2) {
-                            if (data2.success && data2.url) {
-                                window.location.href = data2.url;
-                            } else {
-                                // Ödeme sayfası açılamadı ama rezervasyon zaten kaydedildi —
-                                // müşteriyi bilgilendirip normal başarı modalını gösteriyoruz,
-                                // ekibimiz havale/manuel ödeme için iletişime geçebilir.
-                                alert(t('form.payFailed') + (data2.error || t('alerts.unknownError')));
-                                document.getElementById('successModal').classList.add('open');
-                            }
-                        });
+                        window.location.href = '/odeme/garanti/' + data.reservation.id;
+                        return;
                     }
 
                     document.getElementById('successModal').classList.add('open');
