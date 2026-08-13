@@ -2,7 +2,33 @@
 
 Son güncelleme: 2026-08-13
 
-## GÜNCEL — Garanti BBVA PROD kurulumu aktif ilerliyor (13 Ağustos, akşam)
+## GÜNCEL — Garanti BBVA PROD env var'ları Railway'e eklendi (13 Ağustos, gece)
+Tolga, Railway → Variables'a 7 Garanti env var'ını ekledi:
+`GARANTI_MODE=PROD`, `GARANTI_MERCHANT_ID=3724930`, `GARANTI_TERMINAL_ID=10470591`,
+`GARANTI_PROV_USER_ID=PROVAUT`, `GARANTI_TERMINAL_USER_ID`, `GARANTI_PROVISION_PASSWORD`
+(PROVAUT şifresi), `GARANTI_STORE_KEY` (3D Secure Key — 24 bayt/48 hex karakter,
+ilk denemede "24 byte Hex data girilmelidir" hatası aldı çünkü PDF'teki "24 karakter"
+ifadesi yanıltıcıydı, gerçekte 48 hex karakter/24 bayt gerekiyormuş — düzeltilmiş
+değerle sorun çözüldü). PROVRFN tanımlanmadı (opsiyonel, iade işlemleri API üzerinden
+otomatik yapılmıyor, portaldan manuel yapılıyor — sorun değil).
+
+**Canlıya almak için kalanlar:**
+1. Railway'in değişkenleri alıp otomatik redeploy ettiğini doğrula (Deploy Logs'ta
+   yeni bir deploy görünmeli, "GARANTI_MODE" TEST değil PROD olarak yüklenmiş olmalı)
+2. **Gerçek/küçük tutarlı canlı test işlemi** — siteden gerçek bir kredi kartıyla
+   küçük bir rezervasyon ödemesi dene, `mdstatus`/`procreturncode` başarılı dönmeli,
+   admin panelde rezervasyon "ödendi" (paid) görünmeli, banka hesabına gerçek para
+   düşmeli (birkaç gün içinde hesaba yansır)
+3. `GARANTI_TERMINAL_USER_ID` için panelde ayrı bir alan bulunup bulunmadığı netleşmedi
+   — bulunamadıysa varsayılan `GARANTI` ile devam edilebilir, sorun çıkarsa
+   `ETicaretDestek@garantibbva.com.tr`'e sorulabilir
+4. `git push origin main` — sandboxtan push edilemiyor, Tolga'nın kendi bilgisayarından
+   yapması gerekiyor (2 commit bekliyor: `8590c24`, `ad19084`)
+
+Kod tarafında yapılacak hiçbir şey yok — sistem PROD env var'ları okumaya zaten hazır,
+sadece yukarıdaki doğrulama/test adımları kaldı.
+
+## ESKİ — Garanti BBVA PROD kurulumu aktif ilerliyor (13 Ağustos, akşam)
 Tolga, `eticaretdestek@garantibbva.com.tr` ile yazışıyordu (Müşteri Kodu: 61308591).
 13 Ağustos'ta "Başvurunuz ilerletilmiştir" maili geldi, ardından aynı gün akşam
 aktivasyon maili de geldi (`sanalpos@garantibbva.com.tr`) — Tolga `pos.garantibbva.com.tr`
