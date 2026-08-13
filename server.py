@@ -3405,7 +3405,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     print(f"[!] Garanti result: hash doğrulaması BAŞARISIZ (orderid={order_id}) — sahte istek olabilir!", flush=True)
                 else:
                     outcome = "basarisiz"
-                    print(f"[!] Garanti result: ödeme reddedildi (orderid={order_id}, procreturncode={proc_return_code})", flush=True)
+                    md_error = data.get("mderrormessage") or data.get("errmsg") or ""
+                    mdstatus = data.get("mdstatus", "")
+                    print(f"[!] Garanti result: ödeme reddedildi (orderid={order_id}, procreturncode={proc_return_code}, mdstatus={mdstatus}, mesaj='{md_error}')", flush=True)
             except Exception as e:
                 print(f"[!] Garanti result işleme hatası: {e}", flush=True)
                 outcome = "dogrulanamadi"
