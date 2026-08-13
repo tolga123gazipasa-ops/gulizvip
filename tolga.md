@@ -2,14 +2,28 @@
 
 Son güncelleme: 2026-08-13
 
-## GÜNCEL — Garanti BBVA PROD başvurusu ilerledi (13 Ağustos)
+## GÜNCEL — Garanti BBVA PROD kurulumu aktif ilerliyor (13 Ağustos, akşam)
 Tolga, `eticaretdestek@garantibbva.com.tr` ile yazışıyordu (Müşteri Kodu: 61308591).
-13 Ağustos'ta Garanti'den "Başvurunuz ilerletilmiştir" maili geldi — merchant
-başvurusu onaya doğru ilerliyor. Sıradaki adım: `sanalpos@garantibbva.com.tr`'den
-"Garanti Sanal Pos Login Bilgileriniz" aktivasyon maili gelmesini beklemek (bkz.
-aşağıdaki "PROD kurulumu" bölümündeki adım adım süreç — aktivasyon → pos.garantibbva.com.tr
-girişi → PROVAUT şifresi → 24-hane HEX 3D Secure Key → Merchant ID/Terminal ID).//
-Bu bilgiler geldiğinde Railway'e 7 env var eklenip GARANTI_MODE=PROD yapılacak.
+13 Ağustos'ta "Başvurunuz ilerletilmiştir" maili geldi, ardından aynı gün akşam
+aktivasyon maili de geldi (`sanalpos@garantibbva.com.tr`) — Tolga `pos.garantibbva.com.tr`
+admin portalına giriş yaptı ve "Kullanıcı Aktivasyonu için Şifre Tanımlama" ekranına
+ulaştı (ekran görüntüsüyle doğrulandı).
+
+**GERÇEK PROD DEĞERLERİ ELE GEÇTİ (ekran görüntüsünden okundu):**
+- `GARANTI_MERCHANT_ID` = **3724930** (İş Yeri: GÜLİZ LOJİSTİK MİMARLIK İNŞAAT TURİZM Tİ)
+- `GARANTI_TERMINAL_ID` = **10470591**
+
+**Sırada:** Tolga PROVAUT + PROVOOS kullanıcı şifrelerini admin portalında kendisi
+belirleyecek (asistan şifre alanına giremez — güvenlik kuralı). PROVAUT şifresi
+= `GARANTI_PROVISION_PASSWORD` olacak. PROVRFN opsiyonel, atlandı. Sonraki adım
+PDF'in 3.2 bölümü: "3D Secure Key Değiştirme" — 24 haneli HEX değer üretilecek,
+bu da `GARANTI_STORE_KEY` olacak.
+
+Hâlâ eksik olan 7 env var'dan kalan: `GARANTI_PROVISION_PASSWORD`, `GARANTI_STORE_KEY`
+(PROVAUT/OOS şifreleri + HEX anahtar belirlenince tamamlanacak), `GARANTI_PROV_USER_ID`
+(muhtemelen `PROVAUT` — kod zaten bunu varsayılan alıyor), `GARANTI_TERMINAL_USER_ID`
+(panelde ayrıca bir "kullanıcı adı" alanı olabilir, netleşince teyit edilecek).
+Bu bilgiler tamamlanınca Railway'e 7 env var eklenip `GARANTI_MODE=PROD` yapılacak.
 
 ### Bu oturumda tamamlanan işler (henüz push edilmedi — bkz. en alt)
 1. Kredi kartı ödemesinde onay maili/Telegram artık sadece gerçek ödeme onayından
