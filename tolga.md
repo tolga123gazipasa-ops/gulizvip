@@ -1,8 +1,59 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-12
+Son güncelleme: 2026-08-13
 
-## GÜNCEL: PayPas iptal edildi, Garanti BBVA Sanal POS'a geçildi
+## GÜNCEL — Garanti BBVA PROD başvurusu ilerledi (13 Ağustos)
+Tolga, `eticaretdestek@garantibbva.com.tr` ile yazışıyordu (Müşteri Kodu: 61308591).
+13 Ağustos'ta Garanti'den "Başvurunuz ilerletilmiştir" maili geldi — merchant
+başvurusu onaya doğru ilerliyor. Sıradaki adım: `sanalpos@garantibbva.com.tr`'den
+"Garanti Sanal Pos Login Bilgileriniz" aktivasyon maili gelmesini beklemek (bkz.
+aşağıdaki "PROD kurulumu" bölümündeki adım adım süreç — aktivasyon → pos.garantibbva.com.tr
+girişi → PROVAUT şifresi → 24-hane HEX 3D Secure Key → Merchant ID/Terminal ID).//
+Bu bilgiler geldiğinde Railway'e 7 env var eklenip GARANTI_MODE=PROD yapılacak.
+
+### Bu oturumda tamamlanan işler (henüz push edilmedi — bkz. en alt)
+1. Kredi kartı ödemesinde onay maili/Telegram artık sadece gerçek ödeme onayından
+   sonra gidiyor (önceden rezervasyon oluşur oluşmaz, ödeme tamamlanmadan gidiyordu)
+2. Mesafeli Satış Sözleşmesi'ne satıcı bilgileri eklendi: unvan, merkez adres,
+   Gazipaşa Havalimanı ofis adresi, vergi dairesi (Gazipaşa Mal Müdürlüğü),
+   VKN (4200721970), telefon, e-posta — Garanti BBVA'nın talebi üzerine
+3. **KRİTİK KÖK NEDEN BUG DÜZELTİLDİ:** `load_page_content()` sunucu başlangıcında
+   hiç çağrılmıyordu — page_content.json'daki HİÇBİR değişiklik (ne git'ten ne admin
+   panelinden) kalıcı olmuyordu, her redeploy'da kod içine gömülü orijinal varsayılan
+   metne dönüyordu. Artık düzeltildi.
+4. **Mimari değişiklik:** `/api/page/<slug>` artık önce VERİTABANINI okuyor (JSON
+   dosyası sadece ilk kurulum/yedek). Artık admin panelinden yapılan sayfa
+   düzenlemeleri kalıcı — hiçbir redeploy onları silmiyor.
+5. Admin panelinden tek sayfa düzenlenince diğer sayfaların footer/listeden
+   kaybolduğu bug düzeltildi (`_get_merged_pages()` — DB+JSON birleştirme)
+6. /sayfa/<slug> sayfalarında dil değiştirince anasayfaya atılma sorunu düzeltildi
+7. "Son Güncelleme" tarihinin iki kez görünmesi düzeltildi
+8. **5 içerik sayfası (Hakkımızda, Gizlilik, Mesafeli Satış, Teslimat, İade
+   Şartları) gerçekten İngilizce ve Rusçaya çevrildi** — `/en/sayfa/<slug>`,
+   `/ru/sayfa/<slug>` route'ları eklendi. NOT: Bu çeviriler AI çevirisidir, admin
+   panelinden düzenlenemez, koda gömülüdür (`PAGE_TRANSLATIONS` — server.py).
+   Türkçe içerik admin panelinden değişirse çeviriler OTOMATİK GÜNCELLENMEZ —
+   Tolga admin panelinden bu 5 sayfadan birini değiştirirse bana haber vermesi
+   gerekiyor ki çeviriyi elle senkronize edip yeniden deploy edeyim.
+9. İade Şartları sayfasındaki eski "iyzico altyapısı" referansı "Garanti BBVA
+   Sanal POS altyapısı" olarak düzeltildi (hem TR hem EN/RU)
+10. Kapsamlı SEO çalışması: her /sayfa/<slug> artık kendi canonical/title/meta
+    description/hreflang/OG etiketlerine sahip (önceden hepsi anasayfanınkini
+    gösteriyordu — duplicate content riski). Olmayan sayfalar artık gerçek 404
+    dönüyor. sitemap.xml güncellendi (DB'den besleniyor, 3 dil + hreflang
+    alternate linkleri var, 28 URL/72 hreflang). robots.txt'ye /odeme/ disallow
+    eklendi. Sahte aggregateRating (4.9/127 yer tutucu) kaldırıldı — Tolga'nın
+    Google İşletme Profili'nde gerçek puanı var (5,0 - 8 yorum, "gazipaşa alanya
+    transfer" işletmesi) ama structured data'ya hiç eklememeyi tercih etti.
+
+### Hemen Yapılması Gereken
+```
+cd C:\proje\gulizvip
+git push origin main
+```
+Push + Railway redeploy sonrası yukarıdaki TÜM değişiklikler (13 commit) canlıya çıkar.
+
+## GÜNCEL (12 Ağustos): PayPas iptal edildi, Garanti BBVA Sanal POS'a geçildi
 
 PayPas'ta 401 "Invalid API credentials" hatası mağaza onaylandıktan ve anahtarlar
 teyit edildikten sonra bile çözülemedi (PayPas desteğine yönlendirilmişti). Senin
