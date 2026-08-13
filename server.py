@@ -2564,35 +2564,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if slug not in PAGE_CONTENT:
                     self._send_error("Sayfa bulunamadı.", 404)
                     return
-                # Önce in-memory PAGE_CONTENT (admin panelinden en son kaydedilen)
-                page_entry = PAGE_CONTENT[slug]
-                if page_entry.get("title") and page_entry.get("content"):
-                    self._send_json({"success": True, "page": {
-                        "title": page_entry["title"],
-                        "subtitle": page_entry.get("subtitle", ""),
-                        "is_active": page_entry.get("is_active", True),
-                        "content": page_entry["content"],
-                        "updatedAt": page_entry.get("updatedAt", "")
-                    }})
-                    return
-                # JSON dosyasından okumayı dene (in-memory boşsa)
-                try:
-                    if os.path.exists(PAGE_CONTENT_FILE):
-                        with open(PAGE_CONTENT_FILE, "r", encoding="utf-8") as f:
-                            json_data = json.load(f)
-                            if slug in json_data and json_data[slug].get("title") and json_data[slug].get("content"):
-                                page_entry = json_data[slug]
-                                self._send_json({"success": True, "page": {
-                                    "title": page_entry["title"],
-                                    "subtitle": page_entry.get("subtitle", ""),
-                                    "is_active": page_entry.get("is_active", True),
-                                    "content": page_entry["content"],
-                                    "updatedAt": page_entry.get("updatedAt", "")
-                                }})
-                                return
-                except Exception as e:
-                    print(f"[!] API sayfa okuma ({slug}) JSON fallback hatası: {e}")
-                # DB'den almayı dene (en son çare)
+                # ÖNCELİK SIRASI DEĞİŞTİ (13 Ağustos): Artık VERİTABANI birincil kaynak.
+                # Neden: git'e commit edilen page_content.json ile admin panelinden
+                # yapılan düzenlemeler (DB'ye yazılıyor) arasında "hangisi kazanır"
+                # belirsizliği kafa karıştırıcı veri kaybı gibi görünen olaylara yol
+                # açtı. PostgreSQL, uygulama servisinden bağımsız ayrı bir Railway
+                # servisi olduğu için redeploy'larda ASLA sıfırlanmaz — bu yüzden
+                # artık admin panelinden yapılan bir düzenleme, bir daha hiçbir
+                # redeploy'da kaybolmaz. git'teki page_content.json sadece o sayfa
+                # için DB'de HİÇ kayıt yokken (ilk kurulum / henüz hiç admin panelinden
+                # düzenlenmemiş sayfa) devreye giren bir İLK DEĞER / yedek konumunda.
                 try:
                     db_page = db.get_page_content(slug)
                     if db_page and db_page.get("title") and db_page.get("content"):
@@ -2606,7 +2587,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         return
                 except Exception as e:
                     print(f"[!] API sayfa okuma ({slug}) DB hatası: {e}")
-                self._send_json({"success": True, "page": PAGE_CONTENT[slug]})
+                # DB'de kayıt yoksa (ilk kurulum): in-memory PAGE_CONTENT (git'ten
+                # load_page_content() ile yüklenmiş İLK DEĞER)
+                page_entry = PAGE_CONTENT[slug]
+                self._send_json({"success": True, "page": {
+                    "title": page_entry.get("title", ""),
+                    "subtitle": page_entry.get("subtitle", ""),
+                    "is_active": page_entry.get("is_active", True),
+                    "content": page_entry.get("content", ""),
+                    "updatedAt": page_entry.get("updatedAt", "")
+                }})
                 return
             if path.startswith("/sayfa/"):
                 self._serve_static("index.html")
