@@ -7,6 +7,7 @@ Python stdlib — HMAC auth, flight API, static serving, scheduler
 import http.server
 import json
 import os
+import re
 import time
 import hmac
 import hashlib
@@ -603,6 +604,146 @@ def _get_merged_pages(lang="tr"):
                 entry["title"] = t.get("title", entry["title"])
                 entry["subtitle"] = t.get("subtitle", entry["subtitle"])
     return list(merged.values())
+
+
+def get_page_data(slug, lang="tr"):
+    """Tek bir sayfanın title/subtitle/content/is_active/updatedAt bilgisini
+    DB (öncelikli) + PAGE_CONTENT (yedek) + PAGE_TRANSLATIONS (en/ru varsa)
+    birleştirerek döner. Hem /api/page/<slug> hem de sunucu tarafında
+    render edilen /sayfa/<slug> meta etiketleri (_render_sayfa_page) bu tek
+    fonksiyonu kullanır — iki ayrı yerde aynı öncelik mantığının birbirinden
+    sapması (bu oturumda yaşanan kafa karışıklıklarının kök nedeniydi) böylece
+    engellenmiş olur. Sayfa/slug bilinmiyorsa None döner."""
+    slug = SLUG_ALIASES.get(slug, slug)
+    if slug not in PAGE_CONTENT:
+        return None
+    result_page = None
+    try:
+        db_page = db.get_page_content(slug)
+        if db_page and db_page.get("title") and db_page.get("content"):
+            result_page = {
+                "title": db_page["title"],
+                "subtitle": db_page.get("subtitle", ""),
+                "is_active": db_page.get("is_active", True),
+                "content": db_page["content"],
+                "updatedAt": db_page.get("updatedAt", "")
+            }
+    except Exception as e:
+        print(f"[!] get_page_data({slug}) DB hatası: {e}")
+    if result_page is None:
+        page_entry = PAGE_CONTENT[slug]
+        result_page = {
+            "title": page_entry.get("title", ""),
+            "subtitle": page_entry.get("subtitle", ""),
+            "is_active": page_entry.get("is_active", True),
+            "content": page_entry.get("content", ""),
+            "updatedAt": page_entry.get("updatedAt", "")
+        }
+    if lang in ("en", "ru"):
+        translation = PAGE_TRANSLATIONS.get(lang, {}).get(slug)
+        if translation:
+            result_page = dict(result_page)
+            result_page["title"] = translation.get("title", result_page["title"])
+            result_page["subtitle"] = translation.get("subtitle", result_page["subtitle"])
+            result_page["content"] = translation.get("content", result_page["content"])
+    return result_page
+
+
+def _render_sayfa_page(slug, lang="tr"):
+    """/sayfa/<slug>, /en/sayfa/<slug>, /ru/sayfa/<slug> için index.html'i okuyup
+    <title>/<meta description>/canonical/hreflang/OG/Twitter etiketlerini o
+    sayfaya ve dile özel hale getirir. Önceden bu sayfalar index.html'i hiç
+    değiştirmeden servis ediyordu — yani hepsi anasayfanın canonical/title/OG
+    etiketlerini gösteriyordu (arama motorları için yanlış sinyal, "duplicate
+    content" riski). Görünür içerik istemci tarafında /api/page/<slug>?lang=
+    ile yükleniyor (bkz. index.html sayfa modu betiği) — burada sadece <head>
+    ve <html lang> düzenleniyor, HTML gövdesi değişmiyor."""
+    slug = SLUG_ALIASES.get(slug, slug)
+    page_data = get_page_data(slug, lang)
+    if page_data is None or not page_data.get("is_active", True):
+        return None
+    index_path = os.path.join(WORKSPACE, "index.html")
+    if not os.path.exists(index_path):
+        return None
+    with open(index_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    title = page_data.get("title") or slug
+    subtitle = (page_data.get("subtitle") or "").strip()
+    if subtitle:
+        description = subtitle
+    else:
+        plain = re.sub("<[^>]+>", " ", page_data.get("content", ""))
+        plain = re.sub(r"\s+", " ", plain).strip()
+        description = (plain[:157] + "...") if len(plain) > 160 else plain
+
+    site_suffix = " | Güliz VIP Transfer"
+    full_title = title if title.endswith(site_suffix) else title + site_suffix
+
+    prefix = "" if lang == "tr" else f"/{lang}"
+    page_url = f"{BASE_URL}{prefix}/sayfa/{slug}"
+
+    if lang != "tr":
+        html = html.replace('<html lang="tr">', f'<html lang="{lang}">', 1)
+        html = html.replace(
+            "<head>",
+            f"<head>\n    <script>window.SITE_LANG = '{lang}';</script>",
+            1
+        )
+
+    html = html.replace(
+        "<title>Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP Transfer</title>",
+        f"<title>{full_title}</title>"
+    )
+    html = html.replace(
+        'content="Gazipaşa Havalimanı (GZP) ve Antalya Havalimanı\'ndan (AYT); Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 konforlu, direkt ve ayrıcalıklı VIP transfer hizmeti sunuyoruz."',
+        f'content="{description}"'
+    )
+    html = html.replace(
+        '<link rel="canonical" href="https://gulizvip.com.tr/">',
+        f'<link rel="canonical" href="{page_url}">'
+    )
+    # Hreflang: sadece gerçekten var olan dil sürümlerini işaretle — çevirisi
+    # olmayan bir sayfa için sahte hreflang üretmek Search Console hatası ve
+    # yanlış sinyal riski taşır.
+    hreflang_links = [f'<link rel="alternate" hreflang="tr" href="{BASE_URL}/sayfa/{slug}">']
+    for hl in ("en", "ru"):
+        if slug in PAGE_TRANSLATIONS.get(hl, {}):
+            hreflang_links.append(f'<link rel="alternate" hreflang="{hl}" href="{BASE_URL}/{hl}/sayfa/{slug}">')
+    hreflang_links.append(f'<link rel="alternate" hreflang="x-default" href="{BASE_URL}/sayfa/{slug}">')
+    html = html.replace(
+        '<link rel="alternate" hreflang="tr" href="https://gulizvip.com.tr/">\n'
+        '    <link rel="alternate" hreflang="en" href="https://gulizvip.com.tr/en/">\n'
+        '    <link rel="alternate" hreflang="ru" href="https://gulizvip.com.tr/ru/">\n'
+        '    <link rel="alternate" hreflang="x-default" href="https://gulizvip.com.tr/">',
+        "\n    ".join(hreflang_links)
+    )
+    html = html.replace(
+        'content="Gazipaşa & Antalya Havalimanı VIP Transfer Hizmetleri | Güliz VIP"',
+        f'content="{full_title}"'
+    )
+    html = html.replace(
+        'content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından; Alanya, Side, Manavgat, Belek, Kemer ve tüm Akdeniz bölgesine 7/24 kesintisiz VIP Vito transfer ayrıcalığı."',
+        f'content="{description}"'
+    )
+    html = html.replace(
+        '<meta property="og:url" content="https://gulizvip.com.tr/">',
+        f'<meta property="og:url" content="{page_url}">'
+    )
+    og_locale = {"en": "en_US", "ru": "ru_RU"}.get(lang, "tr_TR")
+    html = html.replace(
+        '<meta property="og:locale" content="tr_TR">',
+        f'<meta property="og:locale" content="{og_locale}">'
+    )
+    html = html.replace(
+        'content="Gazipaşa & Antalya Havalimanı VIP Transfer | Güliz VIP">',
+        f'content="{full_title}">'
+    )
+    html = html.replace(
+        'content="Gazipaşa (GZP) ve Antalya (AYT) havalimanlarından Alanya, Side, Manavgat, Belek ve Kemer\'e 7/24 VIP transfer."',
+        f'content="{description}"'
+    )
+    return html
 
 
 def save_page_content_to_json():
@@ -2634,59 +2775,28 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/page/"):
                 slug = path[len("/api/page/"):]
-                slug = SLUG_ALIASES.get(slug, slug)
-                if slug not in PAGE_CONTENT:
+                result_page = get_page_data(slug, params.get("lang", "tr"))
+                if result_page is None:
                     self._send_error("Sayfa bulunamadı.", 404)
                     return
-                # ÖNCELİK SIRASI DEĞİŞTİ (13 Ağustos): Artık VERİTABANI birincil kaynak.
-                # Neden: git'e commit edilen page_content.json ile admin panelinden
-                # yapılan düzenlemeler (DB'ye yazılıyor) arasında "hangisi kazanır"
-                # belirsizliği kafa karıştırıcı veri kaybı gibi görünen olaylara yol
-                # açtı. PostgreSQL, uygulama servisinden bağımsız ayrı bir Railway
-                # servisi olduğu için redeploy'larda ASLA sıfırlanmaz — bu yüzden
-                # artık admin panelinden yapılan bir düzenleme, bir daha hiçbir
-                # redeploy'da kaybolmaz. git'teki page_content.json sadece o sayfa
-                # için DB'de HİÇ kayıt yokken (ilk kurulum / henüz hiç admin panelinden
-                # düzenlenmemiş sayfa) devreye giren bir İLK DEĞER / yedek konumunda.
-                result_page = None
-                try:
-                    db_page = db.get_page_content(slug)
-                    if db_page and db_page.get("title") and db_page.get("content"):
-                        result_page = {
-                            "title": db_page["title"],
-                            "subtitle": db_page.get("subtitle", ""),
-                            "is_active": db_page.get("is_active", True),
-                            "content": db_page["content"],
-                            "updatedAt": db_page.get("updatedAt", "")
-                        }
-                except Exception as e:
-                    print(f"[!] API sayfa okuma ({slug}) DB hatası: {e}")
-                if result_page is None:
-                    # DB'de kayıt yoksa (ilk kurulum): in-memory PAGE_CONTENT (git'ten
-                    # load_page_content() ile yüklenmiş İLK DEĞER)
-                    page_entry = PAGE_CONTENT[slug]
-                    result_page = {
-                        "title": page_entry.get("title", ""),
-                        "subtitle": page_entry.get("subtitle", ""),
-                        "is_active": page_entry.get("is_active", True),
-                        "content": page_entry.get("content", ""),
-                        "updatedAt": page_entry.get("updatedAt", "")
-                    }
-                # İngilizce/Rusça istendiyse çeviri varsa title/subtitle/content
-                # üzerine yazılır (is_active/updatedAt her zaman Türkçe/DB kaynağından
-                # gelir — yayın durumu ve tarih tek bir yerden yönetilir).
-                lang = params.get("lang", "tr")
-                if lang in ("en", "ru"):
-                    translation = PAGE_TRANSLATIONS.get(lang, {}).get(slug)
-                    if translation:
-                        result_page = dict(result_page)
-                        result_page["title"] = translation.get("title", result_page["title"])
-                        result_page["subtitle"] = translation.get("subtitle", result_page["subtitle"])
-                        result_page["content"] = translation.get("content", result_page["content"])
                 self._send_json({"success": True, "page": result_page})
                 return
             if path.startswith("/sayfa/"):
-                self._serve_static("index.html")
+                sayfa_slug = path[len("/sayfa/"):].rstrip("/")
+                rendered = _render_sayfa_page(sayfa_slug, "tr")
+                if rendered:
+                    self._send_html(rendered)
+                    return
+                # Sayfa bulunamadı/pasif — yine de index.html'i sun (istemci tarafındaki
+                # sayfa modu betiği API'den 404 alınca "Sayfa Bulunamadı" gösterir), ama
+                # HTTP durumu gerçekten 404 olmalı ki arama motorları bu URL'i
+                # indekslemesin ("soft 404" arama motorları için sorunlu bir sinyaldir).
+                index_path = os.path.join(WORKSPACE, "index.html")
+                if os.path.exists(index_path):
+                    with open(index_path, "r", encoding="utf-8") as f:
+                        self._send_html(f.read(), status=404)
+                else:
+                    self._send_error("Sayfa bulunamadı", 404)
                 return
             if path == "/robots.txt":
                 lines = [
@@ -2752,12 +2862,17 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             # içeriği istemci tarafında /api/page/<slug>?lang=<dil> ile yükleniyor.
             lang_sayfa_parts = lang_path.split("/")
             if len(lang_sayfa_parts) == 3 and lang_sayfa_parts[0] in ("en", "ru") and lang_sayfa_parts[1] == "sayfa":
-                page_slug = SLUG_ALIASES.get(lang_sayfa_parts[2], lang_sayfa_parts[2])
-                if page_slug in PAGE_CONTENT:
-                    rendered = _render_lang_page(lang_sayfa_parts[0])
-                    if rendered:
-                        self._send_html(rendered)
-                        return
+                rendered = _render_sayfa_page(lang_sayfa_parts[2], lang_sayfa_parts[0])
+                if rendered:
+                    self._send_html(rendered)
+                    return
+                index_path = os.path.join(WORKSPACE, "index.html")
+                if os.path.exists(index_path):
+                    with open(index_path, "r", encoding="utf-8") as f:
+                        self._send_html(f.read(), status=404)
+                else:
+                    self._send_error("Sayfa bulunamadı", 404)
+                return
             # /en/<rota-slug> veya /ru/<rota-slug> gibi birleşik adresler (örn. eski/dış
             # bağlantılar) — rota sayfalarının çevirisi yok, 404 yerine sade dil sayfasına
             # yönlendir (bkz. index.html switchLanguage() artık bu tarz URL üretmiyor).
