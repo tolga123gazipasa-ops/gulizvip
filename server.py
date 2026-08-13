@@ -4354,6 +4354,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
 # ─── Main ────────────────────────────────────────────────────────
 if __name__ == "__main__":
     db.init_db()  # DATABASE_URL varsa gerekli tabloları/config'i oluşturur; yoksa sessizce atlar
+    load_page_content()
     load_prices()
     load_vehicles()
     load_slider_images()
