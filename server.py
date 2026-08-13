@@ -2705,12 +2705,21 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 today = datetime.now().strftime("%Y-%m-%d")
                 urls = [{"loc": f"{BASE_URL}/", "lastmod": today, "changefreq": "daily", "priority": "1.0"}]
                 try:
-                    for slug, page in PAGE_CONTENT.items():
-                        if not page.get("is_active", True):
+                    # DB + fallback birleştirilmiş güncel liste (bkz. _get_merged_pages —
+                    # admin panelinden pasif/aktif yapılan sayfalar burada doğru yansır)
+                    for page in _get_merged_pages():
+                        slug = page.get("slug")
+                        if not slug or not page.get("is_active", True):
                             continue
                         updated = page.get("updatedAt", "")
                         lastmod = updated[:10] if updated else today
                         urls.append({"loc": f"{BASE_URL}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5"})
+                        # Çevirisi olan sayfalar için /en/sayfa/<slug> ve /ru/sayfa/<slug>
+                        # de ayrı URL olarak eklenir (13 Ağustos'ta eklenen çeviri
+                        # özelliğiyle bu sayfalar artık gerçekten indekslenebilir).
+                        for lang in ("en", "ru"):
+                            if slug in PAGE_TRANSLATIONS.get(lang, {}):
+                                urls.append({"loc": f"{BASE_URL}/{lang}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5"})
                 except Exception as e:
                     print(f"[!] sitemap.xml sayfa listesi hatası: {e}")
                 for slug in ROUTE_SEO_PAGES:
