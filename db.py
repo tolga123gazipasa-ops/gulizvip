@@ -195,6 +195,12 @@ def init_db():
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'TRY';")
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS payment_link VARCHAR(500) DEFAULT '';")
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(200) DEFAULT '';")
+                # Garanti BBVA Sanal POS — prepare adımında üretilen orderid'nin DB'ye kalıcı
+                # yazılması için (önceden sadece JSON yedeğine yazılıyordu; sunucu bir redeploy
+                # ile yeniden başladığında DB'den taze yüklenen rezervasyon bu alanı kaybediyor,
+                # Garanti'nin /api/payments/garanti/result geri dönüşü eşleşemiyordu — 13 Ağustos
+                # canlı testte tam bu senaryo yaşandı).
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS garanti_order_id VARCHAR(100) DEFAULT '';")
                 # İletişim mesajları — IP/coğrafya/cihaz bilgisi + durum/not (admin panel detaylı yönetim)
                 cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS ip_address VARCHAR(64) DEFAULT '';")
                 cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS city VARCHAR(100) DEFAULT '';")
@@ -259,6 +265,7 @@ def load_reservations_from_db():
                 "currency": row.get("currency") or "TRY",
                 "paymentLink": row.get("payment_link") or "",
                 "stripePaymentIntentId": row.get("stripe_payment_intent_id") or "",
+                "garantiOrderId": row.get("garanti_order_id") or "",
                 "createdAt": row["created_at"].isoformat() if row["created_at"] else "",
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             })
@@ -433,6 +440,7 @@ def update_reservation_in_db(res_id, fields):
             "currency": "currency",
             "paymentLink": "payment_link",
             "stripePaymentIntentId": "stripe_payment_intent_id",
+            "garantiOrderId": "garanti_order_id",
         }
         set_parts = []
         values = []

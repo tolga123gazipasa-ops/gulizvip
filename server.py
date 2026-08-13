@@ -3302,6 +3302,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     db.update_reservation_in_db(res_id, {
                         "currency": currency, "paymentMethod": "kredi_karti",
                         "paymentStatus": "link_created",
+                        "garantiOrderId": form["orderid"],
                     })
                 except Exception:
                     pass
