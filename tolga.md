@@ -61,6 +61,46 @@ Kod, tanımlanmazsa Garanti'nin **TEST ortamı** resmi öntanımlı değerleriyl
 Bu bilgileri ben giremem/göremem — güvenlik kuralı gereği API anahtarlarını hiçbir
 zaman kendim bir forma/panele girmiyorum, Railway Variables'a kendin eklemelisin.
 
+### PROD kurulumu neden hâlâ eksik — Garanti'nin resmi "Sanal Pos İlk Adımlar" kitapçığı (13 Ağustos)
+Tolga'nın attığı `sanalposilkadimlar.pdf` incelendi. Bu doküman bir API entegrasyon
+kılavuzu DEĞİL — Garanti'nin yeni sanal POS müşterisi için hesap aktivasyon sürecini
+anlatıyor. Yani eksik olan kod değil, **banka tarafında henüz tamamlanmamış bir kurulum
+süreci**. Bu adımları sadece Tolga yapabilir (TCKN, şifre, admin portalı girişi
+gerektiriyor — bunları benim güvenlik kuralı gereği kendim giremem).
+
+**Adım adım (kitapçıktan):**
+1. Başvuru onaylandıktan sonra `sanalpos@garantibbva.com.tr`'den "Garanti Sanal Pos
+   Login Bilgileriniz" başlıklı bir e-posta gelir (aktivasyon linki **24 saat geçerli**).
+2. E-postadaki "Giriş Yap" butonuna tıkla → `pos.garantibbva.com.tr` üzerinde telefon
+   numaranı SMS koduyla doğrula → güvenlik sorusu belirle → parola oluştur.
+3. Sonra `https://pos.garantibbva.com.tr/web/login` adresinden giriş yap:
+   Kullanıcı Adı = **TCKN**, Parola = az önce oluşturduğun parola.
+4. "Sanal Pos admin portalı" açılır — burada **PROVAUT / PROVOOS / PROVRFN**
+   kullanıcıları için ayrı şifreler belirlemen isteniyor (özel karakter zorunlu:
+   `#$%&*()-+=}[]\:,./`). **`GARANTI_PROVISION_PASSWORD` env var'ı = PROVAUT
+   kullanıcısına verdiğin bu şifre.**
+5. **KRİTİK — "3D Secure Key Değiştirme" bölümü:** Admin portalında oluşturacağın
+   "3D SECURE KEY" **tam 24 karakter HEX** olmak zorunda (örnek:
+   `123456789012345678901234`). Kitapçık, şifreni hex'e çevirip hem panelde hem
+   kodda AYNI çevrilmiş hex değerinin kullanılması gerektiğini özellikle vurguluyor
+   (çeviri için `http://codebeautify.org/string-hex-converter` öneriliyor). **Bu
+   HEX değer = `GARANTI_STORE_KEY` env var'ı.** Şu an TEST modunda kodda varsayılan
+   olarak `12345678` kullanılıyor (Garanti'nin herkese açık TEST ortamı sabiti) —
+   bu PROD'da ASLA kullanılamaz, panelde ürettiğin gerçek 24-karakter hex değeriyle
+   değiştirilmesi şart.
+6. `GARANTI_MERCHANT_ID` ve `GARANTI_TERMINAL_ID` kitapçıkta açıkça geçmiyor — admin
+   portalına (`pos.garantibbva.com.tr`) giriş yaptıktan sonra ayarlar/işyeri bilgileri
+   ekranında görünmesi gerekiyor; bulamazsa `ETicaretDestek@garantibbva.com.tr`'e
+   sorabilir.
+
+**Özet — Tolga'nın yapması gerekenler:** (1) aktivasyon e-postasını bul/tıkla → henüz
+gelmediyse veya süresi dolduysa `ETicaretDestek@garantibbva.com.tr`'den yeniden iste,
+(2) `pos.garantibbva.com.tr/web/login`'e TCKN ile giriş yap, (3) PROVAUT şifresini
+belirle, (4) admin panelinde 24-karakter HEX 3D Secure Key üret, (5) Merchant
+ID/Terminal ID'yi panelden bul, (6) bu 7 değeri Railway Variables'a gir, (7)
+`GARANTI_MODE=PROD` yap ve redeploy et. Kod tarafında yapılacak bir şey YOK, sistem
+zaten bu değerleri okumaya hazır.
+
 ### Hemen Yapılması Gereken
 ```
 cd C:\proje\gulizvip
