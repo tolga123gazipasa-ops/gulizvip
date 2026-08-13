@@ -2969,26 +2969,48 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "checkout_url": None
                 })
                 tip_etiket = "🚗 Transfer" if reservation["type"] == "transfer" else "👑 Şoförlü Günlük VIP"
-                telegram_rez = (
-                    f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
-                    f"📋 <b>Tür:</b> {tip_etiket}\n"
-                    f"👤 <b>İsim:</b> {reservation['customerName']}\n"
-                    f"📞 <b>Telefon:</b> {reservation['customerPhone']}\n"
-                    f"📍 <b>Alış:</b> {reservation['pickup']}\n"
-                    f"🏁 <b>Varış:</b> {reservation['destination']}\n"
-                    f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
-                    f"👥 <b>Kişi:</b> {reservation['passengers']}\n"
-                    f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
-                    f"🕐 <b>Oluşturulma:</b> {reservation['createdAt']}"
-                )
-                if reservation.get("flightNumber"):
-                    telegram_rez += f"\n✈️ <b>Uçuş:</b> {reservation['flightNumber']}"
-                send_telegram(telegram_rez)
-                # Rezervasyon onay e-postası gönder
-                try:
-                    send_confirmation_email(reservation)
-                except Exception as e:
-                    print(f"[!] E-posta gönderme hatası: {e}")
+                # ÖNEMLİ: Kredi kartı seçildiğinde bu noktada MÜŞTERİ HENÜZ ÖDEMEYİ TAMAMLAMADI —
+                # kart formu bir sonraki adımda açılacak (/odeme/garanti/<id>), 3D Secure onayı
+                # gelmemiş olabilir, hatta müşteri ödemeyi hiç tamamlamayabilir. Bu yüzden "Rezervasyon
+                # Onayı" e-postasını ve tam detaylı "Yeni Rezervasyon" Telegram bildirimini burada
+                # göndermek yanıltıcı — ödeme başarısız/yarım kalsa bile müşteri "onaylandı" e-postası
+                # almış, admin de sanki kesin bir rezervasyon gelmiş gibi görmüş oluyordu (canlıda
+                # fark edildi). Kart ödemesinde asıl onay e-postası + detaylı bildirim, ödeme
+                # gerçekten doğrulandığında (bkz. POST /api/payments/garanti/result, procreturncode
+                # 00 + hash doğrulaması) gönderiliyor. Havale seçiminde ise müşteri zaten "işlemi ben
+                # tamamlayacağım" dediği için eski davranış (anında bildirim) korunuyor.
+                is_card_payment = reservation.get("paymentMethod") == "kart"
+                if is_card_payment:
+                    send_telegram(
+                        f"🅿️ <b>Rezervasyon oluşturuldu — kredi kartı ödemesi bekleniyor</b>\n"
+                        f"🆔 <b>#{reservation['id']}</b> — {tip_etiket}\n"
+                        f"👤 {reservation['customerName']} — 📞 {reservation['customerPhone']}\n"
+                        f"💰 {reservation['price']}₺\n"
+                        f"<i>Ödeme onaylanınca ayrı bir bildirim gelecek. Şimdilik müşteriye "
+                        f"onay e-postası gönderilmedi.</i>"
+                    )
+                else:
+                    telegram_rez = (
+                        f"🆕 <b>Yeni Rezervasyon #{reservation['id']}</b>\n"
+                        f"📋 <b>Tür:</b> {tip_etiket}\n"
+                        f"👤 <b>İsim:</b> {reservation['customerName']}\n"
+                        f"📞 <b>Telefon:</b> {reservation['customerPhone']}\n"
+                        f"📍 <b>Alış:</b> {reservation['pickup']}\n"
+                        f"🏁 <b>Varış:</b> {reservation['destination']}\n"
+                        f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
+                        f"👥 <b>Kişi:</b> {reservation['passengers']}\n"
+                        f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
+                        f"🕐 <b>Oluşturulma:</b> {reservation['createdAt']}"
+                    )
+                    if reservation.get("flightNumber"):
+                        telegram_rez += f"\n✈️ <b>Uçuş:</b> {reservation['flightNumber']}"
+                    send_telegram(telegram_rez)
+                    # Rezervasyon onay e-postası gönder (sadece havale/manuel ödemede — kart
+                    # ödemesinde onay e-postası ödeme doğrulanınca gönderilir, bkz. yukarıdaki not)
+                    try:
+                        send_confirmation_email(reservation)
+                    except Exception as e:
+                        print(f"[!] E-posta gönderme hatası: {e}")
                 # Identity matching — eşleşen ziyaretçiyi güncelle
                 rez_session_id = body.get("sessionId", "")
                 if rez_session_id:
@@ -3115,11 +3137,26 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             f"💳 Ödeme alındı: {target.get('customerName', '')} — Rezervasyon #{target['id']}",
                             ntype="payment", reservation_id=target["id"]
                         )
+                        # Kart ödemesinde rezervasyon oluşturulurken sadece kısa bir "ödeme
+                        # bekleniyor" bildirimi gitmişti (bkz. POST /api/reservations) — asıl
+                        # detaylı bildirim ve müşteri onay e-postası, ödeme GERÇEKTEN doğrulandığı
+                        # bu noktada gönderiliyor.
+                        tip_etiket_pay = "🚗 Transfer" if target.get("type") == "transfer" else "👑 Şoförlü Günlük VIP"
                         send_telegram(
-                            f"💳 <b>Ödeme Alındı</b>\n👤 {target.get('customerName', '')}\n"
-                            f"🆔 Rezervasyon #{target['id']}\n💰 {target.get('price', 0)} {target.get('currency', 'TRY')}\n"
-                            f"🔌 Sağlayıcı: garanti"
+                            f"💳 <b>Ödeme Alındı — Rezervasyon Onaylandı #{target['id']}</b>\n"
+                            f"📋 <b>Tür:</b> {tip_etiket_pay}\n"
+                            f"👤 <b>İsim:</b> {target.get('customerName', '')}\n"
+                            f"📞 <b>Telefon:</b> {target.get('customerPhone', '')}\n"
+                            f"📍 <b>Alış:</b> {target.get('pickup', '')}\n"
+                            f"🏁 <b>Varış:</b> {target.get('destination', '')}\n"
+                            f"📅 <b>Tarih:</b> {target.get('date', '')} {target.get('time', '')}\n"
+                            f"💰 <b>Ücret:</b> {target.get('price', 0)} {target.get('currency', 'TRY')}\n"
+                            f"🔌 <b>Sağlayıcı:</b> Garanti BBVA"
                         )
+                        try:
+                            send_confirmation_email(target)
+                        except Exception as e:
+                            print(f"[!] Ödeme sonrası e-posta gönderme hatası: {e}")
                 elif target is None:
                     outcome = "dogrulanamadi"
                     print(f"[!] Garanti result: eşleşen rezervasyon bulunamadı (orderid={order_id})", flush=True)
