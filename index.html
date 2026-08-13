@@ -2511,6 +2511,17 @@
         }
 
         function switchLanguage(lang) {
+            // /sayfa/<slug> içerik sayfalarının (Hakkımızda, Gizlilik, Mesafeli Satış vb.)
+            // İngilizce/Rusça çevirisi yok — önceden dil değişince bu sayfalardan da
+            // kullanıcı anasayfaya atılıyordu (bildirilen hata: okuduğu sayfadan
+            // kopuyordu). Artık burada sayfadan HİÇ ayrılmıyoruz: sadece menü/footer
+            // gibi arayüz metinlerini seçilen dile çeviriyoruz, sayfa içeriği (çevirisi
+            // olmadığı için) Türkçe kalıyor. Sayfa yenilenirse yine Türkçe açılır —
+            // bu bilinen bir sınırlama, ama en azından kullanıcı sayfada kalıyor.
+            if (document.body.classList.contains('page-mode')) {
+                applyLanguage(lang);
+                return;
+            }
             // Rota SEO sayfalarının (örn. /gazipasa-alanya-transfer) İngilizce/Rusça
             // karşılığı yok — bu yüzden dil değişince her zaman site köküne (/, /en/,
             // /ru/) gidilir, geçerli rota korunmaya çalışılmaz (aksi halde
