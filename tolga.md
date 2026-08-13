@@ -25,8 +25,26 @@ otomatik yapılmıyor, portaldan manuel yapılıyor — sorun değil).
 4. `git push origin main` — sandboxtan push edilemiyor, Tolga'nın kendi bilgisayarından
    yapması gerekiyor (2 commit bekliyor: `8590c24`, `ad19084`)
 
-Kod tarafında yapılacak hiçbir şey yok — sistem PROD env var'ları okumaya zaten hazır,
-sadece yukarıdaki doğrulama/test adımları kaldı.
+**GERÇEK BUG BULUNDU VE DÜZELTİLDİ (13 Ağustos, gece — commit `b5c9170`):**
+İlk canlı test denemesinde Tolga "Dönüş için işyeri URL bulunamıyor... PARes mesajı" hatası
+aldı. Railway loglarını inceleyince ayrı bir gerçek bug ortaya çıktı: `garantiOrderId`
+(rezervasyonu Garanti'nin geri dönüşüyle eşleştiren kimlik) sadece JSON yedeğine
+yazılıyordu, PostgreSQL'e HİÇ kaydedilmiyordu. Tam o test sırasında Railway env
+var'ları kaydedilince otomatik bir redeploy tetiklendi — yeni container DB'den taze
+rezervasyon listesini yükledi ama garanti_order_id sütunu DB'de olmadığı için bu alan
+kayboldu. Garanti işlemi tamamlayıp `/api/payments/garanti/result`'a geri post
+ettiğinde ("orderid=GULIZ76-16FDA3DD") sunucu eşleşen rezervasyon bulamadı →
+`outcome=dogrulanamadi`. Düzeltildi: `db.py`'ye `garanti_order_id` kolonu eklendi,
+`update_reservation_in_db`/`load_reservations_from_db` bu alanı artık okuyup yazıyor.
+
+Not: Bu bug, kullanıcının gördüğü "İşyeri URL bulunamıyor" hata METNİNİ tam olarak
+açıklamıyor olabilir (o mesaj muhtemelen Garanti'nin kendi sayfasından geliyor) — ama
+loglardaki somut eşleşme hatasını kesin çözüyor. Push + redeploy sonrası tekrar test
+edilmeli; aynı "İşyeri URL bulunamıyor" hatası YİNE çıkarsa bu artık kesin bankanın
+kendi terminal/routing tarafında bir sorun demektir, Garanti'ye e-posta ile bildirilmeli.
+
+Kod tarafında başka yapılacak bir şey yok — sistem PROD env var'ları okumaya hazır,
+yukarıdaki doğrulama/test adımları ve bu yeni düzeltmenin push edilmesi kaldı.
 
 ## ESKİ — Garanti BBVA PROD kurulumu aktif ilerliyor (13 Ağustos, akşam)
 Tolga, `eticaretdestek@garantibbva.com.tr` ile yazışıyordu (Müşteri Kodu: 61308591).
