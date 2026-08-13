@@ -492,6 +492,45 @@ def load_page_content():
         print(f"[!] Sayfa içerik dosyası yüklenemedi: {e}")
 
 
+def _get_merged_pages():
+    """Sayfa listesini DB + PAGE_CONTENT (fallback) BİRLEŞTİRİLMİŞ olarak döner.
+
+    Kök neden notu: Eskiden db.get_all_pages() herhangi bir satır döndürdüğünde
+    (örn. admin panelinden sadece TEK bir sayfa düzenlenip DB'ye ilk kez
+    yazıldığında) o tek satır TÜM liste sanılıyor, PAGE_CONTENT'teki (henüz
+    hiç DB'ye kaydedilmemiş) diğer sayfalar listeden tamamen düşüyordu —
+    footer'dan ve admin panelinden aniden kayboluyorlardı. Gerçek içerik hiç
+    silinmiyordu (tekil /api/page/<slug> hâlâ doğru veriyi dönüyordu), sadece
+    LİSTE eksik gösteriliyordu. Çözüm: PAGE_CONTENT'i taban al, DB'de kaydı
+    olan slug'ları DB değerleriyle üzerine yaz, DB'de olup PAGE_CONTENT'te
+    olmayan slug'ları da ekle.
+    """
+    merged = {}
+    for slug, data in PAGE_CONTENT.items():
+        merged[slug] = {
+            "slug": slug,
+            "title": data.get("title", ""),
+            "subtitle": data.get("subtitle", ""),
+            "is_active": data.get("is_active", True),
+        }
+    try:
+        db_pages = db.get_all_pages()
+        if db_pages:
+            for p in db_pages:
+                slug = p.get("slug")
+                if not slug:
+                    continue
+                merged[slug] = {
+                    "slug": slug,
+                    "title": p.get("title", ""),
+                    "subtitle": p.get("subtitle", ""),
+                    "is_active": p.get("is_active", True),
+                }
+    except Exception as e:
+        print(f"[!] _get_merged_pages() DB okuma hatası: {e}")
+    return list(merged.values())
+
+
 def save_page_content_to_json():
     """PAGE_CONTENT dict'ini page_content.json dosyasına yaz (PostgreSQL fallback)."""
     try:
@@ -2502,60 +2541,21 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not user:
                     self._send_error("Yetkisiz erişim.", 401)
                     return
-            # Admin: tüm sayfalar (DB + fallback)
-                try:
-                    db_pages = db.get_all_pages()
-                    if db_pages:
-                        self._send_json({"success": True, "pages": db_pages})
-                        return
-                except Exception:
-                    pass
-                pages = []
-                for slug, data in PAGE_CONTENT.items():
-                    pages.append({
-                        "slug": slug,
-                        "title": data.get("title", ""),
-                        "subtitle": data.get("subtitle", ""),
-                        "is_active": data.get("is_active", True),
-                    })
+            # Admin: tüm sayfalar (DB + fallback birleştirilmiş — DB'ye hiç
+            # yazılmamış sayfalar da listede kalsın diye tam değiştirme değil
+            # slug bazlı BİRLEŞTİRME yapılır, bkz. _get_merged_pages())
+                pages = _get_merged_pages()
                 self._send_json({"success": True, "pages": pages})
                 return
             if path == "/api/pages":
-            # Public: tüm sayfaların listesi
-                try:
-                    db_pages = db.get_all_pages()
-                    if db_pages:
-                        self._send_json({"success": True, "pages": db_pages})
-                        return
-                except Exception:
-                    pass
-                pages = []
-                for slug, data in PAGE_CONTENT.items():
-                    pages.append({
-                        "slug": slug,
-                        "title": data.get("title", ""),
-                        "subtitle": data.get("subtitle", ""),
-                        "is_active": data.get("is_active", True),
-                    })
+            # Public: tüm sayfaların listesi (DB + fallback birleştirilmiş)
+                pages = _get_merged_pages()
                 self._send_json({"success": True, "pages": pages})
                 return
             if path == "/api/footer-pages":
-            # Public: sadece aktif sayfalar (footer için)
-                try:
-                    db_pages = db.get_all_pages()
-                    if db_pages:
-                        active = [p for p in db_pages if p.get("is_active", True)]
-                        self._send_json({"success": True, "pages": active})
-                        return
-                except Exception:
-                    pass
-                active = []
-                for slug, data in PAGE_CONTENT.items():
-                    if data.get("is_active", True):
-                        active.append({
-                            "slug": slug,
-                            "title": data.get("title", ""),
-                        })
+            # Public: sadece aktif sayfalar (footer için, DB + fallback birleştirilmiş)
+                pages = _get_merged_pages()
+                active = [p for p in pages if p.get("is_active", True)]
                 self._send_json({"success": True, "pages": active})
                 return
             if path.startswith("/api/page/"):
