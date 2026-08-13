@@ -1050,8 +1050,9 @@
 </head>
 <body>
     <script>
-        // Sayfa modu tespiti (/sayfa/<slug>) — flash önlemek için erken ekleniyor
-        if (window.location.pathname.indexOf('/sayfa/') === 0) {
+        // Sayfa modu tespiti (/sayfa/<slug>, /en/sayfa/<slug>, /ru/sayfa/<slug>) —
+        // flash önlemek için erken ekleniyor
+        if (/^\/(en\/|ru\/)?sayfa\//.test(window.location.pathname)) {
             document.body.classList.add('page-mode');
         }
     </script>
@@ -2512,14 +2513,14 @@
 
         function switchLanguage(lang) {
             // /sayfa/<slug> içerik sayfalarının (Hakkımızda, Gizlilik, Mesafeli Satış vb.)
-            // İngilizce/Rusça çevirisi yok — önceden dil değişince bu sayfalardan da
-            // kullanıcı anasayfaya atılıyordu (bildirilen hata: okuduğu sayfadan
-            // kopuyordu). Artık burada sayfadan HİÇ ayrılmıyoruz: sadece menü/footer
-            // gibi arayüz metinlerini seçilen dile çeviriyoruz, sayfa içeriği (çevirisi
-            // olmadığı için) Türkçe kalıyor. Sayfa yenilenirse yine Türkçe açılır —
-            // bu bilinen bir sınırlama, ama en azından kullanıcı sayfada kalıyor.
+            // artık gerçek İngilizce/Rusça çevirisi var (bkz. server.py PAGE_TRANSLATIONS,
+            // /api/page/<slug>?lang=). Dil değişince aynı sayfanın o dildeki adresine
+            // (/sayfa/<slug>, /en/sayfa/<slug>, /ru/sayfa/<slug>) gidiyoruz — kullanıcı
+            // sayfadan kopmuyor VE içerik de artık gerçekten çevriliyor.
             if (document.body.classList.contains('page-mode')) {
-                applyLanguage(lang);
+                var slug = window.location.pathname.replace(/^\/(en\/|ru\/)?sayfa\//, '').replace(/\/$/, '');
+                var prefix = lang === 'tr' ? '/sayfa/' : '/' + lang + '/sayfa/';
+                window.location.href = prefix + slug;
                 return;
             }
             // Rota SEO sayfalarının (örn. /gazipasa-alanya-transfer) İngilizce/Rusça
@@ -3789,7 +3790,9 @@
         function loadFooterPages() {
             var list = document.getElementById('footer-pages-list');
             if (!list) return;
-            fetch('/api/footer-pages')
+            var lang = window.currentLang || 'tr';
+            var prefix = lang === 'tr' ? '/sayfa/' : '/' + lang + '/sayfa/';
+            fetch('/api/footer-pages?lang=' + encodeURIComponent(lang))
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (!data.success || !data.pages || data.pages.length === 0) {
@@ -3800,7 +3803,7 @@
                     data.pages.forEach(function(p) {
                         var li = document.createElement('li');
                         var a = document.createElement('a');
-                        a.href = '/sayfa/' + p.slug;
+                        a.href = prefix + p.slug;
                         a.textContent = p.title;
                         li.appendChild(a);
                         list.appendChild(li);
@@ -3812,27 +3815,43 @@
         }
         loadFooterPages();
 
-        // ===== SAYFA MODU: /sayfa/<slug> içeriğini API'den yükle =====
+        // ===== SAYFA MODU: /sayfa/<slug> (veya /en/sayfa/<slug>, /ru/sayfa/<slug>)
+        // içeriğini API'den yükle =====
         (function() {
             if (!document.body.classList.contains('page-mode')) return;
 
-            var slug = window.location.pathname.replace(/^\/sayfa\//, '').replace(/\/$/, '');
+            var slug = window.location.pathname.replace(/^\/(en\/|ru\/)?sayfa\//, '').replace(/\/$/, '');
+            var pageLang = window.currentLang || 'tr';
             var pageTitle = document.getElementById('page-title');
             var pageSubtitle = document.getElementById('page-subtitle');
             var pageContent = document.getElementById('page-content');
 
+            var NOT_FOUND_TEXT = {
+                tr: { title: 'Sayfa Bulunamadı', subtitle: 'Aradığınız sayfa mevcut değil.', link: 'Ana Sayfa\'ya dönmek için tıklayın.' },
+                en: { title: 'Page Not Found', subtitle: 'The page you are looking for does not exist.', link: 'Click to return to the Home Page.' },
+                ru: { title: 'Страница не найдена', subtitle: 'Запрашиваемая страница не существует.', link: 'Нажмите, чтобы вернуться на главную страницу.' }
+            };
+            var LAST_UPDATED_LABEL = { tr: 'Son Güncelleme', en: 'Last Updated', ru: 'Последнее обновление' };
+            var MONTHS = {
+                tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+                en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+            };
+
             function loadFallback() {
-                pageTitle.textContent = 'Sayfa Bulunamadı';
-                pageSubtitle.textContent = 'Aradığınız sayfa mevcut değil.';
-                pageContent.innerHTML = '<p><a href="/" style="color:#E31837;font-weight:600;">Ana Sayfa\'ya dönmek için tıklayın.</a></p>';
-                document.title = 'Sayfa Bulunamadı - Güliz VIP Transfer';
+                var t = NOT_FOUND_TEXT[pageLang] || NOT_FOUND_TEXT.tr;
+                var homeHref = pageLang === 'tr' ? '/' : '/' + pageLang + '/';
+                pageTitle.textContent = t.title;
+                pageSubtitle.textContent = t.subtitle;
+                pageContent.innerHTML = '<p><a href="' + homeHref + '" style="color:#E31837;font-weight:600;">' + t.link + '</a></p>';
+                document.title = t.title + ' - Güliz VIP Transfer';
             }
 
             function formatDate(isoStr) {
                 if (!isoStr) return '';
                 try {
                     var d = new Date(isoStr);
-                    var months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+                    var months = MONTHS[pageLang] || MONTHS.tr;
                     return months[d.getMonth()] + ' ' + d.getFullYear();
                 } catch(e) {
                     return '';
@@ -3840,7 +3859,7 @@
             }
 
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/api/page/' + encodeURIComponent(slug), true);
+            xhr.open('GET', '/api/page/' + encodeURIComponent(slug) + '?lang=' + encodeURIComponent(pageLang), true);
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     try {
@@ -3857,7 +3876,8 @@
                             if (pageData.updatedAt) {
                                 var formatted = formatDate(pageData.updatedAt);
                                 if (formatted) {
-                                    contentHtml = '<p class="last-updated">Son Güncelleme: ' + formatted + '</p>' + contentHtml;
+                                    var label = LAST_UPDATED_LABEL[pageLang] || LAST_UPDATED_LABEL.tr;
+                                    contentHtml = '<p class="last-updated">' + label + ': ' + formatted + '</p>' + contentHtml;
                                 }
                             }
                             pageContent.innerHTML = contentHtml;

@@ -138,7 +138,72 @@ PAGE_CONTENT = {
         "title": "İade Şartları",
         "subtitle": "VIP transfer hizmetimizin iade ve para iadesi koşulları",
         "is_active": True,
-        "content": "<p class=\"last-updated\">Son Güncelleme: Temmuz 2026</p><h2>İade Politikası</h2><p>Güliz VIP Transfer olarak, müşteri memnuniyetini ön planda tutuyoruz. İşbu iade politikası, web sitemiz üzerinden yapılan rezervasyonlara ilişkin iade ve para iadesi koşullarını düzenlemektedir.</p><h2>1. Cayma Hakkı</h2><p>6502 sayılı Tüketicinin Korunması Hakkında Kanun kapsamında, VIP transfer hizmetleri belirli bir tarihte ifası gereken hizmetler olarak değerlendirildiğinden, cayma hakkı aşağıdaki şartlara tabidir:</p><ul><li><strong>24 saat ve üzeri kala iptal:</strong> Herhangi bir kesinti yapılmaksızın tam iade sağlanır.</li><li><strong>24 saatten az kala iptal:</strong> Ödenen tutarın %50'si iade edilir.</li><li><strong>Hizmet tarihinde iptal veya gelinmemesi:</strong> İade yapılmaz.</li></ul><h2>2. İade Süreci</h2><p>İade talebinizi aşağıdaki kanallardan bize iletebilirsiniz:</p><ul><li><strong>E-posta:</strong> info@gulizvip.com.tr</li><li><strong>Telefon:</strong> +90 242 606 25 48</li><li><strong>WhatsApp:</strong> +90 242 606 25 48</li></ul><p>İade talebiniz operasyon ekibimiz tarafından değerlendirilir ve en geç 3 iş günü içinde tarafınıza dönüş yapılır.</p><h2>3. İade Yöntemleri</h2><p>Onaylanan iadeler, kullanılan ödeme yöntemine göre aşağıdaki şekilde gerçekleştirilir:</p><ul><li><strong>Kredi Kartı:</strong> iyzico altyapısı üzerinden 3-7 iş günü içinde kartınıza iade edilir.</li><li><strong>Havale / EFT:</strong> Banka hesabınıza 3-5 iş günü içinde yatırılır.</li></ul><h2>4. Değişiklik ve Düzeltmeler</h2><p>Rezervasyon tarih, saat veya güzergah değişiklikleri, hizmet tarihinden en az 12 saat önce bildirilmesi koşuluyla ücretsiz olarak yapılabilir. Son dakika değişiklikleri operasyon ekibimizin onayına tabidir ve ek ücret gerektirebilir.</p><h2>5. Mücbir Sebep</h2><p>Doğal afet, kötü hava koşulları, yol kapanması, grev veya benzeri mücbir sebepler nedeniyle hizmetin ifa edilememesi durumunda, müşteriye tam iade veya alternatif tarihte hizmet seçeneği sunulur.</p><h2>6. İletişim</h2><p>İade ve değişiklik talepleriniz için bizimle iletişime geçebilirsiniz:</p><p>Telefon: +90 242 606 25 48<br>E-posta: info@gulizvip.com.tr<br>Adres: Gazipaşa / Antalya</p>"
+        "content": "<p class=\"last-updated\">Son Güncelleme: Temmuz 2026</p><h2>İade Politikası</h2><p>Güliz VIP Transfer olarak, müşteri memnuniyetini ön planda tutuyoruz. İşbu iade politikası, web sitemiz üzerinden yapılan rezervasyonlara ilişkin iade ve para iadesi koşullarını düzenlemektedir.</p><h2>1. Cayma Hakkı</h2><p>6502 sayılı Tüketicinin Korunması Hakkında Kanun kapsamında, VIP transfer hizmetleri belirli bir tarihte ifası gereken hizmetler olarak değerlendirildiğinden, cayma hakkı aşağıdaki şartlara tabidir:</p><ul><li><strong>24 saat ve üzeri kala iptal:</strong> Herhangi bir kesinti yapılmaksızın tam iade sağlanır.</li><li><strong>24 saatten az kala iptal:</strong> Ödenen tutarın %50'si iade edilir.</li><li><strong>Hizmet tarihinde iptal veya gelinmemesi:</strong> İade yapılmaz.</li></ul><h2>2. İade Süreci</h2><p>İade talebinizi aşağıdaki kanallardan bize iletebilirsiniz:</p><ul><li><strong>E-posta:</strong> info@gulizvip.com.tr</li><li><strong>Telefon:</strong> +90 242 606 25 48</li><li><strong>WhatsApp:</strong> +90 242 606 25 48</li></ul><p>İade talebiniz operasyon ekibimiz tarafından değerlendirilir ve en geç 3 iş günü içinde tarafınıza dönüş yapılır.</p><h2>3. İade Yöntemleri</h2><p>Onaylanan iadeler, kullanılan ödeme yöntemine göre aşağıdaki şekilde gerçekleştirilir:</p><ul><li><strong>Kredi Kartı:</strong> Garanti BBVA Sanal POS altyapısı üzerinden 3-7 iş günü içinde kartınıza iade edilir.</li><li><strong>Havale / EFT:</strong> Banka hesabınıza 3-5 iş günü içinde yatırılır.</li></ul><h2>4. Değişiklik ve Düzeltmeler</h2><p>Rezervasyon tarih, saat veya güzergah değişiklikleri, hizmet tarihinden en az 12 saat önce bildirilmesi koşuluyla ücretsiz olarak yapılabilir. Son dakika değişiklikleri operasyon ekibimizin onayına tabidir ve ek ücret gerektirebilir.</p><h2>5. Mücbir Sebep</h2><p>Doğal afet, kötü hava koşulları, yol kapanması, grev veya benzeri mücbir sebepler nedeniyle hizmetin ifa edilememesi durumunda, müşteriye tam iade veya alternatif tarihte hizmet seçeneği sunulur.</p><h2>6. İletişim</h2><p>İade ve değişiklik talepleriniz için bizimle iletişime geçebilirsiniz:</p><p>Telefon: +90 242 606 25 48<br>E-posta: info@gulizvip.com.tr<br>Adres: Gazipaşa / Antalya</p>"
+    }
+}
+
+# ─── Sayfa Çevirileri (İngilizce / Rusça) ───────────────────────────────────────
+# Bu 5 içerik sayfası (Hakkımızda, Gizlilik, Mesafeli Satış, Teslimat, İade
+# Şartları) için EN/RU çevirileri. NOT: Bunlar AI/makine çevirisidir, admin
+# panelinden düzenlenemez — sadece Türkçe (DB'deki) sürüm admin panelinden
+# yönetilebilir. Türkçe içerik admin panelinden değiştirilirse buradaki
+# çeviriler OTOMATİK GÜNCELLENMEZ, elle senkronize edilmesi gerekir. Mesafeli
+# Satış Sözleşmesi gibi yasal metinlerde resmi/hukuki geçerlilik için
+# profesyonel çeviri önerilir.
+PAGE_TRANSLATIONS = {
+    "en": {
+        "hakkimizda": {
+            "title": "About Us",
+            "subtitle": "The privileged world of premium VIP transfer service",
+            "content": "<h2>Güliz VIP Transfer</h2><p>At Güliz VIP Transfer, we provide a luxurious and comfortable VIP transfer service in the Gazipaşa Airport and Alanya region. Providing our guests with a safe, punctual and prestigious travel experience is our top priority.</p><h2>Our Vision</h2><p>To become the most trusted VIP transfer brand in the Mediterranean region. We work to turn every journey into an unforgettable experience where comfort meets luxury.</p><h2>Our Mission</h2><p>To offer our guests an uninterrupted, safe and exclusive experience in airport transfer and chauffeured daily VIP services, with our professional team and modern vehicle fleet.</p><h2>Our Values</h2><ul><li><strong>Safety:</strong> The highest safety standards on every journey</li><li><strong>Comfort:</strong> Zero compromise on travel comfort with our luxury vehicle fleet</li><li><strong>Punctuality:</strong> 99% on-time delivery rate thanks to flight tracking</li><li><strong>Customer Satisfaction:</strong> A service approach that stands out with personalized solutions</li></ul>"
+        },
+        "gizlilik": {
+            "title": "Privacy Policy",
+            "subtitle": "Information about the protection and processing of your personal data",
+            "content": "<h2>1. Information Collected</h2><p>At Güliz VIP Transfer, we collect personal data such as your name, surname, phone number, email address and payment information during the reservation process. This information is used solely to provide our services.</p><h2>2. Use of Information</h2><p>Your collected personal data is processed to manage your reservations, offer you personalized deals, and improve the quality of customer service.</p><h2>3. Sharing of Information</h2><p>Your personal data is not shared with third parties except where legally required. Payment transactions are carried out through our secure payment infrastructure.</p><h2>4. Data Security</h2><p>Your personal data is protected by industry-standard security measures (SSL, encryption).</p><h2>5. Cookie Policy</h2><p>Our website uses cookies to improve the user experience. You can manage your cookie preferences from your browser settings.</p><h2>6. Your Rights</h2><p>Under the Turkish Personal Data Protection Law (KVKK), you have the right to access, correct, delete and object to the processing of your data. You may contact us to exercise these rights.</p>"
+        },
+        "mesafeli-satis": {
+            "title": "Distance Sales Agreement",
+            "subtitle": "Terms and conditions governing online reservations and sales",
+            "content": "<h2>1. Parties</h2><p>This Distance Sales Agreement is made between the following parties:</p><p><strong>Seller:</strong><br>Company Name: Güliz Lojistik Mimarlık Sanayi ve Tic. Ltd. Şti.<br>Head Office Address: Pazarcı Mah. 10003. Sok. No: 32/7, Gazipaşa/Antalya, Türkiye<br>Gazipaşa Airport Office: Gazipaşa Havalimanı İçi No:3 Sarıağaç, Gazipaşa/Antalya, Türkiye<br>Tax Office: Gazipaşa Mal Müdürlüğü<br>Tax ID (VKN): 4200721970<br>Phone: +90 544 865 42 00<br>Email: info@gulizvip.com.tr</p><p><strong>Buyer:</strong> The individual or legal entity (Customer) making a reservation through the website</p><p>This agreement applies to reservations made through the website within the scope of Güliz VIP Transfer services.</p><h2>2. Description of Service</h2><p>Airport VIP transfer and chauffeured daily VIP vehicle rental services are provided with a luxury vehicle accompanied by a professional driver, on the specified date, time and route.</p><h2>3. Pricing</h2><p>Pricing is calculated based on the current price per kilometer. All prices are stated in Turkish Lira (TL) and include VAT.</p><h2>4. Payment Terms</h2><p>Payment can be made by credit card or bank transfer. Commission rates of the applicable card networks apply to credit card payments.</p><h2>5. Right of Withdrawal</h2><p>Under Turkish Consumer Protection Law No. 6502, VIP transfer services are considered services to be performed at a specific date, and the right of withdrawal is therefore subject to the conditions detailed on the Refund Terms page.</p><h2>6. Performance of the Agreement</h2><p>Once a reservation is confirmed, the service begins on the specified date and time. Force majeure circumstances are taken into account in cases of delay or cancellation.</p>"
+        },
+        "teslimat": {
+            "title": "Delivery and Refund Terms",
+            "subtitle": "Detailed information about the delivery and refund conditions of our VIP transfer service",
+            "content": "<h2>Delivery Terms</h2><p>Our VIP transfer service begins at the meeting point specified at the time of reservation, on the specified date and time. Thanks to flight tracking, our driver is aware of any delays and waits for you in the arrivals area.</p><h2>Service Process</h2><ul><li>Driver greeting at the meeting point</li><li>Luggage assistance and vehicle boarding</li><li>Comfortable and safe VIP transfer</li><li>Timely arrival at the destination</li></ul><h2>Cancellation and Refund Conditions</h2><ul><li><strong>24 hours or more before:</strong> Full refund</li><li><strong>Less than 24 hours before:</strong> 50% refund</li><li><strong>On the day of service:</strong> No refund</li></ul><h2>Changes</h2><p>Changes to the reservation date, time or route must be notified at least 12 hours before the service. Last-minute changes are subject to the approval of the operations team.</p><h2>Force Majeure</h2><p>In the case of force majeure events such as natural disasters, adverse weather conditions or road closures, a full refund or an alternative date option is offered.</p>"
+        },
+        "iade-sartlari": {
+            "title": "Refund Terms",
+            "subtitle": "The refund and reimbursement conditions of our VIP transfer service",
+            "content": "<h2>Refund Policy</h2><p>At Güliz VIP Transfer, customer satisfaction is our top priority. This refund policy governs the refund and reimbursement conditions for reservations made through our website.</p><h2>1. Right of Withdrawal</h2><p>Under Turkish Consumer Protection Law No. 6502, VIP transfer services are considered services to be performed at a specific date, and the right of withdrawal is therefore subject to the following conditions:</p><ul><li><strong>Cancellation 24 hours or more before:</strong> A full refund is provided without any deduction.</li><li><strong>Cancellation less than 24 hours before:</strong> 50% of the amount paid is refunded.</li><li><strong>Cancellation on the day of service, or no-show:</strong> No refund is provided.</li></ul><h2>2. Refund Process</h2><p>You can submit your refund request through the following channels:</p><ul><li><strong>Email:</strong> info@gulizvip.com.tr</li><li><strong>Phone:</strong> +90 242 606 25 48</li><li><strong>WhatsApp:</strong> +90 242 606 25 48</li></ul><p>Your refund request will be reviewed by our operations team and you will receive a response within 3 business days at the latest.</p><h2>3. Refund Methods</h2><p>Approved refunds are processed as follows, depending on the payment method used:</p><ul><li><strong>Credit Card:</strong> Refunded to your card within 3-7 business days via Garanti BBVA Sanal POS infrastructure.</li><li><strong>Bank Transfer / EFT:</strong> Deposited to your bank account within 3-5 business days.</li></ul><h2>4. Changes and Corrections</h2><p>Changes to the reservation date, time or route can be made free of charge, provided they are notified at least 12 hours before the service date. Last-minute changes are subject to the approval of our operations team and may incur additional charges.</p><h2>5. Force Majeure</h2><p>In the event that the service cannot be performed due to force majeure such as natural disasters, adverse weather conditions, road closures, strikes or similar events, the customer is offered a full refund or the option of service on an alternative date.</p><h2>6. Contact</h2><p>You may contact us for refund and change requests:</p><p>Phone: +90 242 606 25 48<br>Email: info@gulizvip.com.tr<br>Address: Gazipaşa / Antalya</p>"
+        }
+    },
+    "ru": {
+        "hakkimizda": {
+            "title": "О нас",
+            "subtitle": "Привилегированный мир премиального VIP-трансфера",
+            "content": "<h2>Güliz VIP Transfer</h2><p>Компания Güliz VIP Transfer предоставляет роскошные и комфортные VIP-трансферы в районе аэропорта Газипаша и Аланьи. Обеспечение безопасного, пунктуального и престижного путешествия для наших гостей — наш главный приоритет.</p><h2>Наше видение</h2><p>Стать самым надёжным брендом VIP-трансфера в Средиземноморском регионе. Мы стремимся превратить каждую поездку в незабываемый опыт, где комфорт сочетается с роскошью.</p><h2>Наша миссия</h2><p>Благодаря профессиональной команде и современному автопарку предложить нашим гостям бесперебойный, безопасный и эксклюзивный опыт трансфера из аэропорта и услуг VIP-аренды автомобиля с водителем.</p><h2>Наши ценности</h2><ul><li><strong>Безопасность:</strong> высочайшие стандарты безопасности в каждой поездке</li><li><strong>Комфорт:</strong> никаких компромиссов в комфорте благодаря нашему автопарку класса люкс</li><li><strong>Пунктуальность:</strong> 99% случаев прибытия вовремя благодаря отслеживанию рейсов</li><li><strong>Удовлетворённость клиентов:</strong> индивидуальный подход, который выделяет наш сервис</li></ul>"
+        },
+        "gizlilik": {
+            "title": "Политика конфиденциальности",
+            "subtitle": "Информация о защите и обработке ваших персональных данных",
+            "content": "<h2>1. Собираемая информация</h2><p>Güliz VIP Transfer собирает такие персональные данные, как имя, фамилия, номер телефона, адрес электронной почты и платёжная информация в процессе бронирования. Эта информация используется исключительно для предоставления наших услуг.</p><h2>2. Использование информации</h2><p>Собранные персональные данные обрабатываются для управления вашими бронированиями, предоставления персональных предложений и повышения качества обслуживания клиентов.</p><h2>3. Передача информации</h2><p>Ваши персональные данные не передаются третьим лицам, за исключением случаев, предусмотренных законом. Платёжные операции осуществляются через нашу защищённую платёжную инфраструктуру.</p><h2>4. Безопасность данных</h2><p>Ваши персональные данные защищены отраслевыми стандартами безопасности (SSL, шифрование).</p><h2>5. Политика использования файлов cookie</h2><p>Наш сайт использует файлы cookie для улучшения пользовательского опыта. Вы можете управлять настройками cookie в своём браузере.</p><h2>6. Ваши права</h2><p>В соответствии с турецким Законом о защите персональных данных (KVKK) вы имеете право на доступ, исправление, удаление своих данных и возражение против их обработки. Для реализации этих прав вы можете связаться с нами.</p>"
+        },
+        "mesafeli-satis": {
+            "title": "Договор дистанционной продажи",
+            "subtitle": "Условия онлайн-бронирования и продажи услуг",
+            "content": "<h2>1. Стороны</h2><p>Настоящий Договор дистанционной продажи заключён между следующими сторонами:</p><p><strong>Продавец:</strong><br>Наименование компании: Güliz Lojistik Mimarlık Sanayi ve Tic. Ltd. Şti.<br>Юридический адрес: Pazarcı Mah. 10003. Sok. No: 32/7, Газипаша/Анталья, Турция<br>Офис в аэропорту Газипаша: Gazipaşa Havalimanı İçi No:3 Sarıağaç, Газипаша/Анталья, Турция<br>Налоговая инспекция: Gazipaşa Mal Müdürlüğü<br>Налоговый номер (VKN): 4200721970<br>Телефон: +90 544 865 42 00<br>Эл. почта: info@gulizvip.com.tr</p><p><strong>Покупатель:</strong> Физическое или юридическое лицо (Клиент), осуществляющее бронирование через сайт</p><p>Настоящий договор применяется к бронированиям, сделанным через сайт в рамках услуг Güliz VIP Transfer.</p><h2>2. Описание услуги</h2><p>Услуги VIP-трансфера из аэропорта и аренды VIP-автомобиля с водителем на день предоставляются на автомобиле класса люкс в сопровождении профессионального водителя, в указанные дату, время и по указанному маршруту.</p><h2>3. Ценообразование</h2><p>Цена рассчитывается на основе текущего тарифа за километр. Все цены указаны в турецких лирах (TL) и включают НДС.</p><h2>4. Условия оплаты</h2><p>Оплата может быть произведена кредитной картой или банковским переводом. При оплате кредитной картой применяются комиссии соответствующих платёжных систем.</p><h2>5. Право на отказ от услуги</h2><p>В соответствии с турецким Законом о защите прав потребителей № 6502, услуги VIP-трансфера считаются услугами, оказываемыми в определённую дату, поэтому право на отказ регулируется условиями, подробно изложенными на странице «Условия возврата».</p><h2>6. Исполнение договора</h2><p>После подтверждения бронирования услуга начинается в указанные дату и время. В случае задержек и отмен учитываются форс-мажорные обстоятельства.</p>"
+        },
+        "teslimat": {
+            "title": "Условия предоставления услуги и возврата",
+            "subtitle": "Подробная информация об условиях предоставления и возврата нашей услуги VIP-трансфера",
+            "content": "<h2>Условия предоставления услуги</h2><p>Наш VIP-трансфер начинается в указанном при бронировании месте встречи, в указанные дату и время. Благодаря отслеживанию рейсов наш водитель знает о задержках и ожидает вас в зоне прилёта.</p><h2>Процесс обслуживания</h2><ul><li>Встреча с водителем в месте сбора</li><li>Помощь с багажом и посадка в автомобиль</li><li>Комфортный и безопасный VIP-трансфер</li><li>Своевременное прибытие в пункт назначения</li></ul><h2>Условия отмены и возврата</h2><ul><li><strong>За 24 часа и более:</strong> полный возврат</li><li><strong>Менее чем за 24 часа:</strong> возврат 50%</li><li><strong>В день оказания услуги:</strong> возврат не производится</li></ul><h2>Изменения</h2><p>Об изменениях даты, времени или маршрута бронирования необходимо сообщить не менее чем за 12 часов до оказания услуги. Изменения в последнюю минуту подлежат согласованию с операционной командой.</p><h2>Форс-мажор</h2><p>В случае форс-мажорных обстоятельств, таких как стихийные бедствия, неблагоприятные погодные условия или перекрытие дорог, предоставляется полный возврат средств или альтернативная дата оказания услуги.</p>"
+        },
+        "iade-sartlari": {
+            "title": "Условия возврата",
+            "subtitle": "Условия возврата и возмещения средств за нашу услугу VIP-трансфера",
+            "content": "<h2>Политика возврата</h2><p>Для Güliz VIP Transfer удовлетворённость клиентов — главный приоритет. Настоящая политика возврата регулирует условия возврата и возмещения средств за бронирования, сделанные через наш сайт.</p><h2>1. Право на отказ от услуги</h2><p>В соответствии с турецким Законом о защите прав потребителей № 6502, услуги VIP-трансфера считаются услугами, оказываемыми в определённую дату, поэтому право на отказ подчиняется следующим условиям:</p><ul><li><strong>Отмена за 24 часа и более:</strong> производится полный возврат без каких-либо удержаний.</li><li><strong>Отмена менее чем за 24 часа:</strong> возвращается 50% от уплаченной суммы.</li><li><strong>Отмена в день оказания услуги или неявка:</strong> возврат не производится.</li></ul><h2>2. Процесс возврата</h2><p>Вы можете отправить запрос на возврат через следующие каналы:</p><ul><li><strong>Эл. почта:</strong> info@gulizvip.com.tr</li><li><strong>Телефон:</strong> +90 242 606 25 48</li><li><strong>WhatsApp:</strong> +90 242 606 25 48</li></ul><p>Ваш запрос на возврат будет рассмотрен нашей операционной командой, и вы получите ответ не позднее чем через 3 рабочих дня.</p><h2>3. Способы возврата</h2><p>Одобренные возвраты производятся следующим образом, в зависимости от использованного способа оплаты:</p><ul><li><strong>Кредитная карта:</strong> возврат на карту в течение 3-7 рабочих дней через инфраструктуру Garanti BBVA Sanal POS.</li><li><strong>Банковский перевод:</strong> зачисление на банковский счёт в течение 3-5 рабочих дней.</li></ul><h2>4. Изменения и исправления</h2><p>Изменения даты, времени или маршрута бронирования могут быть внесены бесплатно при условии уведомления не менее чем за 12 часов до даты оказания услуги. Изменения в последнюю минуту подлежат согласованию с нашей операционной командой и могут повлечь дополнительную плату.</p><h2>5. Форс-мажор</h2><p>В случае невозможности оказания услуги вследствие форс-мажорных обстоятельств, таких как стихийные бедствия, неблагоприятные погодные условия, перекрытие дорог, забастовки или подобные события, клиенту предлагается полный возврат средств или возможность получения услуги в альтернативную дату.</p><h2>6. Контакты</h2><p>По вопросам возврата и изменений вы можете связаться с нами:</p><p>Телефон: +90 242 606 25 48<br>Эл. почта: info@gulizvip.com.tr<br>Адрес: Газипаша / Анталья</p>"
+        }
     }
 }
 
@@ -492,8 +557,10 @@ def load_page_content():
         print(f"[!] Sayfa içerik dosyası yüklenemedi: {e}")
 
 
-def _get_merged_pages():
+def _get_merged_pages(lang="tr"):
     """Sayfa listesini DB + PAGE_CONTENT (fallback) BİRLEŞTİRİLMİŞ olarak döner.
+    lang 'en'/'ru' ise ve PAGE_TRANSLATIONS'ta karşılığı varsa title/subtitle
+    çeviriyle değiştirilir (footer/liste linkleri de doğru dilde görünsün diye).
 
     Kök neden notu: Eskiden db.get_all_pages() herhangi bir satır döndürdüğünde
     (örn. admin panelinden sadece TEK bir sayfa düzenlenip DB'ye ilk kez
@@ -528,6 +595,13 @@ def _get_merged_pages():
                 }
     except Exception as e:
         print(f"[!] _get_merged_pages() DB okuma hatası: {e}")
+    if lang in ("en", "ru"):
+        translations = PAGE_TRANSLATIONS.get(lang, {})
+        for slug, entry in merged.items():
+            t = translations.get(slug)
+            if t:
+                entry["title"] = t.get("title", entry["title"])
+                entry["subtitle"] = t.get("subtitle", entry["subtitle"])
     return list(merged.values())
 
 
@@ -2549,12 +2623,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             if path == "/api/pages":
             # Public: tüm sayfaların listesi (DB + fallback birleştirilmiş)
-                pages = _get_merged_pages()
+                pages = _get_merged_pages(params.get("lang", "tr"))
                 self._send_json({"success": True, "pages": pages})
                 return
             if path == "/api/footer-pages":
             # Public: sadece aktif sayfalar (footer için, DB + fallback birleştirilmiş)
-                pages = _get_merged_pages()
+                pages = _get_merged_pages(params.get("lang", "tr"))
                 active = [p for p in pages if p.get("is_active", True)]
                 self._send_json({"success": True, "pages": active})
                 return
@@ -2574,29 +2648,42 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 # redeploy'da kaybolmaz. git'teki page_content.json sadece o sayfa
                 # için DB'de HİÇ kayıt yokken (ilk kurulum / henüz hiç admin panelinden
                 # düzenlenmemiş sayfa) devreye giren bir İLK DEĞER / yedek konumunda.
+                result_page = None
                 try:
                     db_page = db.get_page_content(slug)
                     if db_page and db_page.get("title") and db_page.get("content"):
-                        self._send_json({"success": True, "page": {
+                        result_page = {
                             "title": db_page["title"],
                             "subtitle": db_page.get("subtitle", ""),
                             "is_active": db_page.get("is_active", True),
                             "content": db_page["content"],
                             "updatedAt": db_page.get("updatedAt", "")
-                        }})
-                        return
+                        }
                 except Exception as e:
                     print(f"[!] API sayfa okuma ({slug}) DB hatası: {e}")
-                # DB'de kayıt yoksa (ilk kurulum): in-memory PAGE_CONTENT (git'ten
-                # load_page_content() ile yüklenmiş İLK DEĞER)
-                page_entry = PAGE_CONTENT[slug]
-                self._send_json({"success": True, "page": {
-                    "title": page_entry.get("title", ""),
-                    "subtitle": page_entry.get("subtitle", ""),
-                    "is_active": page_entry.get("is_active", True),
-                    "content": page_entry.get("content", ""),
-                    "updatedAt": page_entry.get("updatedAt", "")
-                }})
+                if result_page is None:
+                    # DB'de kayıt yoksa (ilk kurulum): in-memory PAGE_CONTENT (git'ten
+                    # load_page_content() ile yüklenmiş İLK DEĞER)
+                    page_entry = PAGE_CONTENT[slug]
+                    result_page = {
+                        "title": page_entry.get("title", ""),
+                        "subtitle": page_entry.get("subtitle", ""),
+                        "is_active": page_entry.get("is_active", True),
+                        "content": page_entry.get("content", ""),
+                        "updatedAt": page_entry.get("updatedAt", "")
+                    }
+                # İngilizce/Rusça istendiyse çeviri varsa title/subtitle/content
+                # üzerine yazılır (is_active/updatedAt her zaman Türkçe/DB kaynağından
+                # gelir — yayın durumu ve tarih tek bir yerden yönetilir).
+                lang = params.get("lang", "tr")
+                if lang in ("en", "ru"):
+                    translation = PAGE_TRANSLATIONS.get(lang, {}).get(slug)
+                    if translation:
+                        result_page = dict(result_page)
+                        result_page["title"] = translation.get("title", result_page["title"])
+                        result_page["subtitle"] = translation.get("subtitle", result_page["subtitle"])
+                        result_page["content"] = translation.get("content", result_page["content"])
+                self._send_json({"success": True, "page": result_page})
                 return
             if path.startswith("/sayfa/"):
                 self._serve_static("index.html")
@@ -2650,6 +2737,18 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if rendered:
                     self._send_html(rendered)
                     return
+            # /en/sayfa/<slug> veya /ru/sayfa/<slug> — içerik sayfalarının (Hakkımızda,
+            # Gizlilik, Mesafeli Satış vb.) İngilizce/Rusça sürümü (bkz. PAGE_TRANSLATIONS).
+            # Aynı index.html kabuğu SITE_LANG enjekte edilerek servis edilir; sayfa
+            # içeriği istemci tarafında /api/page/<slug>?lang=<dil> ile yükleniyor.
+            lang_sayfa_parts = lang_path.split("/")
+            if len(lang_sayfa_parts) == 3 and lang_sayfa_parts[0] in ("en", "ru") and lang_sayfa_parts[1] == "sayfa":
+                page_slug = SLUG_ALIASES.get(lang_sayfa_parts[2], lang_sayfa_parts[2])
+                if page_slug in PAGE_CONTENT:
+                    rendered = _render_lang_page(lang_sayfa_parts[0])
+                    if rendered:
+                        self._send_html(rendered)
+                        return
             # /en/<rota-slug> veya /ru/<rota-slug> gibi birleşik adresler (örn. eski/dış
             # bağlantılar) — rota sayfalarının çevirisi yok, 404 yerine sade dil sayfasına
             # yönlendir (bkz. index.html switchLanguage() artık bu tarz URL üretmiyor).
