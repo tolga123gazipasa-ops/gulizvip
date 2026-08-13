@@ -2806,6 +2806,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "Disallow: /admin",
                     "Disallow: /api/",
                     "Disallow: /uploads/",
+                    # Kart bilgisi giriş sayfası — rezervasyona özel, dinamik, tarama
+                    # bütçesi israfı ve gereksiz indeksleme riski taşır. Sayfanın kendi
+                    # <meta name="robots" content="noindex,nofollow"> etiketi de var
+                    # (bkz. _render_garanti_payment_page), bu ek bir savunma katmanı.
+                    "Disallow: /odeme/",
                     "",
                     f"Sitemap: {BASE_URL}/sitemap.xml",
                 ]
@@ -2813,7 +2818,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             if path == "/sitemap.xml":
                 today = datetime.now().strftime("%Y-%m-%d")
-                urls = [{"loc": f"{BASE_URL}/", "lastmod": today, "changefreq": "daily", "priority": "1.0"}]
+                # Anasayfanın 3 dil sürümü birbirine karşılıklı (reciprocal) hreflang
+                # referansı verir (Google'ın gerekli gördüğü kural: A, B'yi işaret
+                # ediyorsa B de A'yı işaret etmeli).
+                home_alternates = {"tr": f"{BASE_URL}/", "en": f"{BASE_URL}/en/", "ru": f"{BASE_URL}/ru/", "x-default": f"{BASE_URL}/"}
+                urls = [{"loc": f"{BASE_URL}/", "lastmod": today, "changefreq": "daily", "priority": "1.0", "alternates": home_alternates}]
                 try:
                     # DB + fallback birleştirilmiş güncel liste (bkz. _get_merged_pages —
                     # admin panelinden pasif/aktif yapılan sayfalar burada doğru yansır)
@@ -2823,21 +2832,29 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             continue
                         updated = page.get("updatedAt", "")
                         lastmod = updated[:10] if updated else today
-                        urls.append({"loc": f"{BASE_URL}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5"})
-                        # Çevirisi olan sayfalar için /en/sayfa/<slug> ve /ru/sayfa/<slug>
-                        # de ayrı URL olarak eklenir (13 Ağustos'ta eklenen çeviri
-                        # özelliğiyle bu sayfalar artık gerçekten indekslenebilir).
+                        # Bu sayfanın gerçekten var olan dil sürümlerinin tam listesi —
+                        # hem /sayfa/<slug> hem /en/.../ru/ varyantları için AYNI
+                        # alternates seti kullanılır (karşılıklı hreflang kuralı).
+                        page_alternates = {"tr": f"{BASE_URL}/sayfa/{slug}"}
                         for lang in ("en", "ru"):
                             if slug in PAGE_TRANSLATIONS.get(lang, {}):
-                                urls.append({"loc": f"{BASE_URL}/{lang}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5"})
+                                page_alternates[lang] = f"{BASE_URL}/{lang}/sayfa/{slug}"
+                        page_alternates["x-default"] = f"{BASE_URL}/sayfa/{slug}"
+                        urls.append({"loc": f"{BASE_URL}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5", "alternates": page_alternates})
+                        for lang in ("en", "ru"):
+                            if slug in PAGE_TRANSLATIONS.get(lang, {}):
+                                urls.append({"loc": f"{BASE_URL}/{lang}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5", "alternates": page_alternates})
                 except Exception as e:
                     print(f"[!] sitemap.xml sayfa listesi hatası: {e}")
                 for slug in ROUTE_SEO_PAGES:
+                    # Rota sayfalarının EN/RU karşılığı yok (bkz. _render_route_seo_page),
+                    # bu yüzden alternates eklenmiyor — tek dilli sayfa için hreflang
+                    # alternate listesi gereksiz/yanıltıcı olurdu.
                     urls.append({"loc": f"{BASE_URL}/{slug}", "lastmod": today, "changefreq": "weekly", "priority": "0.8"})
                 for lang in ("en", "ru"):
-                    urls.append({"loc": f"{BASE_URL}/{lang}/", "lastmod": today, "changefreq": "weekly", "priority": "0.9"})
+                    urls.append({"loc": f"{BASE_URL}/{lang}/", "lastmod": today, "changefreq": "weekly", "priority": "0.9", "alternates": home_alternates})
                 xml_parts = ['<?xml version="1.0" encoding="UTF-8"?>',
-                             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+                             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">']
                 for u in urls:
                     xml_parts.append(
                         "<url>"
@@ -2845,8 +2862,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         f"<lastmod>{u['lastmod']}</lastmod>"
                         f"<changefreq>{u['changefreq']}</changefreq>"
                         f"<priority>{u['priority']}</priority>"
-                        "</url>"
                     )
+                    for hl, href in u.get("alternates", {}).items():
+                        xml_parts.append(f'<xhtml:link rel="alternate" hreflang="{hl}" href="{href}"/>')
+                    xml_parts.append("</url>")
                 xml_parts.append("</urlset>")
                 self._send_text("".join(xml_parts), content_type="application/xml; charset=utf-8")
                 return
