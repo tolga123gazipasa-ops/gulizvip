@@ -3718,6 +3718,26 @@
             var currentPage = window.location.pathname;
             var entryPage = currentPage;
             var referrer = document.referrer || '';
+            // Google Ads tıklamalarında document.referrer genelde BOŞ gelir (Google'ın
+            // reklam yönlendirme zinciri referrer iletmez) — bu yüzden asıl güvenilir
+            // sinyal, iniş sayfasının URL'sindeki gclid parametresi. sessionStorage'a
+            // kaydediyoruz ki kullanıcı siteden başka sayfaya geçse bile (gclid parametresi
+            // URL'de kalmasa da) ilk giriş kaynağı hatırlansın.
+            var urlParams = new URLSearchParams(window.location.search);
+            var gclid = urlParams.get('gclid') || sessionStorage.getItem('gv_gclid') || '';
+            var fbclid = urlParams.get('fbclid') || sessionStorage.getItem('gv_fbclid') || '';
+            var utmSource = urlParams.get('utm_source') || sessionStorage.getItem('gv_utm_source') || '';
+            var utmMedium = urlParams.get('utm_medium') || sessionStorage.getItem('gv_utm_medium') || '';
+            var utmCampaign = urlParams.get('utm_campaign') || sessionStorage.getItem('gv_utm_campaign') || '';
+            var utmTerm = urlParams.get('utm_term') || sessionStorage.getItem('gv_utm_term') || '';
+            try {
+                if (gclid) sessionStorage.setItem('gv_gclid', gclid);
+                if (fbclid) sessionStorage.setItem('gv_fbclid', fbclid);
+                if (utmSource) sessionStorage.setItem('gv_utm_source', utmSource);
+                if (utmMedium) sessionStorage.setItem('gv_utm_medium', utmMedium);
+                if (utmCampaign) sessionStorage.setItem('gv_utm_campaign', utmCampaign);
+                if (utmTerm) sessionStorage.setItem('gv_utm_term', utmTerm);
+            } catch (e) {}
 
             function identify() {
                 // Not: şehir/ülke bilgisi artık tarayıcıdan doğrudan ip-api.com'a istek
@@ -3734,7 +3754,13 @@
                         os: os,
                         browser: browser,
                         referrer: referrer,
-                        entryPage: entryPage
+                        entryPage: entryPage,
+                        gclid: gclid,
+                        fbclid: fbclid,
+                        utmSource: utmSource,
+                        utmMedium: utmMedium,
+                        utmCampaign: utmCampaign,
+                        utmTerm: utmTerm
                     })
                 }).catch(function() {});
                 identified = true;

@@ -1896,6 +1896,46 @@ def _resolve_geo_and_notify_contact(contact_id, ip, name, phone, email, message,
     send_telegram(tg_msg)
 
 
+def _describe_traffic_source(visitor, html=True):
+    """Ziyaretçinin nereden geldiğini en güvenilir sinyalden başlayarak belirler.
+    document.referrer, Google Ads tıklamalarında GENELDE BOŞ gelir (Google'ın kendi
+    reklam yönlendirme zinciri referrer'ı iletmez) — bu yüzden asıl güvenilir sinyal
+    URL'deki gclid parametresi (Google Ads tıklama kimliği). Öncelik sırası:
+    gclid (Google Ads) > utm_source/medium/campaign (genel kampanya etiketleri) >
+    fbclid (Meta/Facebook Ads) > document.referrer (organik/diğer) > 'Doğrudan'.
+    html=False → admin panel/API için düz metin (Telegram'daki <b> etiketleri olmadan)."""
+    b0, b1 = ("<b>", "</b>") if html else ("", "")
+    gclid = visitor.get("gclid", "")
+    fbclid = visitor.get("fbclid", "")
+    utm_source = visitor.get("utmSource", "")
+    utm_medium = visitor.get("utmMedium", "")
+    utm_campaign = visitor.get("utmCampaign", "")
+    utm_term = visitor.get("utmTerm", "")
+    referrer = visitor.get("referrer", "")
+    if gclid:
+        parts = [f"🎯 {b0}Google Ads (tıklamalı reklam){b1}"]
+        if utm_campaign:
+            parts.append(f"Kampanya: {utm_campaign}")
+        if utm_term:
+            parts.append(f"Anahtar kelime: {utm_term}")
+        parts.append(f"gclid: {gclid[:24]}…")
+        return " | ".join(parts)
+    if fbclid:
+        return f"🎯 {b0}Meta/Facebook Ads (tıklamalı reklam){b1}" + (f" | Kampanya: {utm_campaign}" if utm_campaign else "")
+    if utm_source or utm_medium or utm_campaign:
+        bits = [b for b in [utm_source, utm_medium, utm_campaign] if b]
+        return f"📊 {b0}Kampanya:{b1} " + " / ".join(bits)
+    if referrer:
+        try:
+            domain = urllib.parse.urlparse(referrer).netloc or referrer
+        except Exception:
+            domain = referrer
+        if "google." in domain and "ads" not in domain:
+            return f"🔍 Google Organik Arama ({domain})"
+        return f"🔗 {domain}"
+    return "➡️ Doğrudan (link/favori/uygulama içi)"
+
+
 def _resolve_geo_and_notify_visitor(session_id, ip):
     """Arka plan thread'i: konum tespitini (ip-api.com) yapar, VISITOR_SESSIONS'taki
     kaydı günceller (hâlâ mevcutsa) ve ardından Telegram bildirimini gönderir.
@@ -1915,7 +1955,7 @@ def _resolve_geo_and_notify_visitor(session_id, ip):
         f"\U0001f4f1 <b>Cihaz:</b> {visitor_snapshot.get('device', '?')} / {visitor_snapshot.get('os', '?')}\n"
         f"\U0001f30d <b>Tarayıcı:</b> {visitor_snapshot.get('browser', '?')}\n"
         f"\U0001f6aa <b>Giriş:</b> {visitor_snapshot.get('entryPage', '?')}\n"
-        f"\U0001f517 <b>Yönlendiren:</b> {visitor_snapshot.get('referrer', 'Doğrudan')}\n"
+        f"{_describe_traffic_source(visitor_snapshot)}\n"
         f"\U0001f550 <b>Saat:</b> {datetime.now().isoformat()}"
     )
     send_telegram(msg)
@@ -2664,6 +2704,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             "os": v.get("os", ""), "browser": v.get("browser", ""),
                             "currentPage": v.get("currentPage", ""), "entryPage": v.get("entryPage", ""),
                             "referrer": v.get("referrer", ""), "entryTime": entry_time,
+                            "gclid": v.get("gclid", ""), "fbclid": v.get("fbclid", ""),
+                            "utmSource": v.get("utmSource", ""), "utmMedium": v.get("utmMedium", ""),
+                            "utmCampaign": v.get("utmCampaign", ""), "utmTerm": v.get("utmTerm", ""),
+                            "trafficSource": _describe_traffic_source(v, html=False),
                             "lastHeartbeat": last_heartbeat, "elapsed": elapsed,
                             "elapsedFormatted": _format_duration(elapsed),
                             "online": online, "duration": _format_duration(elapsed),
@@ -3738,6 +3782,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "country": "",
                     "region": "",
                     "referrer": body.get("referrer", ""),
+                    "gclid": body.get("gclid", ""),
+                    "fbclid": body.get("fbclid", ""),
+                    "utmSource": body.get("utmSource", ""),
+                    "utmMedium": body.get("utmMedium", ""),
+                    "utmCampaign": body.get("utmCampaign", ""),
+                    "utmTerm": body.get("utmTerm", ""),
                     "entryPage": body.get("entryPage", ""),
                     "currentPage": body.get("entryPage", ""),
                     "entryTime": time.time(),
