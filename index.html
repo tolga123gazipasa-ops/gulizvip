@@ -10,6 +10,12 @@
 
       gtag('config', 'AW-18372593815');
     </script>
+    <!-- Event snippet for Arama (02426062548) conversion -->
+    <script>
+      gtag('config', 'AW-18372593815/MuZuCM6Gr-EcEJeR3rhE', {
+        'phone_conversion_number': '02426062548'
+      });
+    </script>
     <!-- Event snippet for Satın alma işlemi conversion page -->
     <script>
     function gtag_report_conversion(url, transactionId) {
@@ -1083,7 +1089,7 @@
                         </div>
                     </div>
                 </div>
-                <a href="tel:+902426062548" class="call-btn"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a>
+                <a href="tel:+902426062548" onclick="gtag('event', 'conversion', {'send_to': 'AW-18372593815/MuZuCM6Gr-EcEJeR3rhE'});" class="call-btn"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a>
                 <button class="cta-button" onclick="quickReservation()" data-i18n="header.cta">Hızlı Rezervasyon</button>
                 <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Menüyü Aç/Kapat" data-i18n-aria="header.hamburgerAria"><i class="fa-solid fa-bars"></i></button>
             </div>
@@ -1536,7 +1542,7 @@
                         <div class="iletisim-card-icon"><i class="fa-solid fa-phone"></i></div>
                         <div>
                             <h4 data-i18n="iletisim.phoneLabel">Telefon</h4>
-                            <a href="tel:+902426062548">+90 242 606 25 48</a>
+                            <a href="tel:+902426062548" onclick="gtag('event', 'conversion', {'send_to': 'AW-18372593815/MuZuCM6Gr-EcEJeR3rhE'});">+90 242 606 25 48</a>
                         </div>
                     </div>
                     <div class="iletisim-card">
@@ -1612,7 +1618,7 @@
                 <div class="footer-links">
                     <h4 data-i18n="footer.contactCorporate">İletişim & Kurumsal</h4>
                     <ul>
-                        <li><a href="tel:+902426062548"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a></li>
+                        <li><a href="tel:+902426062548" onclick="gtag('event', 'conversion', {'send_to': 'AW-18372593815/MuZuCM6Gr-EcEJeR3rhE'});"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a></li>
                         <li><a href="mailto:info@gulizvip.com.tr"><i class="fa-solid fa-envelope"></i> info@gulizvip.com.tr</a></li>
                         <li><a href="/#iletisim"><i class="fa-solid fa-location-dot"></i> <span data-i18n="footer.addressFooter">Gazipaşa / Antalya</span></a></li>
                         <li style="margin-top:10px;"><ul id="footer-pages-list"></ul></li>
