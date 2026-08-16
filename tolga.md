@@ -1,6 +1,6 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-16 (curl_cffi / AYT denemesi)
+Son güncelleme: 2026-08-16 (AYT sorunu curl_cffi ile çözüldü ✅)
 
 ## GÜNCEL — Kredi kartı ödemesi CANLIDA ÇALIŞIYOR, döviz sorusu Garanti'ye soruldu (16 Ağustos)
 
@@ -9,7 +9,7 @@ Son güncelleme: 2026-08-16 (curl_cffi / AYT denemesi)
 uçtan uca çalıştı, rezervasyon "ödendi" işaretlendi. Yol boyunca çıkan `garantiOrderId`
 DB'ye kaydedilmeme bug'ı düzeltildi (commit `b5c9170`) — asıl kilit buydu.
 
-**16 Ağustos'ta yapılan ek işler (hepsi commit'lendi, push bekliyor):**
+**16 Ağustos'ta yapılan ek işler (commit'lendi, deploy edildi):**
 1. Google Ads telefon arama dönüşüm takibi eklendi (`AW-18372593815/MuZuCM6Gr-EcEJeR3rhE`)
 2. Google Analytics 4 (GA4) kuruldu (`G-ZV9Q8PX2QL`)
 3. Ziyaretçi trafik kaynağı takibi: `gclid`/`utm_*`/`fbclid` yakalanıyor, Telegram'daki
@@ -43,18 +43,15 @@ DB'ye kaydedilmeme bug'ı düzeltildi (commit `b5c9170`) — asıl kilit buydu.
     hiç set edilmemişti — yani "02:00/13:00" aslında Türkiye saatiyle 05:00/16:00'da
     tetikleniyordu. `TZ=Europe/Istanbul` + `time.tzset()` eklendi, artık gerçekten
     02:00/13:00'te çalışıyor (commit `5e553da`).
-12. **AYT için 2. mitigasyon denemesi — curl_cffi:** Header/retry düzeltmesi (madde 7)
-    tek başına yetmedi, "yine çekemedi" raporlandı. `curl_cffi` kütüphanesi eklendi
+12. **AYT sorunu ÇÖZÜLDÜ — curl_cffi:** Header/retry düzeltmesi (madde 7) tek başına
+    yetmemişti, "yine çekemedi" raporlanmıştı. `curl_cffi` kütüphanesi eklendi
     (`requirements.txt`) — Chrome'un TLS/JA3 parmak izini taklit ederek sitenin bot
-    korumasını aşmayı dener. Yeni `_http_get_ayt()` fonksiyonu önce curl_cffi ile
-    dener, kütüphane yoksa veya başarısız olursa eski urllib yöntemine (`_http_get`)
-    geri düşer — GZP hiç etkilenmiyor (kendi JSON API'sini kullanıyor, hiç sorun
-    yaşamadı). **ÖNEMLİ: Bu, sandbox'ta test edilemedi** (sandbox'ın kendi ağ
-    kısıtlaması antalya-airport.aero'ya doğrudan bağlantıyı engelliyor) — gerçek
-    sonucu ancak Railway'e deploy edildikten sonra, bir sonraki 02:00/13:00
-    taramasında veya admin panelindeki "Uçuşları Şimdi Güncelle" butonuyla
-    görebiliriz. Hâlâ çalışmazsa sıradaki seçenekler: ücretli scraping servisi
-    (ScraperAPI/ScrapingBee) veya Playwright ile headless tarayıcı (commit `8baeff0`).
+    korumasını aşıyor. Yeni `_http_get_ayt()` fonksiyonu önce curl_cffi ile dener,
+    kütüphane yoksa veya başarısız olursa eski urllib yöntemine (`_http_get`) geri
+    düşer — GZP hiç etkilenmedi (kendi JSON API'sini kullanıyor). Deploy sonrası
+    Tolga onayladı: **artık çalışıyor** (commit `8baeff0`). Sandbox'ta doğrudan test
+    edilememişti (sandbox'ın kendi ağ kısıtlaması antalya-airport.aero'yu
+    engelliyordu), gerçek doğrulama Railway'de yapıldı.
 
 **AÇIK KONU — Dövizli (USD/EUR) gerçek ödeme alma:**
 Tolga, gerçekten USD/EUR ile kredi kartı ödemesi almak istiyor (sadece bilgilendirme
