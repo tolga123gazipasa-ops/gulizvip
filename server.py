@@ -1113,13 +1113,36 @@ def _classify_by_iata(code):
     return "ic" if (code or "").upper() in TURKISH_IATA_CODES else "dis"
 
 
-def _http_get(url, timeout=15):
-    req = urllib.request.Request(url, headers={
+def _http_get(url, timeout=15, retries=2):
+    """Gerçek bir tarayıcıya daha çok benzeyen header seti + yeniden deneme.
+    16 Ağustos'ta AYT tarafında 'Connection reset by peer' hatası canlıda
+    doğrulandı (muhtemelen sitenin bot koruması) — sadece User-Agent yeterli
+    gelmiyor olabilir, bu yüzden Accept/Accept-Encoding/Connection gibi
+    tarayıcıların her istekte gönderdiği ek header'lar eklendi. Yine de reddedilirse
+    kısa bir bekleme sonrası tekrar denenir (geçici ağ/rate-limit sorunlarına karşı)."""
+    headers = {
         "User-Agent": SCRAPE_USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
-    })
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+        "Accept-Encoding": "identity",  # gzip istemiyoruz — urllib otomatik decode etmiyor
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Cache-Control": "no-cache",
+    }
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.read().decode("utf-8", errors="replace")
+        except Exception as e:
+            last_err = e
+            if attempt < retries:
+                time.sleep(random.uniform(2, 4))
+    raise last_err
 
 
 def _derive_gzp_status(stad, etad, remark_tr, is_arrival):
@@ -2025,6 +2048,17 @@ def refresh_flights():
         else:
             print(f"[!] {airport_key.upper()} {direction}: çekilemedi, önbellekteki son veri korunuyor "
                   f"({len(flight_cache[airport_key][direction])} kayıt).")
+            # 16 Ağustos'ta bu sessizce günlerce fark edilmeden kalmıştı (AYT bot
+            # koruması nedeniyle "Connection reset by peer") — artık Telegram'a da
+            # düşüyor ki admin panelini/logları kontrol etmeden haberi olsun.
+            try:
+                send_telegram(
+                    f"⚠️ <b>Uçuş verisi çekilemedi: {airport_key.upper()} {direction}</b>\n"
+                    f"Önbellekteki eski veri korunuyor, güncellenemedi. Sorun devam ederse "
+                    f"kaynağın (havalimanı web sitesi) bot koruması/erişim engeli olabilir."
+                )
+            except Exception:
+                pass
 
         # IP ban riskine karşı istekler arasında bekleme (son istekten sonra beklemeye gerek yok)
         if i < len(jobs) - 1:
