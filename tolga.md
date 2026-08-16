@@ -1,6 +1,6 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-16
+Son güncelleme: 2026-08-16 (curl_cffi / AYT denemesi)
 
 ## GÜNCEL — Kredi kartı ödemesi CANLIDA ÇALIŞIYOR, döviz sorusu Garanti'ye soruldu (16 Ağustos)
 
@@ -39,6 +39,22 @@ DB'ye kaydedilmeme bug'ı düzeltildi (commit `b5c9170`) — asıl kilit buydu.
 10. **TL fiyatların yanında bilgilendirme amaçlı $ / € karşılığı gösteriliyor** (TCMB
     günlük kur, günde 2 kez otomatik güncelleniyor). Ödeme akışı TAMAMEN TL olarak
     devam ediyor, bu sadece görsel bilgilendirme.
+11. **Sunucu saat dilimi düzeltildi:** Railway varsayılan olarak UTC çalışıyordu, `TZ`
+    hiç set edilmemişti — yani "02:00/13:00" aslında Türkiye saatiyle 05:00/16:00'da
+    tetikleniyordu. `TZ=Europe/Istanbul` + `time.tzset()` eklendi, artık gerçekten
+    02:00/13:00'te çalışıyor (commit `5e553da`).
+12. **AYT için 2. mitigasyon denemesi — curl_cffi:** Header/retry düzeltmesi (madde 7)
+    tek başına yetmedi, "yine çekemedi" raporlandı. `curl_cffi` kütüphanesi eklendi
+    (`requirements.txt`) — Chrome'un TLS/JA3 parmak izini taklit ederek sitenin bot
+    korumasını aşmayı dener. Yeni `_http_get_ayt()` fonksiyonu önce curl_cffi ile
+    dener, kütüphane yoksa veya başarısız olursa eski urllib yöntemine (`_http_get`)
+    geri düşer — GZP hiç etkilenmiyor (kendi JSON API'sini kullanıyor, hiç sorun
+    yaşamadı). **ÖNEMLİ: Bu, sandbox'ta test edilemedi** (sandbox'ın kendi ağ
+    kısıtlaması antalya-airport.aero'ya doğrudan bağlantıyı engelliyor) — gerçek
+    sonucu ancak Railway'e deploy edildikten sonra, bir sonraki 02:00/13:00
+    taramasında veya admin panelindeki "Uçuşları Şimdi Güncelle" butonuyla
+    görebiliriz. Hâlâ çalışmazsa sıradaki seçenekler: ücretli scraping servisi
+    (ScraperAPI/ScrapingBee) veya Playwright ile headless tarayıcı (commit `8baeff0`).
 
 **AÇIK KONU — Dövizli (USD/EUR) gerçek ödeme alma:**
 Tolga, gerçekten USD/EUR ile kredi kartı ödemesi almak istiyor (sadece bilgilendirme
