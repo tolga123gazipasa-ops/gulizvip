@@ -1094,6 +1094,7 @@
                 <div class="panel-section">
                     <div class="section-header">
                         <h3>Canlı Uçuş Tablosu (Manuel Kontrol)</h3>
+                        <button class="btn-primary" id="flights-refresh-btn" onclick="refreshFlightsNow(this)"><i class="fa-solid fa-rotate"></i> Uçuşları Şimdi Güncelle</button>
                         <button class="btn-primary"><i class="fa-solid fa-plus"></i> Uçuş Ekle</button>
                     </div>
                     <table class="data-table">
@@ -1108,6 +1109,7 @@
                 <div class="panel-section">
                     <div class="section-header">
                         <h3>Canlı Uçuş Tablosu — Antalya (AYT)</h3>
+                        <button class="btn-primary" id="flights-refresh-btn-ayt" onclick="refreshFlightsNow(this)"><i class="fa-solid fa-rotate"></i> Uçuşları Şimdi Güncelle</button>
                         <button class="btn-primary" onclick="switchTab('view-flights', document.querySelectorAll('.menu-item')[7])"><i class="fa-solid fa-plane"></i> GZP Gör</button>
                     </div>
                     <table class="data-table">
@@ -1662,6 +1664,39 @@
     // ─── UTILITY ──────────────────────────────────────────
     function getToken() {
         return localStorage.getItem('guliz_token') || sessionStorage.getItem('guliz_token');
+    }
+
+    // ─── UÇUŞLARI MANUEL YENİLE (02:00/13:00'i beklemeden) ──────
+    async function refreshFlightsNow(btn) {
+        const token = getToken();
+        if (!token) return;
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Güncelleniyor...';
+        try {
+            const res = await fetch('/api/admin/flights/refresh', {
+                method: 'POST',
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Sunucu arka planda ~5-10sn içinde bitiriyor, biraz bekleyip tabloyu yeniden çekelim
+                setTimeout(function() {
+                    loadAdminFlights();
+                    loadAytFlights();
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }, 8000);
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+                alert('Güncelleme başlatılamadı: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        } catch(e) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            alert('Sunucu hatası, tekrar deneyin.');
+        }
     }
 
     // ─── GZP UÇUŞLARI ──────────────────────────────────────────

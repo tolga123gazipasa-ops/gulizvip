@@ -4011,6 +4011,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_error("Gecersiz JSON.", 400)
             return
+        if path == "/api/admin/flights/refresh":
+            # Admin panelindeki "Uçuşları Şimdi Güncelle" butonu — 02:00/13:00'i
+            # beklemeden veya sunucuyu yeniden başlatmadan manuel tetikleme.
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            threading.Thread(target=refresh_flights, daemon=True).start()
+            self._send_json({"success": True, "message": "Güncelleme başlatıldı, birkaç saniye içinde tamamlanır."})
+            return
         self._send_error("Bulunamadı", 404)
 
     def do_PUT(self):
