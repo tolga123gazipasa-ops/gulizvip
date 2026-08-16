@@ -301,6 +301,8 @@
                 return;
             }
             var originalHtml = btn.innerHTML;
+            var warningEl = document.getElementById(warningId);
+            var originalWarningHtml = warningEl ? warningEl.innerHTML : '';
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Konum alınıyor...';
 
@@ -310,12 +312,26 @@
 
                 function finish(addressText) {
                     var input = document.getElementById(inputId);
+                    var outOfArea = !isInServiceArea(addressText);
+                    var finalAddress = addressText;
+                    var finalLat = lat, finalLng = lng;
+
+                    if (outOfArea) {
+                        // Müşteri şu an hizmet bölgesi dışında (ör. ileri tarihli rezervasyon
+                        // yapıyor, henüz bölgede değil) — kutuyu hataya düşürmek yerine
+                        // varsayılana (Gazipaşa Havalimanı) geri döndürüyoruz. Gerçek konumunu
+                        // ise aşağıda ayrıca Telegram'a bildiriyoruz, biz yine biliyoruz.
+                        finalAddress = 'Gazipaşa Havalimanı';
+                        var known = resolveLocation(finalAddress);
+                        if (known) { finalLat = known.lat; finalLng = known.lng; }
+                    }
+
                     if (input) {
-                        input.value = addressText;
+                        input.value = finalAddress;
                         checkServiceArea(inputId, warningId);
                     }
-                    selectedPickupLat = lat;
-                    selectedPickupLng = lng;
+                    selectedPickupLat = finalLat;
+                    selectedPickupLng = finalLng;
                     if (typeof showRouteMap === 'function') showRouteMap();
                     if (inputId === 'pickup-input' && typeof calculateTransferDistance === 'function') {
                         calculateTransferDistance();
@@ -323,11 +339,31 @@
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
 
-                    // Admin'e Telegram bildirimi: müşteri konumunu paylaştı (IP zaten
-                    // /api/track/identify ile biliniyor, bu olay ona GPS pin'ini ekler)
+                    if (outOfArea && warningEl) {
+                        // Kırmızı "hizmet bölgesi dışı" uyarısı yerine bilgilendirici bir not:
+                        // bu bir form hatası değil, müşteri henüz bölgede değil demek.
+                        warningEl.style.display = 'block';
+                        warningEl.style.background = '#eff6ff';
+                        warningEl.style.color = '#1d4ed8';
+                        warningEl.style.borderColor = '#93c5fd';
+                        warningEl.innerHTML = '<i class="fa-solid fa-circle-info"></i> Şu anki konumunuz Alanya/Gazipaşa dışında görünüyor — ileri tarihli rezervasyon yapıyorsanız sorun yok, alış noktası "Gazipaşa Havalimanı" olarak bırakıldı. Dilerseniz kutuyu değiştirebilirsiniz.';
+                        setTimeout(function() {
+                            warningEl.style.display = 'none';
+                            warningEl.style.background = '';
+                            warningEl.style.color = '';
+                            warningEl.style.borderColor = '';
+                            warningEl.innerHTML = originalWarningHtml;
+                        }, 8000);
+                    }
+
+                    // Admin'e Telegram bildirimi — kutuda "Gazipaşa Havalimanı" görünse bile
+                    // biz müşterinin GERÇEKTE nerede olduğunu (IP zaten biliniyor, artık GPS
+                    // pin'i de) her zaman öğreniyoruz.
                     if (typeof gulizTracker !== 'undefined') {
                         var mapsLink = 'https://www.google.com/maps?q=' + lat + ',' + lng;
-                        gulizTracker.trackEvent('Konumumu Kullan (GPS)', '<a href="' + mapsLink + '">Haritada Gör</a> — ' + addressText, true);
+                        var noteForAdmin = '<a href="' + mapsLink + '">Haritada Gör</a> — ' + addressText +
+                            (outOfArea ? ' (hizmet bölgesi dışı, form varsayılana döndürüldü)' : '');
+                        gulizTracker.trackEvent('Konumumu Kullan (GPS)', noteForAdmin, true);
                     }
                 }
 
