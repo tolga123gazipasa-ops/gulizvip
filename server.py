@@ -2489,16 +2489,23 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(b"OK")
                 return
-            # ─── www -> www'sız 301 yönlendirme (SEO: tek canonical domain) ───────
+            # ─── Tek canonical adrese 301 yönlendirme: www -> www'sız, http -> https ──
             # Search Console "Doğru standart etikete sahip alternatif sayfa" uyarısı
             # www.gulizvip.com.tr'nin de aynı içeriği sunmasından kaynaklanıyordu —
-            # canonical etiketi zaten www'sız adresi gösteriyordu ama gerçek bir
-            # yönlendirme yoktu, Google her seferinde canonical'a bakıp karar
-            # vermek zorunda kalıyordu. Artık www ile gelen her istek doğrudan
-            # www'sız adrese 301 ile yönlendiriliyor (path + query korunarak).
+            # canonical etiketi zaten www'sız/https adresi gösteriyordu ama gerçek bir
+            # yönlendirme yoktu, Google her seferinde canonical'a bakıp karar vermek
+            # zorunda kalıyordu. Artık www ve/veya http ile gelen her istek doğrudan
+            # https://gulizvip.com.tr'ye 301 ile yönlendiriliyor (path + query korunarak).
+            # Not: http tespiti Cloudflare/Railway'in eklediği X-Forwarded-Proto header'ına
+            # bakılarak yapılıyor — bu header hiç yoksa (örn. dahili healthcheck) yönlendirme
+            # tetiklenmez, sonsuz döngü riski oluşmaz.
             host = (self.headers.get("Host", "") or "").split(":")[0].lower()
-            if host.startswith("www."):
-                target = "https://" + host[4:] + self.path
+            forwarded_proto = (self.headers.get("X-Forwarded-Proto", "") or "").lower()
+            needs_www_strip = host.startswith("www.")
+            needs_https = (forwarded_proto == "http")
+            if needs_www_strip or needs_https:
+                clean_host = host[4:] if needs_www_strip else host
+                target = "https://" + clean_host + self.path
                 self.send_response(301)
                 self.send_header("Location", target)
                 self.end_headers()
