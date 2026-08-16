@@ -68,6 +68,15 @@ try:
 except ImportError:
     _BS4_AVAILABLE = False
 
+# curl_cffi — AYT (antalya-airport.aero) sitesinin TLS/JA3 parmak izi tabanlı bot
+# korumasını aşmak için opsiyonel. Yüklü değilse AYT scraping normal urllib
+# yöntemine geri döner (GZP hiçbir zaman bundan etkilenmez, kendi JSON API'sini kullanır).
+try:
+    from curl_cffi import requests as _cffi_requests
+    _CURL_CFFI_AVAILABLE = True
+except ImportError:
+    _CURL_CFFI_AVAILABLE = False
+
 # ============================================================
 # HİZMET BÖLGESİ — Gazipaşa, Alanya, Antalya
 # ============================================================
@@ -1156,6 +1165,39 @@ def _http_get(url, timeout=15, retries=2):
     raise last_err
 
 
+def _http_get_ayt(url, timeout=15, retries=2):
+    """AYT (antalya-airport.aero) için özel istek fonksiyonu. Bu site normal
+    urllib istekleri karşısında 'Connection reset by peer' hatası veriyor —
+    muhtemelen TLS/JA3 parmak izi tabanlı bot koruması, çünkü User-Agent ve
+    tarayıcı header'ları doğru olsa bile reddediliyor. curl_cffi kütüphanesi
+    gerçek bir Chrome tarayıcısının TLS imzasını taklit ederek bu korumayı
+    aşmayı dener. curl_cffi yüklü değilse veya tüm denemeler başarısız olursa
+    normal urllib tabanlı _http_get()'e geri döner (GZP zaten bunu kullanıyor
+    ve etkilenmiyor)."""
+    if _CURL_CFFI_AVAILABLE:
+        last_err = None
+        for attempt in range(retries + 1):
+            try:
+                resp = _cffi_requests.get(
+                    url,
+                    impersonate="chrome124",
+                    timeout=timeout,
+                    headers={
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                        "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
+                    },
+                )
+                resp.raise_for_status()
+                return resp.text
+            except Exception as e:
+                last_err = e
+                print(f"[!] AYT curl_cffi denemesi {attempt + 1} başarısız: {e}")
+                if attempt < retries:
+                    time.sleep(random.uniform(2, 4))
+        print(f"[!] AYT curl_cffi tüm denemeler başarısız oldu, urllib yöntemine geri dönülüyor: {last_err}")
+    return _http_get(url, timeout=timeout, retries=retries)
+
+
 def _derive_gzp_status(stad, etad, remark_tr, is_arrival):
     """GZP JSON API'sindeki planlı/tahmini saat ve remark alanına göre insan-okunur
     durum metni ve renk kodu (expected/landed/departed/delayed) üretir."""
@@ -1250,7 +1292,7 @@ def scrape_ayt_flights(direction):
         return None
     url = AYT_ARRIVALS_URL if direction == "arrival" else AYT_DEPARTURES_URL
     try:
-        raw = _http_get(url)
+        raw = _http_get_ayt(url)
         soup = BeautifulSoup(raw, "html.parser")
         container = soup.find(id="ContentPlaceHolder_ForNested_ContentPlaceHolder_ForNested_div_list")
         table = container.find("table") if container else None
