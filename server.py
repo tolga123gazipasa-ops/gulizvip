@@ -2608,10 +2608,15 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             if path == "/api/maps/geocode":
                 address = params.get("address", "")
-                if not address:
-                    self._send_error("address parametresi gereklidir.")
+                latlng = params.get("latlng", "")
+                if latlng:
+                    # Ters geocode: enlem,boylam -> okunur adres (örn. "Konumumu Kullan" butonu için)
+                    google_url = f"https://maps.googleapis.com/maps/api/geocode/json?latlng={urllib.parse.quote(latlng)}&language=tr&key={GOOGLE_MAPS_SERVER_API_KEY}"
+                elif address:
+                    google_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&language=tr&key={GOOGLE_MAPS_SERVER_API_KEY}"
+                else:
+                    self._send_error("address ya da latlng parametresi gereklidir.")
                     return
-                google_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&language=tr&key={GOOGLE_MAPS_SERVER_API_KEY}"
                 try:
                     req = urllib.request.Request(google_url)
                     with urllib.request.urlopen(req, timeout=10) as resp:

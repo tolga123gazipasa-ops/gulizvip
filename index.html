@@ -290,6 +290,69 @@
             }
             return ok;
         }
+
+        // "Konumumu Kullan" — cihazın GPS konumunu alıp alış noktası kutusuna
+        // gerçek adrese çevirerek yazar, ham enlem/boylamı da rezervasyona ekler
+        // (şoförün adres tarifi yerine tam pin'e gitmesi için). İzin verilirse
+        // admin'e o anki IP + konum bilgisiyle Telegram bildirimi de gönderilir.
+        function useMyLocation(inputId, warningId, btn) {
+            if (!navigator.geolocation) {
+                alert('Tarayıcınız konum özelliğini desteklemiyor. Adresi elle yazabilirsiniz.');
+                return;
+            }
+            var originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Konum alınıyor...';
+
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+
+                function finish(addressText) {
+                    var input = document.getElementById(inputId);
+                    if (input) {
+                        input.value = addressText;
+                        checkServiceArea(inputId, warningId);
+                    }
+                    selectedPickupLat = lat;
+                    selectedPickupLng = lng;
+                    if (typeof showRouteMap === 'function') showRouteMap();
+                    if (inputId === 'pickup-input' && typeof calculateTransferDistance === 'function') {
+                        calculateTransferDistance();
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+
+                    // Admin'e Telegram bildirimi: müşteri konumunu paylaştı (IP zaten
+                    // /api/track/identify ile biliniyor, bu olay ona GPS pin'ini ekler)
+                    if (typeof gulizTracker !== 'undefined') {
+                        var mapsLink = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+                        gulizTracker.trackEvent('Konumumu Kullan (GPS)', '<a href="' + mapsLink + '">Haritada Gör</a> — ' + addressText, true);
+                    }
+                }
+
+                if (typeof google !== 'undefined' && google.maps && google.maps.Geocoder) {
+                    var geocoder = new google.maps.Geocoder();
+                    geocoder.geocode({ location: { lat: lat, lng: lng }, language: 'tr' }, function(results, status) {
+                        if (status === 'OK' && results && results.length > 0) {
+                            finish(results[0].formatted_address);
+                        } else {
+                            finish(lat.toFixed(6) + ', ' + lng.toFixed(6));
+                        }
+                    });
+                } else {
+                    finish(lat.toFixed(6) + ', ' + lng.toFixed(6));
+                }
+            }, function(err) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                var msg = 'Konumunuz alınamadı. Adresi elle yazabilirsiniz.';
+                if (err.code === 1) msg = 'Konum izni reddedildi. Adresi elle yazarak devam edebilirsiniz.';
+                else if (err.code === 3) msg = 'Konum isteği zaman aşımına uğradı. Tekrar deneyin veya adresi elle yazın.';
+                alert(msg);
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+        }
+
         function fetchUnitPrice() {
             fetch('/api/unit-price')
                 .then(function(r) { return r.json(); })
@@ -584,7 +647,11 @@
         .input-wrapper i { position: absolute; left: 16px; color: var(--primary-red); font-size: 18px; }
         .input-wrapper input, .input-wrapper select { width: 100%; padding: 18px 18px 18px 48px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 16px; font-weight: 600; color: var(--text-dark); background: var(--bg-light); outline: none; transition: var(--transition); -webkit-appearance: none; }
         .input-wrapper input:focus, .input-wrapper select:focus { border-color: var(--primary-navy); background: var(--pure-white); }
-        
+        .use-location-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: var(--primary-navy); font-size: 12px; font-weight: 700; cursor: pointer; padding: 6px 2px; margin-top: 2px; }
+        .use-location-btn:hover { color: var(--primary-red); }
+        .use-location-btn:disabled { opacity: 0.5; cursor: wait; }
+        .use-location-btn i { font-size: 13px; }
+
         .submit-btn { width: 100%; background: var(--primary-navy); color: var(--pure-white); padding: 20px; border-radius: 8px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: var(--transition); display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 15px;}
         .submit-btn:hover { background: var(--text-dark); box-shadow: var(--shadow-strong); }
 
@@ -1201,6 +1268,7 @@
                         <div class="input-wrapper"><i class="fa-solid fa-map-pin"></i>
                             <input type="text" id="pickup-input" value="Gazipaşa Havalimanı" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." data-i18n-placeholder="form.pickupPh" required oninput="checkServiceArea('pickup-input','pickup-area-warning')">
                         </div>
+                        <button type="button" class="use-location-btn" id="pickup-location-btn" onclick="useMyLocation('pickup-input','pickup-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> Konumumu Kullan</button>
                         <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div>
                     </div>
                     <div class="input-group"><label data-i18n="form.destLabel">Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." data-i18n-placeholder="form.destPh" required oninput="checkServiceArea('dest-input','dest-area-warning')"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
@@ -1308,7 +1376,7 @@
 
                 <div class="form-step" id="tahsis-step1" style="display:block;">
                     <div class="form-grid">
-                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
+                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><button type="button" class="use-location-btn" id="tahsis-location-btn" onclick="useMyLocation('tahsis-pickup-input','tahsis-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> Konumumu Kullan</button><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
                     <div class="input-group"><label data-i18n="form.durationLabel">Tahsis Süresi</label>
                         <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
                             <select id="vDuration" onchange="calculateVipPrice()">
