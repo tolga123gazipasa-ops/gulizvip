@@ -96,6 +96,17 @@ SECRET_KEY = "guliz-vip-hmac-secret-2026"
 TOKEN_TTL = 86400  # 24 hours
 FLIGHT_REFRESH_INTERVAL = 300  # 5 minutes
 GOOGLE_MAPS_API_KEY = "AIzaSyD-IGkbR6iyxvdeQ_Cfekjks3KOWMD7RKw"
+# Sunucu tarafı (server-to-server) Google Maps çağrıları için AYRI bir anahtar.
+# GOOGLE_MAPS_API_KEY tarayıcıya (/api/maps/config) verilip Maps JS SDK ile
+# kullanıldığı için "HTTP referrer" kısıtlamalı — bu kısıtlama türü sunucudan
+# sunucuya yapılan isteklerde Google tarafından "API keys with referer
+# restrictions cannot be used with this API" hatasıyla reddediliyor (14 Ağustos'ta
+# canlıda doğrulandı: admin panelindeki "Google ile Hesapla" özelliği bu yüzden
+# çalışmıyordu). Bu yeni anahtar Google Cloud Console'da kısıtlama YOK, sadece
+# Distance Matrix + Geocoding API'lerine izinli olacak şekilde oluşturuldu.
+# Railway env var yoksa (henüz eklenmediyse) eski anahtara düşer — o durumda da
+# aynı hata devam eder, en azından sistem çökmez.
+GOOGLE_MAPS_SERVER_API_KEY = os.environ.get("GOOGLE_MAPS_SERVER_API_KEY", GOOGLE_MAPS_API_KEY)
 
 # Admin tarafından belirlenen km başı birim fiyat (varsayılan: 25₺)
 UNIT_PRICE = 25.0
@@ -2394,7 +2405,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not origins or not destinations:
                     self._send_error("origins ve destinations parametreleri gereklidir.")
                     return
-                google_url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={urllib.parse.quote(origins)}&destinations={urllib.parse.quote(destinations)}&mode={mode}&language=tr&key={GOOGLE_MAPS_API_KEY}"
+                google_url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={urllib.parse.quote(origins)}&destinations={urllib.parse.quote(destinations)}&mode={mode}&language=tr&key={GOOGLE_MAPS_SERVER_API_KEY}"
                 try:
                     req = urllib.request.Request(google_url)
                     with urllib.request.urlopen(req, timeout=10) as resp:
@@ -2408,7 +2419,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not address:
                     self._send_error("address parametresi gereklidir.")
                     return
-                google_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&language=tr&key={GOOGLE_MAPS_API_KEY}"
+                google_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&language=tr&key={GOOGLE_MAPS_SERVER_API_KEY}"
                 try:
                     req = urllib.request.Request(google_url)
                     with urllib.request.urlopen(req, timeout=10) as resp:
