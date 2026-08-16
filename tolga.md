@@ -1,6 +1,6 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-16 (Konumumu Kullan GPS özelliği + logo sıfırlama eklendi, push edildi ✅)
+Son güncelleme: 2026-08-16 (Search Console uyarıları incelendi, www/http yönlendirmesi eklendi, push edildi ✅)
 
 ## GÜNCEL — Kredi kartı ödemesi CANLIDA ÇALIŞIYOR, döviz sorusu Garanti'ye soruldu (16 Ağustos)
 
@@ -84,6 +84,32 @@ DB'ye kaydedilmeme bug'ı düzeltildi (commit `b5c9170`) — asıl kilit buydu.
     Transferi sekmesine geri geçiyor. Canlı destek/sohbet oturumuna (gulizTracker,
     mesaj geçmişi) kasıtlı olarak dokunulmuyor.
 
+16. **Google Search Console uyarısı incelendi:** Tolga'ya "sayfa içeriklerinizin dizine
+    eklenmesini engelleyen yeni nedenler" e-postası geldi. İncelenip URL örnekleri
+    tek tek kontrol edildi:
+    - "Robots.txt tarafından engellendi" (5 örnek) → hepsi `/api/...` endpoint'leri
+      (paypas/create-session, page/, fleet, availability). Tamamen normal/istenen —
+      bunlar zaten indekslenmemeli, aksiyon gerekmiyor.
+    - "Doğru standart etikete sahip alternatif sayfa" (3 örnek) → `www.gulizvip.com.tr/en/`
+      ve `/ru/` (www'lı versiyon), ayrıca `/?odeme=basarili|iptal|dogrulanamadi` gibi
+      garip bir URL. İkisi de teşhis edildi:
+      1. www'lı adres de siteyi aynı içerikle sunuyordu, canonical www'sız adresi
+         gösteriyordu ama gerçek bir yönlendirme yoktu — Google doğru karar veriyordu
+         ama temiz değildi.
+      2. `/?odeme=basarili|iptal|dogrulanamadi` gerçek bir link değildi — index.html
+         içindeki bir kod yorumunda bu tam metin URL gibi yazılmıştı, Google bunu
+         literal bir adres sanıp taramıştı (zararsızdı, indekslenmemişti zaten).
+    - **Düzeltmeler:** `server.py`'ye www → www'sız VE http → https 301 yönlendirmesi
+      eklendi (artık `http://www.gulizvip.com.tr` dahil her kombinasyon otomatik
+      `https://gulizvip.com.tr`'ye düşüyor — Tolga'nın notu: "zaten o şekildeydi"
+      yani muhtemelen Cloudflare tarafında zaten bir düzey koruma vardı, ama kod
+      seviyesinde garanti altına alındı, zararı yok). Yanıltıcı kod yorumu da
+      URL gibi görünmeyecek şekilde yeniden yazıldı.
+    - **Kontrol edilmemiş kalan tek şey:** Search Console tablosunda "Yönlendirmeli
+      sayfa — Doğrulama: Başarısız oldu" (2 sayfa) satırı vardı, bu diğerlerinden
+      farklı olarak gerçek bir sorun olabilir — hangi 2 URL olduğu henüz görülmedi,
+      ileride Search Console'dan bakılıp incelenmesi gerekiyor.
+
 **AÇIK KONU — Dövizli (USD/EUR) gerçek ödeme alma:**
 Tolga, gerçekten USD/EUR ile kredi kartı ödemesi almak istiyor (sadece bilgilendirme
 değil, gerçek tahsilat). Kod tarafı buna zaten hazır — `_garanti_prepare_form` hangi
@@ -102,11 +128,15 @@ e-posta ile sordu, **cevap bekleniyor**.
   ilerlenir
 
 ### Hemen Yapılması Gereken
-Yok — 16 Ağustos'ta biriken ~20 commit (Google Ads/GA4/trafik takibi/Gazipaşa
+Yok — 16 Ağustos'ta biriken tüm commit'ler (Google Ads/GA4/trafik takibi/Gazipaşa
 varsayılan/Google Maps server key/hizmet bölgesi fiyat düzeltmesi/AYT scraping fix/
 uçuş yenile butonu/uçuş değişiklik özeti/döviz gösterimi/timezone fix/Konumumu Kullan
-GPS özelliği/tahsis harita/logo sıfırlama) push edildi, branch origin ile senkron.
-Railway otomatik redeploy etmiş olmalı — canlıda kontrol edilmesi yeterli.
+GPS özelliği/tahsis harita/logo sıfırlama/www-http yönlendirmesi) Tolga tarafından
+push edildi ve Railway'e deploy edildi ✅. Branch origin ile senkron.
+
+Tek açık madde: Search Console'daki "Yönlendirmeli sayfa — Doğrulama: Başarısız
+oldu" (2 sayfa) satırının hangi URL'ler olduğu henüz görülmedi — Tolga fırsat
+bulunca Search Console'dan bakıp paylaşırsa incelenecek.
 
 ## ESKİ — Garanti BBVA PROD env var'ları Railway'e eklendi (13 Ağustos, gece)
 Tolga, Railway → Variables'a 7 Garanti env var'ını ekledi:
