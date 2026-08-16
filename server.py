@@ -20,6 +20,16 @@ import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
+# Railway konteynerleri varsayılan olarak UTC saatiyle çalışır — TZ ayarlanmazsa
+# koddaki "02:00 / 13:00" gibi saatler (uçuş scraping, vs.) aslında UTC'de tetiklenir,
+# Türkiye saatiyle (UTC+3) 05:00 / 16:00 demek olurdu. datetime.now() Türkiye saatini
+# döndürsün diye TZ burada açıkça sabitleniyor (Linux'ta çalışır — Railway Linux).
+os.environ["TZ"] = "Europe/Istanbul"
+try:
+    time.tzset()
+except AttributeError:
+    pass  # Windows'ta tzset yok (lokal geliştirmede sorun değil, Railway Linux'ta çalışır)
+
 # PostgreSQL modülü — opsiyonel, yüklenemezse tüm fonksiyonlar None döndürür
 try:
     import db
