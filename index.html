@@ -1173,7 +1173,7 @@
                         <div class="input-group">
                             <label data-i18n="form.pickupLabel">Alış Noktası</label>
                         <div class="input-wrapper"><i class="fa-solid fa-map-pin"></i>
-                            <input type="text" id="pickup-input" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." data-i18n-placeholder="form.pickupPh" required oninput="checkServiceArea('pickup-input','pickup-area-warning')">
+                            <input type="text" id="pickup-input" value="Gazipaşa Havalimanı" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." data-i18n-placeholder="form.pickupPh" required oninput="checkServiceArea('pickup-input','pickup-area-warning')">
                         </div>
                         <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div>
                     </div>
@@ -1282,7 +1282,7 @@
 
                 <div class="form-step" id="tahsis-step1" style="display:block;">
                     <div class="form-grid">
-                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
+                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
                     <div class="input-group"><label data-i18n="form.durationLabel">Tahsis Süresi</label>
                         <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
                             <select id="vDuration" onchange="calculateVipPrice()">
