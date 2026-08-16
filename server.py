@@ -2017,6 +2017,44 @@ def visitor_cleanup_loop():
         time.sleep(15)
         _cleanup_offline_sessions()
 
+def _summarize_flight_changes(old_list, new_list, max_items=5):
+    """İki uçuş listesi arasındaki farkı (yeni eklenen uçuşlar + durum değişiklikleri)
+    kısa, Telegram'a uygun bir özet metnine çevirir. Müşteri tarafındaki canlı tablo
+    onay beklemeden zaten güncellenir — bu sadece Tolga'ya bilgi amaçlı bir özet,
+    hiçbir şeyi engellemez/geciktirmez."""
+    def _key(f):
+        return (f.get("flight", ""), f.get("saat", ""))
+
+    old_map = {_key(f): f for f in (old_list or [])}
+    new_map = {_key(f): f for f in (new_list or [])}
+
+    added = [f for k, f in new_map.items() if k not in old_map]
+    status_changed = []
+    for k, f in new_map.items():
+        old_f = old_map.get(k)
+        if old_f and old_f.get("status") != f.get("status"):
+            status_changed.append((f, old_f.get("status", ""), f.get("status", "")))
+
+    if not added and not status_changed:
+        return None
+
+    lines = []
+    if added:
+        lines.append(f"➕ {len(added)} yeni uçuş" + (":" if added[:max_items] else ""))
+        for f in added[:max_items]:
+            city = f.get("from") or f.get("to") or ""
+            lines.append(f"   {f.get('flight','?')} — {city} — {f.get('saat','')}")
+        if len(added) > max_items:
+            lines.append(f"   (+{len(added) - max_items} tane daha)")
+    if status_changed:
+        lines.append(f"🔄 {len(status_changed)} durum değişikliği" + (":" if status_changed[:max_items] else ""))
+        for f, old_s, new_s in status_changed[:max_items]:
+            lines.append(f"   {f.get('flight','?')} — {old_s or '—'} → {new_s or '—'}")
+        if len(status_changed) > max_items:
+            lines.append(f"   (+{len(status_changed) - max_items} tane daha)")
+    return "\n".join(lines)
+
+
 def refresh_flights():
     """Her iki havalimanının gelen/giden uçuş verisini canlı olarak kaynağından
     (kendi resmi web sitelerinden) çeker ve belleğe (flight_cache) yazar.
@@ -2042,9 +2080,20 @@ def refresh_flights():
             result = None
 
         if result is not None:
+            old_result = flight_cache[airport_key][direction]
+            changes_summary = _summarize_flight_changes(old_result, result)
             flight_cache[airport_key][direction] = result
             flight_cache[airport_key]["updated_at"] = now.isoformat()
             print(f"[✓] {airport_key.upper()} {direction}: {len(result)} uçuş güncellendi (canlı).")
+            # Canlı tablo müşteri tarafında ANINDA güncellenir (onay beklemez) — bu
+            # sadece Tolga'ya bilgi amaçlı bir özet, hiçbir şeyi geciktirmiyor.
+            if changes_summary:
+                try:
+                    send_telegram(
+                        f"✈️ <b>Uçuş güncellemesi: {airport_key.upper()} {direction}</b>\n{changes_summary}"
+                    )
+                except Exception:
+                    pass
         else:
             print(f"[!] {airport_key.upper()} {direction}: çekilemedi, önbellekteki son veri korunuyor "
                   f"({len(flight_cache[airport_key][direction])} kayıt).")
