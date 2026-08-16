@@ -1,6 +1,6 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-16 (AYT sorunu curl_cffi ile çözüldü ✅)
+Son güncelleme: 2026-08-16 (Konumumu Kullan GPS özelliği + logo sıfırlama eklendi, push edildi ✅)
 
 ## GÜNCEL — Kredi kartı ödemesi CANLIDA ÇALIŞIYOR, döviz sorusu Garanti'ye soruldu (16 Ağustos)
 
@@ -52,6 +52,37 @@ DB'ye kaydedilmeme bug'ı düzeltildi (commit `b5c9170`) — asıl kilit buydu.
     Tolga onayladı: **artık çalışıyor** (commit `8baeff0`). Sandbox'ta doğrudan test
     edilememişti (sandbox'ın kendi ağ kısıtlaması antalya-airport.aero'yu
     engelliyordu), gerçek doğrulama Railway'de yapıldı.
+13. **YENİ ÖZELLİK — "Konumumu Kullan" (GPS ile alış noktası):** Hem Havalimanı
+    Transferi hem Tahsis formundaki alış noktası kutusunun altına kırmızı bir buton
+    eklendi. Müşteri tıklayınca tarayıcı GPS izni ister; onaylarsa gerçek konum
+    okunur adrese çevrilip kutuya yazılır, ham enlem/boylam da rezervasyona ekleniyor
+    (şoför tam pin'e gidebilsin diye). Aynı anda `gulizTracker` sistemi (zaten bilinen
+    IP + şehir/ülke ile birlikte) GPS pin'ini Telegram'a "Haritada Gör" linkiyle
+    kritik olay olarak bildiriyor — yani butona her basıldığında sana anlık bildirim
+    gidiyor.
+    - **Hizmet bölgesi dışı davranışı (Ankara/İstanbul/yurt dışı vb.):** Kutu kırmızı
+      hataya düşmüyor, otomatik "Gazipaşa Havalimanı"na dönüyor, 8 saniyeliğine mavi
+      bilgilendirici bir not gösteriyor ("ileri tarihli rezervasyon yapıyorsanız sorun
+      yok..."). Müşteri hiç engellenmiyor. Telegram bildirimi yine gidiyor, notunda
+      "(hizmet bölgesi dışı, form varsayılana döndürüldü)" yazıyor — yani kutuda ne
+      görünürse görünsün, müşterinin gerçekte nerede olduğunu her zaman biliyoruz.
+    - **İzin reddedilirse / tarayıcı desteklemiyorsa / zaman aşımı:** Sadece uygun bir
+      uyarı mesajı çıkıyor, Telegram'a hiçbir şey gitmiyor (konum hiç alınamadığı için).
+    - Tüm buton/tooltip/uyarı metinleri TR/EN/RU olarak çevrildi (I18N sistemine
+      bağlandı) — sana giden Telegram bildirimi ise kasıtlı olarak her zaman Türkçe.
+14. **Tahsis (Şoförlü VIP/Günlük) formuna harita eklendi:** Daha önce sadece
+    Havalimanı Transferi formunda harita vardı — kod tahsis formunu da güncellemeye
+    çalışıyordu ama o formda haritanın gösterileceği bir kutu hiç yoktu, yani hiçbir
+    şey görünmüyordu. Artık tahsis formunun kendi harita kutusu var; alış noktası
+    seçilince (veya "Konumumu Kullan" ile) tek bir pin gösteriyor (varış noktası
+    toplanmadığı için rota çizilmiyor, sadece alış pin'i).
+15. **Logo tıklaması artık formu gerçekten sıfırlıyor:** Önceden logoya basınca (ana
+    sayfadayken) sadece sayfa en üste kayıyordu, form verisine hiç dokunulmuyordu —
+    "başa dönme" diye bir mekanizma yoktu. Şimdi logo tıklaması (ve 404/403
+    sayfalarındaki "Ana Sayfaya Dön" linki) alış/varış noktalarını, tarih/saati,
+    kişisel bilgileri, fiyat tahminini ve haritayı ilk haline döndürüyor, Havalimanı
+    Transferi sekmesine geri geçiyor. Canlı destek/sohbet oturumuna (gulizTracker,
+    mesaj geçmişi) kasıtlı olarak dokunulmuyor.
 
 **AÇIK KONU — Dövizli (USD/EUR) gerçek ödeme alma:**
 Tolga, gerçekten USD/EUR ile kredi kartı ödemesi almak istiyor (sadece bilgilendirme
@@ -71,14 +102,11 @@ e-posta ile sordu, **cevap bekleniyor**.
   ilerlenir
 
 ### Hemen Yapılması Gereken
-```
-cd C:\proje\gulizvip
-git push origin main
-```
-16 Ağustos'ta ~13 commit birikti (Google Ads/GA4/trafik takibi/Gazipaşa varsayılan/
-Google Maps server key/hizmet bölgesi fiyat düzeltmesi/AYT scraping fix/uçuş yenile
-butonu/uçuş değişiklik özeti/döviz gösterimi). Push + Railway redeploy sonrası hepsi
-canlıya çıkar.
+Yok — 16 Ağustos'ta biriken ~20 commit (Google Ads/GA4/trafik takibi/Gazipaşa
+varsayılan/Google Maps server key/hizmet bölgesi fiyat düzeltmesi/AYT scraping fix/
+uçuş yenile butonu/uçuş değişiklik özeti/döviz gösterimi/timezone fix/Konumumu Kullan
+GPS özelliği/tahsis harita/logo sıfırlama) push edildi, branch origin ile senkron.
+Railway otomatik redeploy etmiş olmalı — canlıda kontrol edilmesi yeterli.
 
 ## ESKİ — Garanti BBVA PROD env var'ları Railway'e eklendi (13 Ağustos, gece)
 Tolga, Railway → Variables'a 7 Garanti env var'ını ekledi:
