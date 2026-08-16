@@ -2291,8 +2291,9 @@
 
         (function handlePaymentReturn() {
             // Garanti BBVA kart formu sayfasından (/odeme/garanti/<id>) dönüşte server.py
-            // bizi "/?odeme=basarili|basarisiz|iptal|dogrulanamadi" ile buraya yönlendirir
-            // (bkz. POST /api/payments/garanti/result). Mevcut successModal'ı yeniden
+            // bizi buraya "odeme" query parametresiyle yönlendirir (tek bir değerle,
+            // olası değerler: basarili, basarisiz, iptal veya dogrulanamadi — bkz.
+            // POST /api/payments/garanti/result). Mevcut successModal'ı yeniden
             // kullanıp içeriğini duruma göre değiştiriyoruz.
             var params = new URLSearchParams(window.location.search);
             var odeme = params.get('odeme');

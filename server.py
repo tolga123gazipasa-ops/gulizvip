@@ -2489,6 +2489,20 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(b"OK")
                 return
+            # ─── www -> www'sız 301 yönlendirme (SEO: tek canonical domain) ───────
+            # Search Console "Doğru standart etikete sahip alternatif sayfa" uyarısı
+            # www.gulizvip.com.tr'nin de aynı içeriği sunmasından kaynaklanıyordu —
+            # canonical etiketi zaten www'sız adresi gösteriyordu ama gerçek bir
+            # yönlendirme yoktu, Google her seferinde canonical'a bakıp karar
+            # vermek zorunda kalıyordu. Artık www ile gelen her istek doğrudan
+            # www'sız adrese 301 ile yönlendiriliyor (path + query korunarak).
+            host = (self.headers.get("Host", "") or "").split(":")[0].lower()
+            if host.startswith("www."):
+                target = "https://" + host[4:] + self.path
+                self.send_response(301)
+                self.send_header("Location", target)
+                self.end_headers()
+                return
             if path == "/api/flights":
                 self._send_json({"success": True, "data": {"gzp": flight_cache["gzp"], "ayt": flight_cache["ayt"]}, "updated_at": max(flight_cache["gzp"]["updated_at"] or "", flight_cache["ayt"]["updated_at"] or "")})
                 return
