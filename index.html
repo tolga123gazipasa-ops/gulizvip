@@ -3355,6 +3355,19 @@
                 return;
             }
 
+            // Hizmet bölgesi dışındaki bir nokta için mesafe/fiyat HESAPLAMA — kırmızı
+            // uyarı zaten gösteriliyor (checkServiceArea), ama önceden burası yine de
+            // bir mesafe/fiyat gösterip kafa karıştırıyordu (örn. Eskişehir yazınca bile
+            // bir tahmini fiyat çıkıyordu). Artık ikisi de hizmet bölgesindeyse hesaplanır.
+            if (pickupVal && !isInServiceArea(pickupVal)) {
+                document.getElementById('distanceInfo').style.display = 'none';
+                return;
+            }
+            if (!isInServiceArea(destVal)) {
+                document.getElementById('distanceInfo').style.display = 'none';
+                return;
+            }
+
             var distanceInfo = document.getElementById('distanceInfo');
 
             // Use selected coords first, fallback to text address
