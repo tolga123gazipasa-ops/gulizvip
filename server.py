@@ -17,6 +17,7 @@ import random
 import urllib.parse
 import urllib.request
 import urllib.error
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
 # PostgreSQL modülü — opsiyonel, yüklenemezse tüm fonksiyonlar None döndürür
@@ -1284,6 +1285,50 @@ def scrape_ayt_flights(direction):
 
 flight_cache = {"gzp": {"gelen": [], "giden": [], "updated_at": None}, "ayt": {"gelen": [], "giden": [], "updated_at": None}}
 
+# ─── Döviz Kurları (bilgilendirme amaçlı — ödeme HER ZAMAN TL üzerinden alınır) ─
+# TCMB'nin (Türkiye Cumhuriyet Merkez Bankası) resmi günlük kur XML'i — ücretsiz,
+# API anahtarı gerekmiyor. Sadece müşteriye "TL fiyatınız yaklaşık şu kadar $/€'ya
+# denk geliyor" göstermek için kullanılıyor; ödeme/rezervasyon akışı bundan
+# ETKİLENMEZ, hep TL olarak devam eder.
+TCMB_KUR_URL = "https://www.tcmb.gov.tr/kurlar/today.xml"
+exchange_rates_cache = {"USD": None, "EUR": None, "updated_at": None}
+
+
+def fetch_exchange_rates():
+    """TCMB günlük kur XML'ini çeker, USD ve EUR satış (ForexSelling) kurlarını
+    döndürür. Hata durumunda None döner — çağıran taraf önbellekteki eski kuru korur
+    (bir günlük gecikme fiyat gösteriminde önemli bir sorun yaratmaz)."""
+    try:
+        req = urllib.request.Request(TCMB_KUR_URL, headers={"User-Agent": SCRAPE_USER_AGENT})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            raw = resp.read()
+        root = ET.fromstring(raw)
+        rates = {}
+        for currency in root.findall("Currency"):
+            code = currency.get("Kod") or currency.get("CurrencyCode")
+            if code in ("USD", "EUR"):
+                selling = currency.findtext("ForexSelling")
+                if selling:
+                    rates[code] = float(selling)
+        if "USD" in rates and "EUR" in rates:
+            return rates
+        return None
+    except Exception as e:
+        print(f"[!] TCMB kur çekme hatası: {e}")
+        return None
+
+
+def refresh_exchange_rates():
+    rates = fetch_exchange_rates()
+    if rates:
+        exchange_rates_cache["USD"] = rates["USD"]
+        exchange_rates_cache["EUR"] = rates["EUR"]
+        exchange_rates_cache["updated_at"] = datetime.now().isoformat()
+        print(f"[✓] Döviz kurları güncellendi: 1 USD = {rates['USD']}₺, 1 EUR = {rates['EUR']}₺")
+    else:
+        print("[!] Döviz kurları güncellenemedi, önbellekteki eski kur korunuyor.")
+
+
 # ─── Live Chat ──────────────────────────────────────────────────────────────────
 CHAT_MESSAGES = []
 CHAT_ID = 1
@@ -2139,12 +2184,14 @@ def scheduler_loop():
     günde 2 kez (02:00 / 13:00) tekrar çalışır. Kullanıcılar siteye girdikçe scraping
     TEKRAR TETİKLENMEZ; her istek bellekteki hazır veriyi okur."""
     refresh_flights()
+    refresh_exchange_rates()
     while True:
         wait_seconds, next_run = _seconds_until_next_refresh()
         print(f"[i] Bir sonraki otomatik uçuş güncellemesi: {next_run.strftime('%d.%m.%Y %H:%M')} "
               f"({int(wait_seconds // 60)} dk sonra)")
         time.sleep(max(wait_seconds, 1))
         refresh_flights()
+        refresh_exchange_rates()
 
 # ─── HMAC Auth ────────────────────────────────────────────────────────────────
 
@@ -2414,6 +2461,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 return
             if path == "/api/unit-price":
                 self._send_json({"success": True, "unitPrice": UNIT_PRICE})
+                return
+            if path == "/api/exchange-rates":
+                # Bilgilendirme amaçlı — ödeme her zaman TL. Frontend, hesaplanan TL
+                # fiyatının yanında yaklaşık $ ve € karşılığını göstermek için kullanır.
+                self._send_json({
+                    "success": True,
+                    "usd": exchange_rates_cache["USD"],
+                    "eur": exchange_rates_cache["EUR"],
+                    "updatedAt": exchange_rates_cache["updated_at"],
+                })
                 return
             if path.startswith("/odeme/garanti/"):
                 # Admin panelindeki "Ödeme Linki Oluştur" / WhatsApp'tan gönder özelliğiyle

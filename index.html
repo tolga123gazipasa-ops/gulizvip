@@ -302,6 +302,32 @@
         }
         fetchUnitPrice();
 
+        // ===== DÖVİZ KURU BİLGİLENDİRMESİ (ödeme her zaman TL — bu sadece gösterim) =====
+        var EXCHANGE_RATES = { usd: null, eur: null };
+        function fetchExchangeRates() {
+            fetch('/api/exchange-rates')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if(d.success) {
+                        EXCHANGE_RATES.usd = d.usd;
+                        EXCHANGE_RATES.eur = d.eur;
+                    }
+                })
+                .catch(function() {});
+        }
+        fetchExchangeRates();
+
+        // tlAmount: sayısal TL tutarı. targetElId: yanına "≈ $.. / €.." yazılacak <small> id'si.
+        function showFxEquivalent(tlAmount, targetElId) {
+            var el = document.getElementById(targetElId);
+            if(!el) return;
+            if(!tlAmount || !EXCHANGE_RATES.usd || !EXCHANGE_RATES.eur) { el.textContent = ''; return; }
+            var usd = tlAmount / EXCHANGE_RATES.usd;
+            var eur = tlAmount / EXCHANGE_RATES.eur;
+            el.textContent = '(≈ $' + usd.toLocaleString('en-US', {maximumFractionDigits: 0}) +
+                ' / €' + eur.toLocaleString('en-US', {maximumFractionDigits: 0}) + ')';
+        }
+
         // Tahsis fiyatlarını admin panelinden dinamik çek
         function fetchTahsisPrices() {
             fetch('/api/tahsis-prices')
@@ -1200,7 +1226,7 @@
                     </div>
                     <div class="distance-detail highlight">
                         <i class="fa-solid fa-tag"></i>
-                        <span><span data-i18n="form.estimatedLabel">Tahmini:</span> <strong id="priceEstimate">—</strong></span>
+                        <span><span data-i18n="form.estimatedLabel">Tahmini:</span> <strong id="priceEstimate">—</strong> <small id="priceEstimateFx" style="color:var(--text-gray);font-weight:500;"></small></span>
                     </div>
                 </div>
                 <div class="map-preview" id="mapPreview" style="display:none;">
@@ -1300,7 +1326,7 @@
                     <div class="input-group"><label data-i18n="form.vehicleTypeLabel">Araç Tipi</label><div class="input-wrapper"><i class="fa-solid fa-car"></i><select><option data-i18n="form.vehicleTypeOpt">VIP Mercedes Vito</option></select></div></div>
                 </div>
                 <div id="tahsis-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.availabilityWarning">Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</span></div>
-                <div class="vip-summary"><div class="title" data-i18n="form.estimatedPriceLabel">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div></div>
+                <div class="vip-summary"><div class="title" data-i18n="form.estimatedPriceLabel">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div><small id="vipPriceFx" style="color:var(--text-gray);font-weight:500;"></small></div>
 
                 <div class="form-nav">
                     <div></div>
@@ -2837,6 +2863,7 @@
             const price = selectedOption.getAttribute('data-price'); 
             const priceDisplay = document.getElementById('vipPriceDisplay');
             priceDisplay.innerHTML = parseInt(price).toLocaleString('tr-TR') + ' <span>₺</span>';
+            showFxEquivalent(parseInt(price), 'vipPriceFx');
         }
 
         // 3. FİLO GALERİ FOTO DEĞİŞTİRME
@@ -3404,6 +3431,7 @@
             document.getElementById('distanceText').textContent = 'Hesaplanıyor...';
             document.getElementById('durationText').textContent = '—';
             document.getElementById('priceEstimate').textContent = '—';
+            showFxEquivalent(0, 'priceEstimateFx');
 
             // Client-side Distance Matrix Service kullan (backend proxy'yi atla)
             if(typeof google !== 'undefined' && google.maps && google.maps.DistanceMatrixService) {
@@ -3440,6 +3468,7 @@
                                 if(pSrc.includes(rf) && pDst.includes(rt)) { price = r.price; break; }
                             }
                             document.getElementById('priceEstimate').textContent = price.toLocaleString('tr-TR') + ' ₺';
+                            showFxEquivalent(price, 'priceEstimateFx');
 
                             distanceInfo.style.display = 'flex';
                         } else {
@@ -3633,6 +3662,7 @@
                 if(pSrc.includes(rf) && pDst.includes(rt)) {
                     document.getElementById('durationText').textContent = '—';
                     document.getElementById('priceEstimate').textContent = r.price.toLocaleString('tr-TR') + ' ₺';
+                    showFxEquivalent(r.price, 'priceEstimateFx');
                     return;
                 }
             }
@@ -3649,6 +3679,7 @@
 
             document.getElementById('durationText').textContent = '—';
             document.getElementById('priceEstimate').textContent = price.toLocaleString('tr-TR') + ' ₺';
+            showFxEquivalent(price, 'priceEstimateFx');
         }
 
         // Sayfa açılınca pickup input'ta varsayılan bir değer varsa geocode'la
