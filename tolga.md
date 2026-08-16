@@ -1,8 +1,73 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-13
+Son güncelleme: 2026-08-16
 
-## GÜNCEL — Garanti BBVA PROD env var'ları Railway'e eklendi (13 Ağustos, gece)
+## GÜNCEL — Kredi kartı ödemesi CANLIDA ÇALIŞIYOR, döviz sorusu Garanti'ye soruldu (16 Ağustos)
+
+**✅ Garanti BBVA Sanal POS PROD'da gerçek parayla test edildi ve BAŞARILI oldu**
+(14 Ağustos gecesi, rezervasyon #80). SMS/OTP onayı + banka onayı + hash doğrulama
+uçtan uca çalıştı, rezervasyon "ödendi" işaretlendi. Yol boyunca çıkan `garantiOrderId`
+DB'ye kaydedilmeme bug'ı düzeltildi (commit `b5c9170`) — asıl kilit buydu.
+
+**16 Ağustos'ta yapılan ek işler (hepsi commit'lendi, push bekliyor):**
+1. Google Ads telefon arama dönüşüm takibi eklendi (`AW-18372593815/MuZuCM6Gr-EcEJeR3rhE`)
+2. Google Analytics 4 (GA4) kuruldu (`G-ZV9Q8PX2QL`)
+3. Ziyaretçi trafik kaynağı takibi: `gclid`/`utm_*`/`fbclid` yakalanıyor, Telegram'daki
+   "Yönlendiren" alanı artık gerçek kaynağı gösteriyor (Google Ads / organik / kampanya)
+   — önceden `document.referrer` genelde boş geliyordu, reklam tıklamalarında hep boş
+   çıkıyordu, bu düzeltildi
+4. Alış Noktası alanları (hem Havalimanı Transferi hem Tahsis formu) artık varsayılan
+   olarak "Gazipaşa Havalimanı" ile başlıyor, kullanıcı değiştirebiliyor
+5. **Gerçek bug bulundu ve düzeltildi:** Google Maps API anahtarı "HTTP referrer"
+   kısıtlamalı olduğu için sunucu-taraflı çağrılar (`/api/maps/distance`,
+   `/api/maps/geocode`) Google tarafından reddediliyordu — admin panelindeki
+   "Google ile Hesapla" (rota fiyat önerisi) özelliği bu yüzden çalışmıyordu. Ayrı,
+   kısıtlamasız bir sunucu anahtarı (`GOOGLE_MAPS_SERVER_API_KEY`) oluşturulup env
+   var olarak eklendi, kod güncellendi
+6. Hizmet bölgesi dışındaki (örn. Eskişehir) alış/varış noktaları için artık mesafe/
+   fiyat hiç hesaplanmıyor/gösterilmiyor (önceden kafa karıştırıcı şekilde yine de bir
+   fiyat çıkıyordu)
+7. **AYT (Antalya) uçuş verisi çekilememe sorunu teşhis edildi:** Railway loglarında
+   kesin hata bulundu — `Connection reset by peer` (muhtemelen sitenin bot koruması).
+   Sayfa yapısı bozulmamıştı, sorun ağ/erişim seviyesindeydi. Daha gerçekçi tarayıcı
+   header'ları + otomatik yeniden deneme eklendi; başarısız olursa artık Telegram'a da
+   uyarı düşüyor (önceden sessizce günlerce fark edilmeden kalmıştı)
+8. Admin panele "Uçuşları Şimdi Güncelle" butonu eklendi (02:00/13:00'i beklemeden
+   veya sunucuyu yeniden başlatmadan manuel tetikleme) — `POST /api/admin/flights/refresh`
+9. Uçuş güncellemelerinde Telegram'a değişiklik özeti gidiyor (yeni uçuşlar + durum
+   değişiklikleri) — sadece bilgilendirme, canlı tablo onay beklemeden anında güncelleniyor
+10. **TL fiyatların yanında bilgilendirme amaçlı $ / € karşılığı gösteriliyor** (TCMB
+    günlük kur, günde 2 kez otomatik güncelleniyor). Ödeme akışı TAMAMEN TL olarak
+    devam ediyor, bu sadece görsel bilgilendirme.
+
+**AÇIK KONU — Dövizli (USD/EUR) gerçek ödeme alma:**
+Tolga, gerçekten USD/EUR ile kredi kartı ödemesi almak istiyor (sadece bilgilendirme
+değil, gerçek tahsilat). Kod tarafı buna zaten hazır — `_garanti_prepare_form` hangi
+para biriminde göndereceğini parametre olarak alıyor, `GARANTI_CURRENCY_CODES` içinde
+USD/EUR tanımlı. **Ama asıl soru bankada:** Merchant ID 3724930 / Terminal 10470591
+hesabı döviz ile 3D'li Peşin satış yapmaya yetkili mi, yoksa ayrı bir başvuru mu
+gerekiyor? Tolga bu soruyu 16 Ağustos'ta Garanti'ye (`eticaretdestek@garantibbva.com.tr`)
+e-posta ile sordu, **cevap bekleniyor**.
+
+**Cevap geldiğinde:**
+- Evet, yetkiliyse → ödeme ekranına gerçek TL/USD/EUR seçici eklenir (alt yapı hazır,
+  sadece frontend'de bir para birimi toggle'ı + reservation'ın currency alanının doğru
+  set edilmesi gerekiyor), TCMB kuru ile TL fiyat USD/EUR'ya çevrilip o tutar/para
+  biriminde Garanti'ye gönderilir
+- Hayır, yetkili değilse → ek başvuru/sözleşme gerekip gerekmediği netleşince ona göre
+  ilerlenir
+
+### Hemen Yapılması Gereken
+```
+cd C:\proje\gulizvip
+git push origin main
+```
+16 Ağustos'ta ~13 commit birikti (Google Ads/GA4/trafik takibi/Gazipaşa varsayılan/
+Google Maps server key/hizmet bölgesi fiyat düzeltmesi/AYT scraping fix/uçuş yenile
+butonu/uçuş değişiklik özeti/döviz gösterimi). Push + Railway redeploy sonrası hepsi
+canlıya çıkar.
+
+## ESKİ — Garanti BBVA PROD env var'ları Railway'e eklendi (13 Ağustos, gece)
 Tolga, Railway → Variables'a 7 Garanti env var'ını ekledi:
 `GARANTI_MODE=PROD`, `GARANTI_MERCHANT_ID=3724930`, `GARANTI_TERMINAL_ID=10470591`,
 `GARANTI_PROV_USER_ID=PROVAUT`, `GARANTI_TERMINAL_USER_ID`, `GARANTI_PROVISION_PASSWORD`
