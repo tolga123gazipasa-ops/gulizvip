@@ -297,14 +297,14 @@
         // admin'e o anki IP + konum bilgisiyle Telegram bildirimi de gönderilir.
         function useMyLocation(inputId, warningId, btn) {
             if (!navigator.geolocation) {
-                alert('Tarayıcınız konum özelliğini desteklemiyor. Adresi elle yazabilirsiniz.');
+                alert(t('form.geoNotSupported'));
                 return;
             }
             var originalHtml = btn.innerHTML;
             var warningEl = document.getElementById(warningId);
             var originalWarningHtml = warningEl ? warningEl.innerHTML : '';
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Konum alınıyor...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + t('form.geoLoading');
 
             navigator.geolocation.getCurrentPosition(function(pos) {
                 var lat = pos.coords.latitude;
@@ -348,7 +348,7 @@
                         warningEl.style.background = '#eff6ff';
                         warningEl.style.color = '#1d4ed8';
                         warningEl.style.borderColor = '#93c5fd';
-                        warningEl.innerHTML = '<i class="fa-solid fa-circle-info"></i> Şu anki konumunuz Alanya/Gazipaşa dışında görünüyor — ileri tarihli rezervasyon yapıyorsanız sorun yok, alış noktası "Gazipaşa Havalimanı" olarak bırakıldı. Dilerseniz kutuyu değiştirebilirsiniz.';
+                        warningEl.innerHTML = '<i class="fa-solid fa-circle-info"></i> ' + t('form.geoOutOfArea');
                         setTimeout(function() {
                             warningEl.style.display = 'none';
                             warningEl.style.background = '';
@@ -371,6 +371,10 @@
 
                 if (typeof google !== 'undefined' && google.maps && google.maps.Geocoder) {
                     var geocoder = new google.maps.Geocoder();
+                    // Not: dil her zaman 'tr' istenir — isInServiceArea() eşleştirmesi Latin
+                    // harfli TR anahtar kelimelere dayanıyor (Rusça sonuç Kiril alfabesiyle
+                    // gelirse eşleşme bozulur), ayrıca diğer geocode fonksiyonları da (geocodePickup/
+                    // geocodeDest) aynı şekilde her zaman 'tr' kullanıyor.
                     geocoder.geocode({ location: { lat: lat, lng: lng }, language: 'tr' }, function(results, status) {
                         if (status === 'OK' && results && results.length > 0) {
                             finish(results[0].formatted_address);
@@ -384,9 +388,9 @@
             }, function(err) {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
-                var msg = 'Konumunuz alınamadı. Adresi elle yazabilirsiniz.';
-                if (err.code === 1) msg = 'Konum izni reddedildi. Adresi elle yazarak devam edebilirsiniz.';
-                else if (err.code === 3) msg = 'Konum isteği zaman aşımına uğradı. Tekrar deneyin veya adresi elle yazın.';
+                var msg = t('form.geoFailed');
+                if (err.code === 1) msg = t('form.geoDenied');
+                else if (err.code === 3) msg = t('form.geoTimeout');
                 alert(msg);
             }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
         }
@@ -1309,7 +1313,7 @@
                         <div class="input-wrapper"><i class="fa-solid fa-map-pin"></i>
                             <input type="text" id="pickup-input" value="Gazipaşa Havalimanı" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." data-i18n-placeholder="form.pickupPh" required oninput="checkServiceArea('pickup-input','pickup-area-warning')">
                         </div>
-                        <button type="button" class="use-location-btn" id="pickup-location-btn" onclick="useMyLocation('pickup-input','pickup-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> Konumumu Kullan<span class="location-tooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button>
+                        <button type="button" class="use-location-btn" id="pickup-location-btn" onclick="useMyLocation('pickup-input','pickup-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button>
                         <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div>
                     </div>
                     <div class="input-group"><label data-i18n="form.destLabel">Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." data-i18n-placeholder="form.destPh" required oninput="checkServiceArea('dest-input','dest-area-warning')"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
@@ -1417,7 +1421,7 @@
 
                 <div class="form-step" id="tahsis-step1" style="display:block;">
                     <div class="form-grid">
-                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><button type="button" class="use-location-btn" id="tahsis-location-btn" onclick="useMyLocation('tahsis-pickup-input','tahsis-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> Konumumu Kullan<span class="location-tooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
+                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><button type="button" class="use-location-btn" id="tahsis-location-btn" onclick="useMyLocation('tahsis-pickup-input','tahsis-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
                     <div class="input-group"><label data-i18n="form.durationLabel">Tahsis Süresi</label>
                         <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
                             <select id="vDuration" onchange="calculateVipPrice()">
@@ -1906,7 +1910,15 @@
                 duration12:"12 Saatlik (Uzun Mesafe Tur)", duration24:"Tam Gün (24 Saat Şoförlü Tahsis)",
                 pickupDateLabel:"Alış Tarihi", pickupTimeLabel:"Alış Saati",
                 vehicleTypeLabel:"Araç Tipi", vehicleTypeOpt:"VIP Mercedes Vito",
-                estimatedPriceLabel:"Tahmini Hizmet Bedeli"
+                estimatedPriceLabel:"Tahmini Hizmet Bedeli",
+                useLocationBtn:"Konumumu Kullan",
+                useLocationTooltip:"Konumunuzdan aracın sizi alması için bu seçeneği tıklayın",
+                geoLoading:"Konum alınıyor...",
+                geoNotSupported:"Tarayıcınız konum özelliğini desteklemiyor. Adresi elle yazabilirsiniz.",
+                geoFailed:"Konumunuz alınamadı. Adresi elle yazabilirsiniz.",
+                geoDenied:"Konum izni reddedildi. Adresi elle yazarak devam edebilirsiniz.",
+                geoTimeout:"Konum isteği zaman aşımına uğradı. Tekrar deneyin veya adresi elle yazın.",
+                geoOutOfArea:"Şu anki konumunuz Alanya/Gazipaşa dışında görünüyor — ileri tarihli rezervasyon yapıyorsanız sorun yok, alış noktası \"Gazipaşa Havalimanı\" olarak bırakıldı. Dilerseniz kutuyu değiştirebilirsiniz."
             },
             hizmetler: {
                 title:"Premium Hizmetlerimiz",
@@ -2014,7 +2026,15 @@
                 duration12:"12 Hours (Long-Distance Tour)", duration24:"Full Day (24-Hour Chauffeured Hire)",
                 pickupDateLabel:"Pickup Date", pickupTimeLabel:"Pickup Time",
                 vehicleTypeLabel:"Vehicle Type", vehicleTypeOpt:"VIP Mercedes Vito",
-                estimatedPriceLabel:"Estimated Service Fee"
+                estimatedPriceLabel:"Estimated Service Fee",
+                useLocationBtn:"Use My Location",
+                useLocationTooltip:"Click this option for the vehicle to pick you up from your location",
+                geoLoading:"Getting location...",
+                geoNotSupported:"Your browser does not support location services. You can type the address manually.",
+                geoFailed:"Your location could not be retrieved. You can type the address manually.",
+                geoDenied:"Location permission denied. You can continue by typing the address manually.",
+                geoTimeout:"Location request timed out. Please try again or type the address manually.",
+                geoOutOfArea:"Your current location appears to be outside Alanya/Gazipaşa — if you're booking in advance, that's fine, the pickup point was kept as \"Gazipaşa Airport\". You can change it if you'd like."
             },
             hizmetler: {
                 title:"Our Premium Services",
@@ -2122,7 +2142,15 @@
                 duration12:"12 часов (тур на дальние расстояния)", duration24:"Полный день (аренда с водителем на 24 часа)",
                 pickupDateLabel:"Дата подачи", pickupTimeLabel:"Время подачи",
                 vehicleTypeLabel:"Тип автомобиля", vehicleTypeOpt:"VIP Mercedes Vito",
-                estimatedPriceLabel:"Примерная стоимость услуги"
+                estimatedPriceLabel:"Примерная стоимость услуги",
+                useLocationBtn:"Использовать моё местоположение",
+                useLocationTooltip:"Нажмите эту кнопку, чтобы автомобиль забрал вас с вашего местоположения",
+                geoLoading:"Определение местоположения...",
+                geoNotSupported:"Ваш браузер не поддерживает определение местоположения. Вы можете ввести адрес вручную.",
+                geoFailed:"Не удалось определить ваше местоположение. Вы можете ввести адрес вручную.",
+                geoDenied:"В доступе к местоположению отказано. Вы можете продолжить, введя адрес вручную.",
+                geoTimeout:"Истекло время ожидания запроса местоположения. Попробуйте снова или введите адрес вручную.",
+                geoOutOfArea:"Похоже, вы сейчас находитесь за пределами Алании/Газипаши — если вы бронируете заранее, это не проблема, место посадки оставлено как \"Аэропорт Газипаша\". При желании вы можете изменить его."
             },
             hizmetler: {
                 title:"Наши премиум-услуги",
