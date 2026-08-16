@@ -1204,7 +1204,7 @@
 
     <header class="header">
         <div class="container">
-            <a href="/" onclick="if(document.body.classList.contains('page-mode')){return true;} window.scrollTo(0,0); return false;" class="logo-container">
+            <a href="/" onclick="if(document.body.classList.contains('page-mode')){return true;} if(typeof resetToHomeState === 'function'){resetToHomeState();} window.scrollTo(0,0); return false;" class="logo-container">
                 <img src="/logo.png" alt="Güliz Premium VIP Logo">
             </a>
             <nav class="nav-menu">
@@ -2976,6 +2976,62 @@
         }
 
         // 1. FORM SEKME DEĞİŞTİRME
+        // Logoya tıklanınca (zaten ana sayfadaysak) rezervasyon formunu tamamen
+        // sıfırlar — alış/varış noktaları, tarih/saat, kişisel bilgiler, fiyat ve
+        // harita önizlemesi ilk haline döner. Canlı destek/sohbet oturumu ve
+        // ziyaretçi takibi (gulizTracker) kasıtlı olarak DOKUNULMUYOR — sadece
+        // rezervasyon formu sıfırlanıyor, sohbet geçmişi kaybolmuyor.
+        function resetToHomeState() {
+            var pickupInput = document.getElementById('pickup-input');
+            if (pickupInput) pickupInput.value = 'Gazipaşa Havalimanı';
+            var destInput = document.getElementById('dest-input');
+            if (destInput) destInput.value = '';
+            var tahsisInput = document.getElementById('tahsis-pickup-input');
+            if (tahsisInput) tahsisInput.value = 'Gazipaşa Havalimanı';
+
+            ['transfer-date', 'transfer-time', 'transfer-flight', 'transfer-notes',
+             'tahsis-date', 'tahsis-time',
+             'transfer-name', 'transfer-phone', 'transfer-email',
+             'tahsis-name', 'tahsis-phone', 'tahsis-email'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+
+            var vDuration = document.getElementById('vDuration');
+            if (vDuration) vDuration.selectedIndex = 0;
+
+            ['pickup-area-warning', 'dest-area-warning', 'tahsis-area-warning',
+             'transfer-availability-warning', 'tahsis-availability-warning'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+
+            var distanceInfo = document.getElementById('distanceInfo');
+            if (distanceInfo) distanceInfo.style.display = 'none';
+            var priceEstimate = document.getElementById('priceEstimate');
+            if (priceEstimate) priceEstimate.textContent = '—';
+            var priceEstimateFx = document.getElementById('priceEstimateFx');
+            if (priceEstimateFx) priceEstimateFx.textContent = '';
+            var durationText = document.getElementById('durationText');
+            if (durationText) durationText.textContent = '—';
+
+            var mapPreview = document.getElementById('mapPreview');
+            if (mapPreview) mapPreview.style.display = 'none';
+            var tahsisMapPreview = document.getElementById('tahsisMapPreview');
+            if (tahsisMapPreview) tahsisMapPreview.style.display = 'none';
+            var mapError = document.getElementById('mapError');
+            if (mapError) mapError.style.display = 'none';
+
+            var known = (typeof resolveLocation === 'function') ? resolveLocation('gazipaşa havalimanı') : null;
+            selectedPickupLat = known ? known.lat : null;
+            selectedPickupLng = known ? known.lng : null;
+            selectedDestLat = null;
+            selectedDestLng = null;
+
+            if (typeof calculateVipPrice === 'function') calculateVipPrice();
+            if (typeof switchForm === 'function') switchForm('transfer');
+        }
+
         function switchForm(formType) {
             document.getElementById('tab-transfer').classList.remove('active');
             document.getElementById('tab-tahsis').classList.remove('active');
@@ -4163,6 +4219,11 @@
 
                 if (hash === '' || hash === 'home') {
                     hideAllErrorPages();
+                    // "Ana Sayfaya Dön" / "Görsel Girişe Dön" linkleri (#home) ile buraya
+                    // gelindiyse rezervasyon formunu da sıfırla (logo tıklamasıyla aynı davranış).
+                    if (hash === 'home' && typeof resetToHomeState === 'function') {
+                        resetToHomeState();
+                    }
                     return;
                 }
 
