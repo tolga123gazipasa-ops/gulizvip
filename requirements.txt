@@ -3,4 +3,10 @@ psycopg2-binary>=2.9
 resend
 Pillow>=10.0
 beautifulsoup4>=4.12
-curl_cffi>=0.16
+# curl_cffi geçici olarak kaldırıldı — Railway build'i "Build image" adımında
+# başarısız oluyordu (17 Ağustos), en muhtemel sebep bu paketin derleme
+# gerektiren (native) yapısı. Kod zaten try/except ImportError ile korumalı
+# (_CURL_CFFI_AVAILABLE kontrolü, server.py) — bu paket kurulu olmasa da site
+# çöküyor, AYT uçuş verisi sadece eski urllib yöntemine geri düşüyor. Deploy
+# tekrar sağlıklı çalıştığı doğrulandıktan sonra ayrı bir denemeyle (pinlenmiş
+# bir sürümle) tekrar eklenmesi planlanıyor.
