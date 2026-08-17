@@ -1,6 +1,46 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-16 (Search Console uyarıları incelendi, www/http yönlendirmesi eklendi, push edildi ✅)
+Son güncelleme: 2026-08-17 (GTM eklendi, Railway build hatası araştırılıyor — ÇÖZÜLMEDİ ⚠️)
+
+## AÇIK SORUN — Railway deploy build hatası (17 Ağustos)
+17 Ağustos'ta Google Tag Manager kodu eklendi (`GTM-58F7GC87`, commit `ff75e58`) ve
+push edildi. Deploy denemesi **"Build image" adımında başarısız oldu**
+("Failed to build an image. Please check the build logs for more details.") —
+gerçek hata metni hâlâ görülmedi, Tolga build log'un tamamını paylaşmadı
+(sadece "scheduling build on Metal builder..." satırlarını gönderdi, bunlar
+sadece hangi sunucuya atandığını gösteriyor, hatayı içermiyor).
+
+**Yapılanlar:**
+- Railway MCP connector'ı bağlamayı denedik (loglara doğrudan erişip teşhis
+  koymak için) — Railway'in OAuth giriş sistemi hata verdi
+  ("Couldn't register with Railway's sign-in service", ref: `ofid_c2653ca9697a1dfa`),
+  bağlantı kurulamadı.
+- Şüphelenilen sebep: bu oturumda (16 Ağustos, AYT scraping fix'i sırasında)
+  eklenen `curl_cffi` paketi — derleme gerektiren (native) bir kütüphane,
+  Railway'in build ortamında kurulumu başarısız olmuş olabilir. Önce
+  `requirements.txt`'ten geçici olarak kaldırıldı (commit `325575b`) — kod
+  zaten `_CURL_CFFI_AVAILABLE` kontrolüyle korumalı, bu paket olmasa bile
+  site çalışır, sadece AYT uçuş verisi eski urllib yöntemine geri düşer.
+- Deploy tekrar denenirken bu sefer Railway/GitHub tarafında **ayrı, alakasız
+  bir arıza** çıktı: "GitHub is experiencing elevated error rates"
+  (bkz. status.railway.com/incident/W4MIGEVT) — Railway'in GitHub'dan kod
+  çekememesiyle ilgili, bizim kodumuzla alakasız, GitHub'ın kendi genel
+  altyapı sorunu.
+- Tolga bunu görünce "sorun GitHub'daymış, curl_cffi'de sorun yoktu" diyerek
+  curl_cffi'nin geri eklenmesini istedi — **geri eklendi** (commit `2030436`),
+  `requirements.txt` tekrar `curl_cffi>=0.16` içeriyor.
+- **ÖNEMLİ NOT:** GitHub arızası ile ilk "Build image" hatası muhtemelen
+  FARKLI şeyler — GitHub kesintisi sadece en son deploy denemesinde (kodu
+  çekerken) yaşandı, ama ilk başarısız deployment "Build image" aşamasında
+  (kod çekildikten SONRAKI bir adımda) patlamıştı. Yani curl_cffi'nin gerçekten
+  suçlu olup olmadığı hâlâ NETLEŞMEDİ — sadece varsayımla geri eklendi.
+
+**Sıradaki adım:** Tolga deploy'u tekrar deneyecek. Başarılı olursa mesele
+kalmaz. Başarısız olursa **build log'un TAMAMININ** (özellikle "Build Logs"
+sekmesindeki kırmızı/error satırlarının) paylaşılması şart — o olmadan kesin
+teşhis konulamıyor, tahmin yürütülüyor. Alternatif: Railway MCP connector'ı
+tekrar bağlanmayı denemek (bir süre sonra OAuth sorunu geçmiş olabilir),
+bağlanırsa loglara doğrudan erişilip net teşhis konabilir.
 
 ## GÜNCEL — Kredi kartı ödemesi CANLIDA ÇALIŞIYOR, döviz sorusu Garanti'ye soruldu (16 Ağustos)
 
