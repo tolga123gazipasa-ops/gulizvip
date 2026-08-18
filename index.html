@@ -3127,13 +3127,18 @@
                 if (el) el.checked = false;
             });
 
-            ['transfer-date', 'transfer-time', 'transfer-flight', 'transfer-notes',
-             'tahsis-date', 'tahsis-time',
+            ['transfer-flight', 'transfer-notes',
              'transfer-name', 'transfer-phone', 'transfer-email',
              'tahsis-name', 'tahsis-phone', 'tahsis-email'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.value = '';
             });
+
+            // Tarih/saat alanları boş bırakılmıyor — sayfa ilk açıldığındaki gibi
+            // "bugün, şu an + 1 saat" ile otomatik dolduruluyor (önceden reset
+            // sonrası bu alanlar boş kalıyordu, kullanıcı elle tekrar seçmek
+            // zorunda kalıyordu).
+            if (typeof autoFillDateTime === 'function') autoFillDateTime();
 
             var vDuration = document.getElementById('vDuration');
             if (vDuration) vDuration.selectedIndex = 0;
@@ -3390,16 +3395,11 @@
                 .catch(function() {});
         }
 
-        // 4c. SAYFA YÜKLENİNCE UÇUŞ VERİLERİNİ ÇEK
-        document.addEventListener("DOMContentLoaded", function() {
-            renderFlights('gzp');
-            renderFlights('ayt');
-            fetchFleet();
-            // Reset forms to step1 on load
-            goToStep('transfer', 1);
-            goToStep('tahsis', 1);
-
-            // Auto-fill date/time: bugünün tarihi ve saati +1 saat
+        // Tarih/saat alanlarını "bugün, şu an + 1 saat" ile dolduran fonksiyon —
+        // hem sayfa ilk açıldığında hem de logo/anasayfa reseti sonrası (bkz.
+        // resetToHomeState) çağrılır. Önceden bu mantık sadece DOMContentLoaded
+        // içinde tek seferlik vardı; reset sonrası tarih/saat boş kalıyordu.
+        function autoFillDateTime() {
             var now = new Date();
             now.setHours(now.getHours() + 1);
 
@@ -3423,6 +3423,18 @@
                 var el = document.getElementById(id);
                 if(el) el.value = timeStr;
             });
+        }
+
+        // 4c. SAYFA YÜKLENİNCE UÇUŞ VERİLERİNİ ÇEK
+        document.addEventListener("DOMContentLoaded", function() {
+            renderFlights('gzp');
+            renderFlights('ayt');
+            fetchFleet();
+            // Reset forms to step1 on load
+            goToStep('transfer', 1);
+            goToStep('tahsis', 1);
+
+            autoFillDateTime();
 
             // Client-side validation on submit
             document.querySelectorAll('.form-body').forEach(function(form) {
