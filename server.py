@@ -1768,6 +1768,12 @@ def _render_return_reservation_page(reservation, token):
     kisi_label = f"{passengers} Yolcu" + (f" + {child_count} Çocuk" if child_count else "")
     price = reservation.get("price", 0)
     currency = reservation.get("currency", "TRY")
+    try:
+        expiry_ts = int(token.split(".", 1)[0])
+        expiry_label = datetime.fromtimestamp(expiry_ts).strftime("%H:%M")
+    except Exception:
+        expiry_label = ""
+    expiry_note = f'<p style="font-size:12px;color:#94a3b8;text-align:center;margin:16px 0 0;">Bu bağlantı saat {expiry_label}\'e kadar geçerlidir.</p>' if expiry_label else ""
     return f"""<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -1826,6 +1832,7 @@ def _render_return_reservation_page(reservation, token):
       <p style="color:#16a34a;font-weight:600;margin-top:20px;">Teşekkürler! Dönüş rezervasyonunuz alındı.</p>
       <div id="ibanBox"></div>
     </div>
+    {expiry_note}
   </div>
 <script>
 var bankAccountsCache = null;
@@ -2439,18 +2446,33 @@ def verify_token(token):
 # HMAC tabanlı bir token içeriyor (SECRET_KEY olmadan üretilemez/doğrulanamaz)
 # — böylece biri linkteki rezervasyon numarasını değiştirerek başka bir
 # müşterinin isim/telefon/adres bilgisine erişemiyor. DB'ye yeni bir kolon
-# eklemeye gerek kalmadı, token deterministik olarak rezervasyon ID'sinden
-# türetiliyor.
+# eklemeye gerek kalmadı, token'ın içine rezervasyon ID'si + bitiş zamanı
+# gömülüyor (admin auth token'ıyla aynı desen — bkz. generate_token). Link
+# üretildikten RETURN_LINK_TTL saniye sonra otomatik geçersiz olur.
+RETURN_LINK_TTL = 3600  # Dönüş rezervasyonu linki 1 saat sonra geçersiz olur
+
 def generate_return_token(res_id):
-    payload = f"return:{res_id}"
+    expiry = int(time.time()) + RETURN_LINK_TTL
+    payload = f"return:{res_id}:{expiry}"
     sig = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).digest()
-    return base64.urlsafe_b64encode(sig).decode().rstrip("=")[:24]
+    sig_b64 = base64.urlsafe_b64encode(sig).decode().rstrip("=")
+    return f"{expiry}.{sig_b64}"
 
 def verify_return_token(res_id, token):
-    if not token:
+    if not token or "." not in token:
         return False
-    expected = generate_return_token(res_id)
-    return hmac.compare_digest(expected, token)
+    try:
+        expiry_str, sig_b64 = token.split(".", 1)
+        expiry = int(expiry_str)
+        if time.time() > expiry:
+            return False  # süresi dolmuş
+        payload = f"return:{res_id}:{expiry}"
+        expected_sig = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).digest()
+        pad = sig_b64 + "=" * (4 - len(sig_b64) % 4) if len(sig_b64) % 4 else sig_b64
+        sig_bytes = base64.urlsafe_b64decode(pad)
+        return hmac.compare_digest(expected_sig, sig_bytes)
+    except Exception:
+        return False
 
 # ─── HTTP Handler ─────────────────────────────────────────────────────────────
 
@@ -3841,12 +3863,24 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Ödeme yöntemi seçilmedi.", 400)
                     return
                 payment_method = raw_payment_method
+                # Aynı linke iki kez basılırsa (yanlışlıkla çift tık, sayfa yenileme vb.)
+                # ikinci bildirim/e-postanın gitmesini önlemek için "zaten onaylandı mı"
+                # kontrolü VE işaretlemesi aynı kilit altında, atomik olarak yapılıyor —
+                # aksi halde iki isteğin ikisi de kontrolü aynı anda geçip iki kez
+                # bildirim gönderebilirdi.
+                already_confirmed = False
                 with reservations_lock:
-                    if phone:
-                        target["customerPhone"] = phone
-                    if email:
-                        target["customerEmail"] = email
-                    target["paymentMethod"] = payment_method
+                    if target.get("paymentMethod"):
+                        already_confirmed = True
+                    else:
+                        if phone:
+                            target["customerPhone"] = phone
+                        if email:
+                            target["customerEmail"] = email
+                        target["paymentMethod"] = payment_method
+                if already_confirmed:
+                    self._send_error("Bu bağlantı zaten kullanılmış, rezervasyonunuz onaylanmıştı.", 409)
+                    return
                 fields_to_update = {
                     "customerPhone": target["customerPhone"],
                     "customerEmail": target["customerEmail"],
@@ -3856,6 +3890,20 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     db.update_reservation_in_db(res_id, fields_to_update)
                 except Exception as e:
                     print(f"[!] Dönüş rezervasyonu güncelleme hatası: {e}")
+                # Müşteri telefon/e-postasını burada düzeltmiş olabilir (orijinal
+                # rezervasyondan farklı) — genel müşteri kaydını (CRM) da senkronize
+                # ediyoruz, aksi halde admin panelindeki müşteri kartı eski bilgiyle
+                # kalırdı.
+                if target.get("customerId") and (phone or email):
+                    try:
+                        customer_fields = {}
+                        if phone:
+                            customer_fields["phone"] = phone
+                        if email:
+                            customer_fields["email"] = email
+                        db.update_customer(target["customerId"], customer_fields)
+                    except Exception as e:
+                        print(f"[!] Müşteri kaydı senkronizasyon hatası: {e}")
                 save_reservations()
                 tip_etiket = "🚗 Transfer" if target.get("type") == "transfer" else "👑 Şoförlü Günlük VIP"
                 is_card_payment = payment_method == "kart"
