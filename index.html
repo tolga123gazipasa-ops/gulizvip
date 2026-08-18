@@ -1359,7 +1359,7 @@
                         <button type="button" class="use-location-btn" id="pickup-location-btn" onclick="useMyLocation('pickup-input','pickup-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button>
                         <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div>
                     </div>
-                    <div class="input-group"><label data-i18n="form.destLabel">Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." data-i18n-placeholder="form.destPh" required oninput="checkServiceArea('dest-input','dest-area-warning')"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
+                    <div class="input-group"><label data-i18n="form.destLabel">Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." data-i18n-placeholder="form.destPh" required oninput="checkServiceArea('dest-input','dest-area-warning')" onblur="handleDestManualEntry()"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
                     <div class="input-group"><label data-i18n="form.flightLabel">Uçuş Numarası</label><div class="input-wrapper"><i class="fa-solid fa-plane"></i><input type="text" id="transfer-flight" placeholder="Örn: TK2405 (Opsiyonel)" data-i18n-placeholder="form.flightPh"></div></div>
                 </div>
                 <div class="form-grid">
@@ -3421,6 +3421,13 @@
                 payload.customerName = document.getElementById('transfer-name').value;
                 payload.customerPhone = document.getElementById('transfer-phone').value;
                 payload.customerEmail = document.getElementById('transfer-email').value;
+                // Son güvenlik ağı: fiyat her nasılsa hâlâ hesaplanmadıysa (asenkron
+                // Google Maps cevabı gelmeden gönderilmişse vb.) asla ₺0 rezervasyon
+                // göndermeyelim — senkron yedek hesaplamayı burada zorla çalıştır.
+                var priceEl = document.getElementById('priceEstimate');
+                if (!priceEl.textContent || !/[0-9]/.test(priceEl.textContent)) {
+                    if (typeof priceFromDestFallback === 'function') priceFromDestFallback();
+                }
                 payload.price = document.getElementById('priceEstimate').textContent.replace(/[^0-9]/g, '') || 0;
                 if(selectedPickupLat !== null) payload.pickupLat = selectedPickupLat;
                 if(selectedPickupLng !== null) payload.pickupLng = selectedPickupLng;
@@ -3687,6 +3694,24 @@
                     }
                 });
             }
+        }
+
+        // KRİTİK DÜZELTME: varış adresi Google öneri listesinden TIKLANARAK
+        // seçilmezse (ör. adres kopyala-yapıştır ile girilirse, ya da öneriye
+        // dokunmadan başka bir alana geçilirse), place_changed olayı hiç
+        // tetiklenmiyordu ve fiyat asla hesaplanmıyordu — rezervasyon ücretsiz
+        // (₺0) gidiyordu. Alan odağını kaybettiğinde (blur), öneri tıklamasına
+        // kısa bir süre tanıyıp hâlâ bir yer seçilmediyse adresi elle geocode'la.
+        function handleDestManualEntry() {
+            var destInput = document.getElementById('dest-input');
+            if (!destInput) return;
+            var val = destInput.value.trim();
+            if (val.length < 3) return;
+            setTimeout(function() {
+                if (!selectedDestLat && typeof geocodeDest === 'function') {
+                    geocodeDest(destInput.value.trim());
+                }
+            }, 300);
         }
 
         // 5c. MESAFE HESAPLAMA (KM + TAHMİNİ FİYAT)
