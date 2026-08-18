@@ -1,6 +1,6 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-18 (yolcu/çocuk stepper + interlock, rezervasyon fiyat=0 bug'ı kalıcı çözüldü, Telegram bildirimleri iyileştirildi — 2 commit push bekliyor ⚠️)
+Son güncelleme: 2026-08-18 (yolcu/çocuk stepper + interlock, rezervasyon fiyat=0 bug'ı kalıcı çözüldü, Telegram bildirimleri iyileştirildi, Dönüş Rezervasyonu Linki özelliği eklendi — HEPSİ PUSH EDİLDİ VE CANLIDA DOĞRULANDI ✅)
 
 ## GÜNCEL (18 Ağustos) — Booking formu iyileştirmeleri + kritik bug fix
 
@@ -84,14 +84,22 @@ istek reddediliyor, çift Telegram/e-posta gitmiyor. (3) Müşteri /donus
 sayfasında telefon/e-posta düzeltirse artık admin panelindeki genel müşteri
 kaydına (CRM) da işleniyor.
 
+**8d. Dönüş Rezervasyonu Linki — CANLIDA DOĞRULANDI ✅ (18 Ağustos akşam).**
+Tüm commit'ler push edildi, Railway deploy oldu. Canlı sitede test edildi:
+ana sayfa ve `/donus/<id>/<token>` sayfası doğru çalışıyor, süresi dolmuş
+linkte doğru "Bu Bağlantının Süresi Dolmuş" uyarı sayfası çıkıyor. Railway
+loglarında (Tolga'nın paylaştığı) gerçek ziyaretçi trafiği (uçuş verisi,
+canlı destek, Google Ads'ten gelen `gclid`'li ziyaretçiler) sorunsuz 200
+dönüyor — sistem sağlıklı.
+
+Not: Tolga bir ara kendi bilgisayarında siteye giremediğini bildirdi, telefonda
+sorunsuz açılıyordu — bu sitenin sorunu değil, Tolga'nın bilgisayarındaki
+tarayıcı/DNS önbelleği kaynaklıydı (sert yenileme / gizli pencere / DNS
+flush ile çözülür), sunucu tarafında hiçbir sorun yoktu.
+
 ### Hemen Yapılması Gereken
-```
-cd C:\proje\gulizvip
-git push origin main
-```
-8 commit push bekliyor: harita retry fix, Telegram "Fiyat Hesapla" detay
-eklentisi, harita uyarısının kaldırılması, Dönüş Rezervasyonu Linki özelliği
-+ üzerindeki tüm düzeltmeler. Push edilmeden Railway'e yansımaz.
+Yok — tüm commit'ler push edildi ve Railway'de canlı, doğrulandı. Branch
+origin ile senkron.
 
 ### Açık / senin kararına kalan konular
 - **404 sayfası:** var olmayan bir adrese gidince şu an düzgün tasarlanmış hata
