@@ -201,6 +201,10 @@ def init_db():
                 # Garanti'nin /api/payments/garanti/result geri dönüşü eşleşemiyordu — 13 Ağustos
                 # canlı testte tam bu senaryo yaşandı).
                 cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS garanti_order_id VARCHAR(100) DEFAULT '';")
+                # Çocuk sayısı + bebek/çocuk koltuğu ihtiyacı — 17 Ağustos'ta eklendi, isim
+                # toplamadan sadece operasyonel planlama (şoförün koltuk hazırlaması) için.
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS child_count INTEGER DEFAULT 0;")
+                cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS needs_child_seat BOOLEAN DEFAULT FALSE;")
                 # İletişim mesajları — IP/coğrafya/cihaz bilgisi + durum/not (admin panel detaylı yönetim)
                 cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS ip_address VARCHAR(64) DEFAULT '';")
                 cur.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS city VARCHAR(100) DEFAULT '';")
@@ -266,6 +270,8 @@ def load_reservations_from_db():
                 "paymentLink": row.get("payment_link") or "",
                 "stripePaymentIntentId": row.get("stripe_payment_intent_id") or "",
                 "garantiOrderId": row.get("garanti_order_id") or "",
+                "childCount": row.get("child_count") if row.get("child_count") is not None else 0,
+                "needsChildSeat": bool(row.get("needs_child_seat", False)),
                 "createdAt": row["created_at"].isoformat() if row["created_at"] else "",
                 "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else "",
             })
@@ -292,10 +298,12 @@ def save_reservation_to_db(reservation):
                          payment_method, payment_status, status,
                          vehicle_unit_id, buffer_minutes, estimated_duration_minutes,
                          pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, distance_km, is_manual,
-                         customer_id, currency, payment_link, stripe_payment_intent_id)
+                         customer_id, currency, payment_link, stripe_payment_intent_id,
+                         child_count, needs_child_seat)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                             %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                            %s, %s, %s, %s)
+                            %s, %s, %s, %s,
+                            %s, %s)
                     RETURNING id
                 """, (
                     reservation.get("type", "transfer"),
@@ -327,6 +335,8 @@ def save_reservation_to_db(reservation):
                     reservation.get("currency", "TRY"),
                     reservation.get("paymentLink", ""),
                     reservation.get("stripePaymentIntentId", ""),
+                    _coerce_passenger_count(reservation.get("childCount", 0), default=0),
+                    bool(reservation.get("needsChildSeat", False)),
                 ))
                 new_id = cur.fetchone()["id"]
         conn.close()
@@ -441,6 +451,8 @@ def update_reservation_in_db(res_id, fields):
             "paymentLink": "payment_link",
             "stripePaymentIntentId": "stripe_payment_intent_id",
             "garantiOrderId": "garanti_order_id",
+            "childCount": "child_count",
+            "needsChildSeat": "needs_child_seat",
         }
         set_parts = []
         values = []
@@ -450,6 +462,8 @@ def update_reservation_in_db(res_id, fields):
                 val = fields[json_key]
                 if json_key == "passengers":
                     val = _coerce_passenger_count(val)
+                elif json_key == "childCount":
+                    val = _coerce_passenger_count(val, default=0)
                 values.append(val)
         if not set_parts:
             return False

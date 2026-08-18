@@ -700,6 +700,8 @@
         .use-location-btn:hover { background: #b5122a; }
         .use-location-btn:disabled { opacity: 0.6; cursor: wait; }
         .use-location-btn i { font-size: 13px; }
+        .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 0 18px; height: 100%; min-height: 58px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-light); cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-dark); }
+        .checkbox-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary-red); cursor: pointer; flex-shrink: 0; }
         .location-tooltip { visibility: hidden; opacity: 0; pointer-events: none; position: absolute; bottom: 130%; left: 0; width: 230px; background: var(--primary-navy); color: var(--pure-white); font-size: 12px; font-weight: 500; line-height: 1.4; text-transform: none; letter-spacing: normal; padding: 10px 12px; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.25); transition: opacity 0.15s ease; z-index: 30; }
         .location-tooltip::after { content: ''; position: absolute; top: 100%; left: 18px; border: 6px solid transparent; border-top-color: var(--primary-navy); }
         .use-location-btn:hover .location-tooltip, .use-location-btn:focus .location-tooltip { visibility: visible; opacity: 1; }
@@ -1347,6 +1349,16 @@
                         <option value="8" data-i18n="form.passengers8">8 Kişi</option>
                         <option value="9" data-i18n="form.passengers9">9 Kişi (VIP Vito, maksimum)</option>
                     </select></div></div>
+                    <div class="input-group"><label data-i18n="form.childCountLabel">Çocuk Sayısı (varsa)</label><div class="input-wrapper"><i class="fa-solid fa-baby"></i><select id="transfer-child-count">
+                        <option value="0" selected data-i18n="form.childCount0">Yok</option>
+                        <option value="1" data-i18n="form.childCount1">1 Çocuk</option>
+                        <option value="2" data-i18n="form.childCount2">2 Çocuk</option>
+                        <option value="3" data-i18n="form.childCount3">3 Çocuk</option>
+                        <option value="4" data-i18n="form.childCount4">4+ Çocuk</option>
+                    </select></div></div>
+                </div>
+                <div class="form-grid">
+                    <div class="input-group"><label>&nbsp;</label><label class="checkbox-row" for="transfer-child-seat"><input type="checkbox" id="transfer-child-seat"><span data-i18n="form.needsChildSeatLabel">Bebek/çocuk koltuğu gerekiyor</span></label></div>
                     <div class="input-group"><label data-i18n="form.notesLabel">Notlar (Opsiyonel)</label><div class="input-wrapper"><i class="fa-solid fa-note-sticky"></i><input type="text" id="transfer-notes" placeholder="Özel istek, ek bilgi..." data-i18n-placeholder="form.notesPh"></div></div>
                 </div>
                 <div class="distance-info" id="distanceInfo" style="display:none;">
@@ -1469,6 +1481,14 @@
                         <option value="8" data-i18n="form.passengers8">8 Kişi</option>
                         <option value="9" data-i18n="form.passengers9">9 Kişi (VIP Vito, maksimum)</option>
                     </select></div></div>
+                    <div class="input-group"><label data-i18n="form.childCountLabel">Çocuk Sayısı (varsa)</label><div class="input-wrapper"><i class="fa-solid fa-baby"></i><select id="tahsis-child-count">
+                        <option value="0" selected data-i18n="form.childCount0">Yok</option>
+                        <option value="1" data-i18n="form.childCount1">1 Çocuk</option>
+                        <option value="2" data-i18n="form.childCount2">2 Çocuk</option>
+                        <option value="3" data-i18n="form.childCount3">3 Çocuk</option>
+                        <option value="4" data-i18n="form.childCount4">4+ Çocuk</option>
+                    </select></div></div>
+                    <div class="input-group"><label>&nbsp;</label><label class="checkbox-row" for="tahsis-child-seat"><input type="checkbox" id="tahsis-child-seat"><span data-i18n="form.needsChildSeatLabel">Bebek/çocuk koltuğu gerekiyor</span></label></div>
                 </div>
                 <div id="tahsis-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.availabilityWarning">Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</span></div>
                 <div class="vip-summary"><div class="title" data-i18n="form.estimatedPriceLabel">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div><small id="vipPriceFx" style="color:var(--text-gray);font-weight:500;"></small></div>
@@ -1928,6 +1948,9 @@
                 passengers1:"1 Kişi", passengers2:"2 Kişi", passengers3:"3 Kişi",
                 passengers4:"4 Kişi", passengers5:"5 Kişi", passengers6:"6 Kişi",
                 passengers7:"7 Kişi", passengers8:"8 Kişi", passengers9:"9 Kişi (VIP Vito, maksimum)",
+                childCountLabel:"Çocuk Sayısı (varsa)",
+                childCount0:"Yok", childCount1:"1 Çocuk", childCount2:"2 Çocuk", childCount3:"3 Çocuk", childCount4:"4+ Çocuk",
+                needsChildSeatLabel:"Bebek/çocuk koltuğu gerekiyor",
                 notesLabel:"Notlar (Opsiyonel)", notesPh:"Özel istek, ek bilgi...",
                 estimatedLabel:"Tahmini:", continueBtn:"Devam Et", backBtn:"Geri",
                 contactInfoTitle:"İletişim Bilgileri", nameLabel:"Adınız Soyadınız", namePh:"Adınız ve soyadınız",
@@ -2047,6 +2070,9 @@
                 passengers1:"1 Person", passengers2:"2 People", passengers3:"3 People",
                 passengers4:"4 People", passengers5:"5 People", passengers6:"6 People",
                 passengers7:"7 People", passengers8:"8 People", passengers9:"9 People (VIP Vito, max)",
+                childCountLabel:"Number of Children (if any)",
+                childCount0:"None", childCount1:"1 Child", childCount2:"2 Children", childCount3:"3 Children", childCount4:"4+ Children",
+                needsChildSeatLabel:"Baby/child seat needed",
                 notesLabel:"Notes (Optional)", notesPh:"Special request, additional info...",
                 estimatedLabel:"Estimated:", continueBtn:"Continue", backBtn:"Back",
                 contactInfoTitle:"Contact Information", nameLabel:"Full Name", namePh:"Your first and last name",
@@ -2166,6 +2192,9 @@
                 passengers1:"1 человек", passengers2:"2 человека", passengers3:"3 человека",
                 passengers4:"4 человека", passengers5:"5 человек", passengers6:"6 человек",
                 passengers7:"7 человек", passengers8:"8 человек", passengers9:"9 человек (VIP Vito, максимум)",
+                childCountLabel:"Количество детей (если есть)",
+                childCount0:"Нет", childCount1:"1 ребёнок", childCount2:"2 ребёнка", childCount3:"3 ребёнка", childCount4:"4+ детей",
+                needsChildSeatLabel:"Нужно детское/автокресло",
                 notesLabel:"Примечания (необязательно)", notesPh:"Особые пожелания, доп. информация...",
                 estimatedLabel:"Примерно:", continueBtn:"Продолжить", backBtn:"Назад",
                 contactInfoTitle:"Контактная информация", nameLabel:"Имя и фамилия", namePh:"Ваше имя и фамилия",
@@ -3347,6 +3376,8 @@
                 payload.date = document.getElementById('transfer-date').value;
                 payload.time = document.getElementById('transfer-time').value;
                 payload.passengers = document.getElementById('transfer-passengers').value;
+                payload.childCount = document.getElementById('transfer-child-count').value;
+                payload.needsChildSeat = document.getElementById('transfer-child-seat').checked;
                 payload.notes = document.getElementById('transfer-notes').value;
                 payload.customerName = document.getElementById('transfer-name').value;
                 payload.customerPhone = document.getElementById('transfer-phone').value;
@@ -3372,6 +3403,10 @@
                 payload.time = document.getElementById('tahsis-time').value;
                 var tahsisPassengers = document.getElementById('tahsis-passengers');
                 if (tahsisPassengers) payload.passengers = tahsisPassengers.value;
+                var tahsisChildCount = document.getElementById('tahsis-child-count');
+                if (tahsisChildCount) payload.childCount = tahsisChildCount.value;
+                var tahsisChildSeat = document.getElementById('tahsis-child-seat');
+                if (tahsisChildSeat) payload.needsChildSeat = tahsisChildSeat.checked;
                 payload.customerName = document.getElementById('tahsis-name').value;
                 payload.customerPhone = document.getElementById('tahsis-phone').value;
                 payload.customerEmail = document.getElementById('tahsis-email').value;
@@ -3411,6 +3446,9 @@
                     details.push('Tarih: ' + payload.date);
                     details.push('Saat: ' + payload.time);
                     if(payload.passengers) details.push('Yolcu: ' + payload.passengers);
+                    if(payload.childCount && Number(payload.childCount) > 0) {
+                        details.push('Çocuk: ' + payload.childCount + (payload.needsChildSeat ? ' (koltuk gerekiyor)' : ''));
+                    }
                     details.push('İsim: ' + payload.customerName);
                     details.push('Telefon: ' + payload.customerPhone);
                     if(payload.customerEmail) details.push('E-posta: ' + payload.customerEmail);

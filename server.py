@@ -3290,6 +3290,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "date": body.get("date", ""),
                     "time": body.get("time", ""),
                     "passengers": body.get("passengers", 1),
+                    "childCount": body.get("childCount", 0),
+                    "needsChildSeat": bool(body.get("needsChildSeat", False)),
                     "duration": body.get("duration", ""),
                     "notes": body.get("notes", ""),
                     "price": body.get("price", 0),
@@ -3357,8 +3359,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     f"🏁 <b>Varış:</b> {reservation['destination']}\n"
                     f"📅 <b>Tarih:</b> {reservation['date']} {reservation['time']}\n"
                     f"💰 <b>Ücret:</b> {reservation['price']}₺\n"
-                    f"🚐 <b>Takvimden admin tarafından girildi.</b>"
                 )
+                if reservation.get("childCount"):
+                    seat_note = " (koltuk gerekiyor)" if reservation.get("needsChildSeat") else ""
+                    telegram_msg += f"👶 <b>Çocuk:</b> {reservation['childCount']}{seat_note}\n"
+                telegram_msg += "🚐 <b>Takvimden admin tarafından girildi.</b>"
                 send_telegram(telegram_msg)
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
@@ -3380,6 +3385,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "date": body.get("date", ""),
                     "time": body.get("time", ""),
                     "passengers": body.get("passengers", 1),
+                    "childCount": body.get("childCount", 0),
+                    "needsChildSeat": bool(body.get("needsChildSeat", False)),
                     "duration": body.get("duration", ""),
                     "notes": body.get("notes", ""),
                     "price": body.get("price", 0),
@@ -3509,6 +3516,9 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     )
                     if reservation.get("flightNumber"):
                         telegram_rez += f"\n✈️ <b>Uçuş:</b> {reservation['flightNumber']}"
+                    if reservation.get("childCount"):
+                        seat_note = " (koltuk gerekiyor)" if reservation.get("needsChildSeat") else ""
+                        telegram_rez += f"\n👶 <b>Çocuk:</b> {reservation['childCount']}{seat_note}"
                     send_telegram(telegram_rez)
                     # Rezervasyon onay e-postası gönder (sadece havale/manuel ödemede — kart
                     # ödemesinde onay e-postası ödeme doğrulanınca gönderilir, bkz. yukarıdaki not)
@@ -4391,7 +4401,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                                             "pickup", "destination", "flightNumber", "date", "time",
                                             "passengers", "notes", "price", "paymentMethod", "paymentStatus",
                                             "vehicleUnitId", "bufferMinutes", "estimatedDurationMinutes",
-                                            "distanceKm", "isManual"):
+                                            "distanceKm", "isManual", "childCount", "needsChildSeat"):
                                     if key in body:
                                         r[key] = body[key]
                             save_reservations()
