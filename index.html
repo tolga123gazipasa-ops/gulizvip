@@ -1359,7 +1359,7 @@
                         <button type="button" class="use-location-btn" id="pickup-location-btn" onclick="useMyLocation('pickup-input','pickup-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button>
                         <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div>
                     </div>
-                    <div class="input-group"><label data-i18n="form.destLabel">Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." data-i18n-placeholder="form.destPh" required oninput="checkServiceArea('dest-input','dest-area-warning'); invalidateDestSelection();"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div><div id="dest-select-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.destSelectWarning">Lütfen adresinizi aşağıda çıkan öneri listesinden seçin — listeden bir sonuca tıklamadan devam edilemez.</span></div></div>
+                    <div class="input-group"><label data-i18n="form.destLabel">Varış Noktası</label><div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="dest-input" placeholder="Mahmutlar, Avsallar, Otel Adı vb." data-i18n-placeholder="form.destPh" required oninput="invalidateDestSelection();"></div><div id="dest-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div><div id="dest-select-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.destSelectWarning">Adresinizi bulamadık. Lütfen mahalle, semt veya otel adı gibi anahtar kelimelerle arayın ve altta çıkan öneri listesinden birini seçin.</span></div></div>
                     <div class="input-group"><label data-i18n="form.flightLabel">Uçuş Numarası</label><div class="input-wrapper"><i class="fa-solid fa-plane"></i><input type="text" id="transfer-flight" placeholder="Örn: TK2405 (Opsiyonel)" data-i18n-placeholder="form.flightPh"></div></div>
                 </div>
                 <div class="form-grid">
@@ -1954,7 +1954,7 @@
             form: {
                 pickupLabel:"Alış Noktası", pickupPh:"Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb.",
                 areaWarning:"Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.",
-                destSelectWarning:"Lütfen adresinizi aşağıda çıkan öneri listesinden seçin — listeden bir sonuca tıklamadan devam edilemez.",
+                destSelectWarning:"Adresinizi bulamadık. Lütfen mahalle, semt veya otel adı gibi anahtar kelimelerle arayın ve altta çıkan öneri listesinden birini seçin.",
                 destLabel:"Varış Noktası", destPh:"Mahmutlar, Avsallar, Otel Adı vb.",
                 flightLabel:"Uçuş Numarası", flightPh:"Örn: TK2405 (Opsiyonel)",
                 dateLabel:"Tarih", timeLabel:"Saat",
@@ -2075,7 +2075,7 @@
             form: {
                 pickupLabel:"Pickup Location", pickupPh:"Gazipaşa Airport, Antalya Airport, hotel name, etc.",
                 areaWarning:"We do not provide service in this area. We only serve <strong>Gazipaşa, Alanya, Antalya</strong> and surrounding areas.",
-                destSelectWarning:"Please select your address from the suggestion list shown below — you can't continue without clicking a result from the list.",
+                destSelectWarning:"We couldn't find your address. Please search using keywords like the neighborhood, district, or hotel name, and select a result from the suggestion list below.",
                 destLabel:"Destination", destPh:"Mahmutlar, Avsallar, hotel name, etc.",
                 flightLabel:"Flight Number", flightPh:"e.g. TK2405 (Optional)",
                 dateLabel:"Date", timeLabel:"Time",
@@ -2196,7 +2196,7 @@
             form: {
                 pickupLabel:"Место посадки", pickupPh:"Аэропорт Газипаша, Аэропорт Анталии, название отеля и т.д.",
                 areaWarning:"Мы не обслуживаем этот район. Мы работаем только в <strong>Газипаше, Алании, Анталии</strong> и их окрестностях.",
-                destSelectWarning:"Пожалуйста, выберите адрес из списка предложений ниже — продолжить без выбора из списка нельзя.",
+                destSelectWarning:"Мы не смогли найти ваш адрес. Пожалуйста, введите ключевые слова (район, квартал, название отеля) и выберите вариант из списка предложений ниже.",
                 destLabel:"Пункт назначения", destPh:"Махмутлар, Авсаллар, название отеля и т.д.",
                 flightLabel:"Номер рейса", flightPh:"Напр.: TK2405 (Необязательно)",
                 dateLabel:"Дата", timeLabel:"Время",
@@ -2849,20 +2849,25 @@
                         checkServiceArea('pickup-input', 'pickup-area-warning');
                         return;
                     }
-                    // Hizmet bölgesi kontrolü — destination
-                    if (!isInServiceArea(dest.value)) {
-                        shakeField(dest);
-                        dest.focus();
-                        checkServiceArea('dest-input', 'dest-area-warning');
-                        return;
-                    }
-                    // Adres öneri listesinden seçilmediyse ilerlemeyi engelle —
-                    // aksi halde fiyat hiç hesaplanmadan (₺0) rezervasyon gidiyordu.
-                    // "Adresim listede yok, yine de devam et" ile bilerek atlanabilir.
+                    // Varış noktası için önce öneri listesinden gerçekten seçim
+                    // yapılıp yapılmadığına bakıyoruz (aksi halde fiyat hiç
+                    // hesaplanmadan (₺0) rezervasyon gidiyordu). Bunu hizmet
+                    // bölgesi kontrolünden ÖNCE yapıyoruz çünkü seçim yapılmadan
+                    // ham yazılan metin üzerinden bölge kontrolü yanlış pozitif
+                    // üretebiliyordu (ör. adında "Alanya" geçmeyen gerçek bir
+                    // Alanya oteli için de "hizmet vermiyoruz" hatası çıkıyordu).
                     if (typeof isDestSelectionConfirmed === 'function' && !isDestSelectionConfirmed()) {
                         shakeField(dest);
                         dest.focus();
                         showDestSelectWarning();
+                        return;
+                    }
+                    // Hizmet bölgesi kontrolü — destination (bu noktada Google'ın
+                    // öneriden döndürdüğü gerçek/onaylı adres metni kullanılıyor)
+                    if (!isInServiceArea(dest.value)) {
+                        shakeField(dest);
+                        dest.focus();
+                        checkServiceArea('dest-input', 'dest-area-warning');
                         return;
                     }
                 }
@@ -3752,6 +3757,8 @@
         // gizle — bir sonraki "İleri" denemesinde yeniden kontrol edilecek zaten.
         function invalidateDestSelection() {
             hideDestSelectWarning();
+            var areaWarning = document.getElementById('dest-area-warning');
+            if (areaWarning) areaWarning.style.display = 'none';
         }
 
         // 5c. MESAFE HESAPLAMA (KM + TAHMİNİ FİYAT)
