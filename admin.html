@@ -2496,6 +2496,7 @@
                 '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">' + editBtnHtml +
                 ' <button class="btn-secondary" onclick="openPaymentLinkModal(' + r.id + ')" style="padding:8px 16px;font-size:13px;"><i class="fa-solid fa-link"></i> Ödeme Linki Oluştur</button>' +
                 ' <button class="btn-secondary" onclick="sendWhatsAppReservation(' + r.id + ')" style="padding:8px 16px;font-size:13px;background:#DCF8C6;color:#075E54;border-color:#BFEAB0;"><i class="fa-brands fa-whatsapp"></i> WhatsApp\'tan Gönder</button>' +
+                ' <button class="btn-secondary" onclick="openReturnReservationModal(' + r.id + ')" style="padding:8px 16px;font-size:13px;background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE;"><i class="fa-solid fa-rotate"></i> Dönüş Rezervasyonu Oluştur</button>' +
                 '</div>' +
                 '<div style="margin-top:12px;"><button onclick="adminDeleteReservation(' + r.id + ')" style="padding:8px 16px;font-size:13px;background:transparent;color:#DC2626;border:1px solid #FCA5A5;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-trash"></i> Rezervasyonu Sil</button></div>' +
                 '</div></div>';
@@ -2769,6 +2770,131 @@
             }
         })
         .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    // ─── Dönüş Rezervasyonu Linki ─────────────────────────────────────────────
+    // Tamamlanmış bir rezervasyondan tek tıkla "dönüş" rezervasyonu oluşturur:
+    // alış/varış ters çevrilmiş (veya tahsiste aynı süre) önceden dolu gelir,
+    // sadece tarih/saat admin tarafından girilir. Müşteriye gönderilen link
+    // salt-okunur bir özet + telefon onayı + ödeme yöntemi seçimi sunar.
+    function openReturnReservationModal(id) {
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+        fetch('/api/admin/reservations', { method: 'GET', headers: {'Authorization': 'Bearer ' + token} })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(!data.success) return;
+            var r = null;
+            for(var i = 0; i < data.reservations.length; i++) { if(data.reservations[i].id === id) { r = data.reservations[i]; break; } }
+            if(!r) { alert('Rezervasyon bulunamadı'); return; }
+            var isTahsis = r.type === 'tahsis';
+
+            var modalHtml =
+                '<div id="return-res-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;display:flex;justify-content:center;align-items:center;" onclick="if(event.target===this)closeReturnReservationModal()">' +
+                '<div style="background:#fff;border-radius:16px;padding:28px;width:90%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+                '<h3 style="color:#1B2B4C;margin:0;font-size:18px;">Dönüş Rezervasyonu Oluştur</h3>' +
+                '<button onclick="closeReturnReservationModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999;">&times;</button>' +
+                '</div>' +
+                '<p style="font-size:13px;color:#64748B;margin:0 0 16px;">Rezervasyon #' + r.id + ' — ' + escapeHtml(r.customerName || '') + ' — bilgiler otomatik ters çevrildi, isim/telefon orijinalinden kopyalanacak.</p>' +
+                '<div id="return-res-fields">' +
+                '<label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Alış Noktası</label><input id="rr-pickup" value="' + escapeHtml(isTahsis ? (r.pickup || '') : (r.destination || '')) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:15px;margin-bottom:12px;">' +
+                (isTahsis ?
+                    '<label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tahsis Süresi (saat)</label><input id="rr-duration" type="number" value="' + (r.duration || 4) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:15px;margin-bottom:12px;">'
+                    :
+                    '<label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Varış Noktası</label><input id="rr-destination" value="' + escapeHtml(r.pickup || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:15px;margin-bottom:12px;">'
+                ) +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tarih</label><input id="rr-date" type="date" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:15px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Saat</label><input id="rr-time" type="time" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:15px;"></div>' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Yolcu</label><input id="rr-passengers" type="number" min="1" value="' + (r.passengers || 1) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:15px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Çocuk</label><input id="rr-child-count" type="number" min="0" value="' + (r.childCount || 0) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:15px;"></div>' +
+                '</div>' +
+                '<label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Tutar (₺)</label><input id="rr-price" type="number" value="' + (r.price || 0) + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:15px;margin-bottom:4px;">' +
+                '<p style="font-size:12px;color:#94A3B8;margin:0 0 16px;">Aynı güzergah olduğu için ücret genelde değişmez, gerekirse düzelt.</p>' +
+                '<button class="btn-approve" onclick="submitReturnReservation(' + r.id + ')" style="width:100%;padding:12px;font-size:14px;"><i class="fa-solid fa-rotate"></i> Dönüş Linkini Oluştur</button>' +
+                '</div>' +
+                '<div id="return-res-result" style="display:none;"></div>' +
+                '</div></div>';
+
+            var existing = document.getElementById('return-res-modal');
+            if(existing) existing.remove();
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        })
+        .catch(function() { alert('Rezervasyon bilgisi alınamadı.'); });
+    }
+
+    function closeReturnReservationModal() {
+        var el = document.getElementById('return-res-modal');
+        if(el) el.remove();
+    }
+
+    function submitReturnReservation(originalId) {
+        var token = getToken();
+        if(!token) { alert('Oturum süreniz dolmuş.'); return; }
+        var date = document.getElementById('rr-date').value;
+        var time = document.getElementById('rr-time').value;
+        if(!date || !time) { alert('Tarih ve saat zorunludur.'); return; }
+        var isTahsisField = document.getElementById('rr-duration');
+        var body = {
+            originalReservationId: originalId,
+            pickup: document.getElementById('rr-pickup').value,
+            date: date,
+            time: time,
+            passengers: parseInt(document.getElementById('rr-passengers').value, 10) || 1,
+            childCount: parseInt(document.getElementById('rr-child-count').value, 10) || 0,
+            price: parseFloat(document.getElementById('rr-price').value) || 0
+        };
+        if(isTahsisField) {
+            body.duration = isTahsisField.value;
+        } else {
+            body.destination = document.getElementById('rr-destination').value;
+        }
+
+        fetch('/api/admin/reservations/create-return', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+            body: JSON.stringify(body)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(!data.success) { alert('Hata: ' + (data.error || 'Dönüş rezervasyonu oluşturulamadı')); return; }
+            var url = data.returnUrl;
+            var newId = data.reservation.id;
+            document.getElementById('return-res-fields').style.display = 'none';
+            var resultBox = document.getElementById('return-res-result');
+            resultBox.style.display = 'block';
+            resultBox.innerHTML =
+                '<p style="font-size:14px;color:#16A34A;font-weight:600;margin:0 0 10px;"><i class="fa-solid fa-circle-check"></i> Rezervasyon #' + newId + ' oluşturuldu.</p>' +
+                '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;word-break:break-all;margin-bottom:12px;">' + escapeHtml(url) + '</div>' +
+                '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+                '<button class="btn-secondary" onclick="navigator.clipboard.writeText(\'' + url + '\');this.textContent=\'Kopyalandı!\';" style="padding:10px 16px;font-size:13px;"><i class="fa-solid fa-copy"></i> Linki Kopyala</button>' +
+                '<button class="btn-secondary" onclick="sendReturnLinkWhatsApp(' + newId + ', \'' + url + '\')" style="padding:10px 16px;font-size:13px;background:#DCF8C6;color:#075E54;border-color:#BFEAB0;"><i class="fa-brands fa-whatsapp"></i> WhatsApp\'tan Gönder</button>' +
+                '</div>';
+            loadReservations();
+        })
+        .catch(function() { alert('Sunucu hatası'); });
+    }
+
+    function sendReturnLinkWhatsApp(id, url) {
+        var token = getToken();
+        fetch('/api/admin/reservations', { method: 'GET', headers: {'Authorization': 'Bearer ' + token} })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if(!data.success) return;
+            var r = null;
+            for(var i = 0; i < data.reservations.length; i++) { if(data.reservations[i].id === id) { r = data.reservations[i]; break; } }
+            var phone = r ? (r.customerPhone || '') : '';
+            var name = r ? (r.customerName || '') : '';
+            var message = 'Merhaba ' + name + ',\nGüliz VIP Transfer olarak dönüş yolculuğunuz için rezervasyonunuzu sizin adınıza hazırladık.\nBilgileri kontrol edip onaylamak için linke tıklamanız yeterli:\n' + url;
+            var phoneDigits = phone.replace(/[^0-9]/g, '');
+            if(phoneDigits.length === 10) phoneDigits = '90' + phoneDigits;
+            else if(phoneDigits.length === 11 && phoneDigits.charAt(0) === '0') phoneDigits = '90' + phoneDigits.substring(1);
+            window.open('https://wa.me/' + phoneDigits + '?text=' + encodeURIComponent(message), '_blank');
+        })
+        .catch(function() {});
     }
 
     // ─── WhatsApp Hızlı Rezervasyon Gönderimi ────────────────────────────────

@@ -1751,6 +1751,127 @@ document.getElementById('cardForm').addEventListener('submit', function(e) {{
 </html>"""
 
 
+def _render_return_reservation_page(reservation, token):
+    """Admin'in 'Dönüş Rezervasyonu Oluştur' özelliğiyle ürettiği link (GET
+    /donus/<id>/<token>) açıldığında gösterilir. Müşteri, önceden doldurulmuş
+    rezervasyon bilgilerini salt-okunur bir özet olarak görür, sadece telefonunu
+    teyit edip ödeme yöntemini seçer — adres/tarih formlarını baştan doldurmaz."""
+    def esc(v):
+        return str(v or "").replace("<", "&lt;").replace(">", "&gt;")
+
+    res_id = reservation.get("id")
+    is_tahsis = reservation.get("type") == "tahsis"
+    route_label = "Tahsis Süresi" if is_tahsis else "Varış Noktası"
+    route_value = (esc(reservation.get("duration")) + " Saat") if is_tahsis else esc(reservation.get("destination"))
+    passengers = reservation.get("passengers", 1)
+    child_count = reservation.get("childCount", 0)
+    kisi_label = f"{passengers} Yolcu" + (f" + {child_count} Çocuk" if child_count else "")
+    price = reservation.get("price", 0)
+    currency = reservation.get("currency", "TRY")
+    return f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Dönüş Rezervasyonu — Güliz VIP Transfer</title>
+<style>
+  * {{ box-sizing: border-box; }}
+  body {{ margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:#0f172a; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }}
+  .card {{ background:#fff; border-radius:16px; padding:32px; max-width:460px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.35); }}
+  .card h2 {{ margin:0 0 4px; font-size:20px; color:#0f172a; }}
+  .card .sub {{ color:#64748b; font-size:14px; margin:0 0 20px; }}
+  .summary {{ background:#f8fafc; border-radius:10px; padding:14px 16px; margin-bottom:20px; }}
+  .summary-row {{ display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-bottom:1px solid #e2e8f0; }}
+  .summary-row:last-child {{ border-bottom:none; }}
+  .summary-row span:first-child {{ color:#64748b; }}
+  .summary-row span:last-child {{ color:#0f172a; font-weight:600; text-align:right; }}
+  .amount {{ font-size:24px; font-weight:700; color:#b8860b; margin:14px 0 0; text-align:right; }}
+  label {{ display:block; font-size:13px; color:#334155; margin:14px 0 6px; font-weight:600; }}
+  input {{ width:100%; padding:12px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px; }}
+  input:focus {{ outline:none; border-color:#b8860b; }}
+  .pay-opt {{ display:flex; align-items:center; gap:10px; border:1px solid #cbd5e1; border-radius:8px; padding:12px 14px; margin-top:8px; cursor:pointer; }}
+  .pay-opt input {{ width:auto; }}
+  button {{ width:100%; margin-top:22px; padding:14px; border:none; border-radius:8px; background:#b8860b; color:#fff; font-size:16px; font-weight:600; cursor:pointer; }}
+  button:disabled {{ opacity:.6; cursor:not-allowed; }}
+  .err {{ color:#dc2626; font-size:13px; margin-top:10px; display:none; }}
+  .iban-box {{ background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:16px; margin-top:16px; font-size:14px; }}
+  .iban-box b {{ display:block; margin-bottom:6px; color:#16a34a; }}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2>Dönüş Rezervasyonunuz Hazır</h2>
+    <p class="sub">{esc(reservation.get('customerName'))} — Rezervasyon #{res_id}</p>
+    <div class="summary">
+      <div class="summary-row"><span>Alış Noktası</span><span>{esc(reservation.get('pickup'))}</span></div>
+      <div class="summary-row"><span>{route_label}</span><span>{route_value}</span></div>
+      <div class="summary-row"><span>Tarih / Saat</span><span>{esc(reservation.get('date'))} {esc(reservation.get('time'))}</span></div>
+      <div class="summary-row"><span>Yolcu</span><span>{esc(kisi_label)}</span></div>
+      <div class="amount">{price} {currency}</div>
+    </div>
+    <form id="confirmForm">
+      <label>Telefon Numaranız</label>
+      <input id="phoneInput" required inputmode="tel" value="{esc(reservation.get('customerPhone'))}" placeholder="05XX XXX XX XX">
+      <label>Ödeme Yöntemi</label>
+      <label class="pay-opt"><input type="radio" name="paymethod" value="havale" checked> Banka Havalesi / EFT</label>
+      <label class="pay-opt"><input type="radio" name="paymethod" value="kart"> Kredi Kartı (Online)</label>
+      <button type="submit" id="confirmBtn">Rezervasyonu Onayla</button>
+      <div class="err" id="errBox"></div>
+    </form>
+    <div id="successBox" style="display:none;">
+      <p style="color:#16a34a;font-weight:600;margin-top:20px;">Teşekkürler! Dönüş rezervasyonunuz alındı.</p>
+      <div id="ibanBox"></div>
+    </div>
+  </div>
+<script>
+document.getElementById('confirmForm').addEventListener('submit', function(e) {{
+  e.preventDefault();
+  var btn = document.getElementById('confirmBtn');
+  var errBox = document.getElementById('errBox');
+  errBox.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Gönderiliyor...';
+  var phone = document.getElementById('phoneInput').value.trim();
+  var payMethod = document.querySelector('input[name="paymethod"]:checked').value;
+  fetch('/api/public/return-reservation/confirm', {{
+    method: 'POST',
+    headers: {{ 'Content-Type': 'application/json' }},
+    body: JSON.stringify({{ id: {res_id}, token: '{token}', phone: phone, paymentMethod: payMethod }})
+  }})
+  .then(function(r) {{ return r.json(); }})
+  .then(function(data) {{
+    if (!data.success) {{
+      throw new Error(data.error || 'Onaylanamadı, lütfen tekrar deneyin.');
+    }}
+    if (payMethod === 'kart') {{
+      window.location.href = '/odeme/garanti/{res_id}';
+      return;
+    }}
+    document.getElementById('confirmForm').style.display = 'none';
+    document.getElementById('successBox').style.display = 'block';
+    fetch('/api/bank-accounts').then(function(r) {{ return r.json(); }}).then(function(bd) {{
+      if (!bd.success) return;
+      var html = '';
+      Object.keys(bd.accounts).forEach(function(k) {{
+        var acc = bd.accounts[k];
+        html += '<div class="iban-box"><b>' + acc.name + '</b>' + acc.accountHolder + '<br>' + acc.iban + '</div>';
+      }});
+      document.getElementById('ibanBox').innerHTML = html + '<p style="font-size:13px;color:#64748b;margin-top:10px;">Açıklama kısmına rezervasyon numaranızı (#{res_id}) yazmayı unutmayın.</p>';
+    }});
+  }})
+  .catch(function(err) {{
+    errBox.textContent = err.message || 'Bir hata oluştu, lütfen tekrar deneyin.';
+    errBox.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Rezervasyonu Onayla';
+  }});
+}});
+</script>
+</body>
+</html>"""
+
+
 # ─── Telegram Bot ─────────────────────────────────────────────────────────────────
 def send_telegram(message):
     global TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
@@ -2277,6 +2398,25 @@ def verify_token(token):
         pass
     return None
 
+# Dönüş rezervasyonu linki — admin, tamamlanmış bir rezervasyondan tek tıkla
+# "dönüş" rezervasyonu oluşturup müşteriye link gönderiyor (bkz. POST
+# /api/admin/reservations/create-return). Link tahmin edilebilir bir ID değil,
+# HMAC tabanlı bir token içeriyor (SECRET_KEY olmadan üretilemez/doğrulanamaz)
+# — böylece biri linkteki rezervasyon numarasını değiştirerek başka bir
+# müşterinin isim/telefon/adres bilgisine erişemiyor. DB'ye yeni bir kolon
+# eklemeye gerek kalmadı, token deterministik olarak rezervasyon ID'sinden
+# türetiliyor.
+def generate_return_token(res_id):
+    payload = f"return:{res_id}"
+    sig = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(sig).decode().rstrip("=")[:24]
+
+def verify_return_token(res_id, token):
+    if not token:
+        return False
+    expected = generate_return_token(res_id)
+    return hmac.compare_digest(expected, token)
+
 # ─── HTTP Handler ─────────────────────────────────────────────────────────────
 
 MIME_TYPES = {
@@ -2560,6 +2700,27 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_html("<h2>Rezervasyon bulunamadı.</h2>", 404)
                     return
                 self._send_html(_render_garanti_payment_page(target))
+                return
+            if path.startswith("/donus/"):
+                # Admin panelindeki "Dönüş Rezervasyonu Oluştur" özelliğiyle üretilen link.
+                # Format: /donus/<id>/<token> — token doğrulanmadan hiçbir bilgi gösterilmez.
+                parts = path[len("/donus/"):].strip("/").split("/")
+                res_id = None
+                token = ""
+                if len(parts) >= 2:
+                    try:
+                        res_id = int(parts[0])
+                    except ValueError:
+                        res_id = None
+                    token = parts[1]
+                if res_id is None or not verify_return_token(res_id, token):
+                    self._send_html("<h2>Bu bağlantı geçersiz veya süresi dolmuş.</h2>", 403)
+                    return
+                target = next((r for r in RESERVATIONS if r.get("id") == res_id), None)
+                if target is None:
+                    self._send_html("<h2>Rezervasyon bulunamadı.</h2>", 404)
+                    return
+                self._send_html(_render_return_reservation_page(target, token))
                 return
             if path == "/api/availability":
                 # FAZ 3: Sitede müsaitlik göstergesi. Filo tanımlı değilse (henüz araç birimi
@@ -3370,6 +3531,85 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._send_error(str(e), 500)
             return
+        if path == "/api/admin/reservations/create-return":
+            # Mevcut (tamamlanmış) bir rezervasyondan "dönüş" rezervasyonu oluşturur.
+            # Müşteri isim/telefon/e-posta orijinal rezervasyondan kopyalanır; alış/varış
+            # (transfer) veya süre (tahsis) admin panelinden gönderilir (genelde ters
+            # çevrilmiş güzergah). Müşteriye giden link, rezervasyon ID'sini tahmin
+            # edilemez bir HMAC token ile birlikte taşır (bkz. generate_return_token) —
+            # böylece linkteki numara değiştirilerek başka müşterilerin bilgisine
+            # erişilemez.
+            user = self._authenticate()
+            if not user:
+                self._send_error("Yetkisiz erişim.", 401)
+                return
+            try:
+                body = json.loads(self._read_body())
+                original_id = body.get("originalReservationId")
+                original = next((r for r in RESERVATIONS if r.get("id") == original_id), None) if original_id is not None else None
+                if not original:
+                    self._send_error("Orijinal rezervasyon bulunamadı.", 404)
+                    return
+                if not body.get("date") or not body.get("time"):
+                    self._send_error("Tarih ve saat zorunludur.", 400)
+                    return
+                reservation = {
+                    "id": RESERVATION_ID,
+                    "type": original.get("type", "transfer"),
+                    "customerName": original.get("customerName", ""),
+                    "customerPhone": original.get("customerPhone", ""),
+                    "customerEmail": original.get("customerEmail", ""),
+                    "pickup": body.get("pickup", "") or original.get("destination", ""),
+                    "destination": body.get("destination", ""),
+                    "flightNumber": "",
+                    "date": body.get("date", ""),
+                    "time": body.get("time", ""),
+                    "passengers": body.get("passengers", original.get("passengers", 1)),
+                    "childCount": body.get("childCount", original.get("childCount", 0)),
+                    "needsChildSeat": bool(body.get("needsChildSeat", original.get("needsChildSeat", False))),
+                    "duration": body.get("duration", original.get("duration", "")),
+                    "notes": f"Dönüş rezervasyonu — orijinal rezervasyon #{original_id}",
+                    "price": body.get("price", original.get("price", 0)),
+                    "paymentMethod": "",
+                    "status": "pending",
+                    "currency": original.get("currency", "TRY"),
+                    "paymentStatus": "pending",
+                    "paymentLink": "",
+                    "stripePaymentIntentId": "",
+                    "isManual": True,
+                    "createdAt": datetime.now().isoformat(),
+                }
+
+                try:
+                    customer = db.find_or_create_customer(
+                        reservation.get("customerPhone", ""),
+                        reservation.get("customerName", ""),
+                        reservation.get("customerEmail", "")
+                    )
+                    if customer:
+                        reservation["customerId"] = customer["id"]
+                except Exception as e:
+                    print(f"[!] Müşteri eşleştirme hatası (dönüş rezervasyonu): {e}")
+
+                db_id = db.save_reservation_to_db(reservation)
+                if db_id:
+                    reservation["id"] = db_id
+                    RESERVATION_ID = db_id + 1
+                    _reservations_insert(reservation)
+                else:
+                    _reservations_insert(reservation)
+                    RESERVATION_ID += 1
+                    save_reservations()
+
+                token = generate_return_token(reservation["id"])
+                base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
+                return_url = f"{base_url}/donus/{reservation['id']}/{token}"
+                self._send_json({"success": True, "reservation": reservation, "returnUrl": return_url})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
+            return
         if path == "/api/reservations":
             try:
                 body = json.loads(self._read_body())
@@ -3541,6 +3781,56 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             print(f"[tracking] Identity matched: session {rez_session_id} → {display_name}")
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
+            return
+        if path == "/api/public/return-reservation/confirm":
+            # Dönüş rezervasyonu sayfasından (/donus/<id>/<token>) müşteri telefonunu
+            # teyit edip ödeme yöntemini seçtiğinde çağrılır. Kimlik doğrulaması yok
+            # (public) — ama token doğrulanmadan hiçbir kayıt güncellenmiyor, aksi
+            # halde biri rezervasyon ID'sini deneyerek başka müşterilerin telefon/
+            # ödeme bilgisini değiştirebilirdi.
+            try:
+                body = json.loads(self._read_body())
+                res_id = body.get("id")
+                token = body.get("token", "")
+                if not verify_return_token(res_id, token):
+                    self._send_error("Geçersiz veya süresi dolmuş bağlantı.", 403)
+                    return
+                target = next((r for r in RESERVATIONS if r.get("id") == res_id), None)
+                if not target:
+                    self._send_error("Rezervasyon bulunamadı.", 404)
+                    return
+                phone = (body.get("phone") or "").strip()
+                payment_method = "kart" if body.get("paymentMethod") == "kart" else "havale"
+                if phone:
+                    target["customerPhone"] = phone
+                target["paymentMethod"] = payment_method
+                fields_to_update = {"customerPhone": target["customerPhone"], "paymentMethod": target["paymentMethod"]}
+                try:
+                    db.update_reservation_in_db(res_id, fields_to_update)
+                except Exception as e:
+                    print(f"[!] Dönüş rezervasyonu güncelleme hatası: {e}")
+                save_reservations()
+                tip_etiket = "🚗 Transfer" if target.get("type") == "transfer" else "👑 Şoförlü Günlük VIP"
+                send_telegram(
+                    f"🔁 <b>Dönüş rezervasyonu onaylandı #{target['id']}</b>\n"
+                    f"📋 <b>Tür:</b> {tip_etiket}\n"
+                    f"👤 <b>İsim:</b> {target.get('customerName','')}\n"
+                    f"📞 <b>Telefon:</b> {target.get('customerPhone','')}\n"
+                    f"📍 <b>Alış:</b> {target.get('pickup','')}\n"
+                    f"🏁 <b>Varış:</b> {target.get('destination','')}\n"
+                    f"📅 <b>Tarih:</b> {target.get('date','')} {target.get('time','')}\n"
+                    f"💰 <b>Ücret:</b> {target.get('price',0)}₺\n"
+                    f"💳 <b>Ödeme:</b> {'Kredi Kartı' if payment_method == 'kart' else 'Havale/EFT'}"
+                )
+                _push_dashboard_notification(
+                    f"🔁 Dönüş rezervasyonu #{target['id']} müşteri tarafından onaylandı.",
+                    ntype="reservation", reservation_id=target["id"]
+                )
+                self._send_json({"success": True, "reservation": target})
+            except json.JSONDecodeError:
+                self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                self._send_error(str(e), 500)
             return
         if path == "/api/payments/garanti/prepare":
             # Müşteri rezervasyon formunda "Kredi Kartı" seçtiğinde (veya admin'in ürettiği
