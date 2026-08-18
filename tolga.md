@@ -76,14 +76,22 @@ doğrulandığında geliyor (normal rezervasyon akışıyla aynı mantık). Hava
 seçiminde ise (müşteri kendi yatıracağını teyit ettiği için) bildirim +
 e-posta hemen gidiyor, bu kısım aynı kaldı.
 
+**8c. Dönüş Rezervasyonu Linki'nde son 3 iyileştirme (analiz sonrası):**
+(1) Link artık 1 saat sonra otomatik geçersiz oluyor — bitiş zamanı token'ın
+içine gömülü, sayfada da "saat X'e kadar geçerli" notu var. (2) Aynı linke
+iki kez basma artık engelleniyor — rezervasyon zaten onaylanmışsa ikinci
+istek reddediliyor, çift Telegram/e-posta gitmiyor. (3) Müşteri /donus
+sayfasında telefon/e-posta düzeltirse artık admin panelindeki genel müşteri
+kaydına (CRM) da işleniyor.
+
 ### Hemen Yapılması Gereken
 ```
 cd C:\proje\gulizvip
 git push origin main
 ```
-6 commit push bekliyor: harita retry fix, Telegram "Fiyat Hesapla" detay
+8 commit push bekliyor: harita retry fix, Telegram "Fiyat Hesapla" detay
 eklentisi, harita uyarısının kaldırılması, Dönüş Rezervasyonu Linki özelliği
-+ üzerindeki düzeltmeler. Push edilmeden Railway'e yansımaz.
++ üzerindeki tüm düzeltmeler. Push edilmeden Railway'e yansımaz.
 
 ### Açık / senin kararına kalan konular
 - **404 sayfası:** var olmayan bir adrese gidince şu an düzgün tasarlanmış hata
