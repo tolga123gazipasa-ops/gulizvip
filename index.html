@@ -2980,7 +2980,22 @@
             if (typeof gulizTracker !== 'undefined') {
                 if (currentStep === 1) {
                     // 1. adımdan 2. adıma → "Fiyat Hesapla"
-                    gulizTracker.trackEvent('Fiyat Hesapla', formType === 'transfer' ? 'Havalimanı Transferi' : 'Şoförlü Günlük VIP', true);
+                    var step1Detail;
+                    if (formType === 'transfer') {
+                        var trPickup = document.getElementById('pickup-input').value;
+                        var trDest = document.getElementById('dest-input').value;
+                        var trDate = document.getElementById('transfer-date').value;
+                        var trTime = document.getElementById('transfer-time').value;
+                        step1Detail = 'Havalimanı Transferi | Alış: ' + trPickup + ' | Varış: ' + trDest + ' | ' + trDate + ' ' + trTime;
+                    } else {
+                        var tsPickup = document.getElementById('tahsis-pickup-input').value;
+                        var durationSelect = document.getElementById('vDuration');
+                        var tsDuration = durationSelect ? durationSelect.options[durationSelect.selectedIndex].text : '';
+                        var tsDate = document.getElementById('tahsis-date').value;
+                        var tsTime = document.getElementById('tahsis-time').value;
+                        step1Detail = 'Şoförlü Günlük VIP | Alış: ' + tsPickup + ' | Süre: ' + tsDuration + ' | ' + tsDate + ' ' + tsTime;
+                    }
+                    gulizTracker.trackEvent('Fiyat Hesapla', step1Detail, true);
                 } else if (currentStep === 2) {
                     // 2. adımdan 3. adıma (ödeme) → "Ödeme Adımına Geç"
                     var destSummary = formType === 'transfer' ?
