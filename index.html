@@ -309,26 +309,71 @@
             return ok;
         }
 
+        // Yolcu ile çocuk sayısı alanlarını eşleştirir (transfer/tahsis formu
+        // kendi içinde) — VIP Vito'nun fiziksel koltuk kapasitesi (9) hiçbir
+        // zaman aşılmasın diye kullanılıyor.
+        function getPairedStepperId(inputId) {
+            if (inputId === 'transfer-passengers') return 'transfer-child-count';
+            if (inputId === 'transfer-child-count') return 'transfer-passengers';
+            if (inputId === 'tahsis-passengers') return 'tahsis-child-count';
+            if (inputId === 'tahsis-child-count') return 'tahsis-passengers';
+            return null;
+        }
+
+        // Bir stepper'ın +/- butonlarını verilen min/max'a göre günceller
+        // (sadece görünüm — değeri değiştirmez).
+        function refreshStepperButtons(inputId, min, max) {
+            var input = document.getElementById(inputId);
+            var wrapper = input ? input.previousElementSibling : null;
+            if (!wrapper || !wrapper.classList.contains('qty-stepper')) return;
+            var val = parseInt(input.value, 10);
+            if (isNaN(val)) val = min;
+            var minusBtn = wrapper.querySelector('.qty-minus');
+            var plusBtn = wrapper.querySelector('.qty-plus');
+            if (minusBtn) minusBtn.disabled = (val <= min);
+            if (plusBtn) plusBtn.disabled = (val >= max);
+        }
+
         // Yolcu/çocuk sayısı +/- stepper — gizli input'un değerini min-max arasında
         // tutar (varsayılan 1-9, çocuk sayısı için 0-4 verilir), görünen sayıyı
-        // günceller ve sınırda ilgili butonu devre dışı bırakır.
+        // günceller ve sınırda ilgili butonu devre dışı bırakır. Ayrıca eşleştiği
+        // alanın (yolcu<->çocuk) o anki değerine göre kendi üst sınırını daraltır:
+        // toplamları (yolcu+çocuk) hiçbir zaman 9'u (VIP Vito kapasitesi) geçemez.
+        // Örn. çocuk 4'teyse yolcu en fazla 5'e çıkabilir; birini azaltınca
+        // diğerinin + butonu otomatik tekrar açılır. Değerler asla geriye doğru
+        // otomatik değiştirilmez — sadece ileri gidiş sınırlanır.
         function adjustPassengers(inputId, delta, min, max) {
             min = (min === undefined) ? 1 : min;
             max = (max === undefined) ? 9 : max;
             var input = document.getElementById(inputId);
             var display = document.getElementById(inputId + '-display');
             if (!input) return;
+
+            var pairedId = getPairedStepperId(inputId);
+            var pairedVal = 0;
+            if (pairedId) {
+                var pairedInput = document.getElementById(pairedId);
+                pairedVal = pairedInput ? (parseInt(pairedInput.value, 10) || 0) : 0;
+            }
+            var effectiveMax = pairedId ? Math.min(max, 9 - pairedVal) : max;
+            if (effectiveMax < min) effectiveMax = min;
+
             var val = parseInt(input.value, 10);
             if (isNaN(val)) val = min;
-            val = Math.min(max, Math.max(min, val + delta));
+            val = Math.min(effectiveMax, Math.max(min, val + delta));
             input.value = val;
             if (display) display.textContent = (max === 4 && val === max) ? (val + '+') : val;
-            var wrapper = input.previousElementSibling;
-            if (wrapper && wrapper.classList.contains('qty-stepper')) {
-                var minusBtn = wrapper.querySelector('.qty-minus');
-                var plusBtn = wrapper.querySelector('.qty-plus');
-                if (minusBtn) minusBtn.disabled = (val <= min);
-                if (plusBtn) plusBtn.disabled = (val >= max);
+
+            refreshStepperButtons(inputId, min, effectiveMax);
+
+            // Karşı alanın üst sınırı da bu değişiklikten etkilenir (daralmış ya
+            // da genişlemiş olabilir) — butonlarını da güncelle.
+            if (pairedId) {
+                var pairedMax = (pairedId.indexOf('child-count') !== -1) ? 4 : 9;
+                var pairedMin = (pairedId.indexOf('child-count') !== -1) ? 0 : 1;
+                var pairedEffectiveMax = Math.min(pairedMax, 9 - val);
+                if (pairedEffectiveMax < pairedMin) pairedEffectiveMax = pairedMin;
+                refreshStepperButtons(pairedId, pairedMin, pairedEffectiveMax);
             }
         }
 
@@ -3101,27 +3146,21 @@
                 if (el) el.value = '2';
                 var disp = document.getElementById(id + '-display');
                 if (disp) disp.textContent = '2';
-                var wrapper = el ? el.previousElementSibling : null;
-                if (wrapper && wrapper.classList.contains('qty-stepper')) {
-                    var minusBtn = wrapper.querySelector('.qty-minus');
-                    var plusBtn = wrapper.querySelector('.qty-plus');
-                    if (minusBtn) minusBtn.disabled = false;
-                    if (plusBtn) plusBtn.disabled = false;
-                }
             });
             ['transfer-child-count', 'tahsis-child-count'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.value = '0';
                 var disp = document.getElementById(id + '-display');
                 if (disp) disp.textContent = '0';
-                var wrapper = el ? el.previousElementSibling : null;
-                if (wrapper && wrapper.classList.contains('qty-stepper')) {
-                    var minusBtn = wrapper.querySelector('.qty-minus');
-                    var plusBtn = wrapper.querySelector('.qty-plus');
-                    if (minusBtn) minusBtn.disabled = true;
-                    if (plusBtn) plusBtn.disabled = false;
-                }
             });
+            // Varsayılana dönüldüğünde (yolcu:2, çocuk:0) buton kilitlerini de
+            // dinamik yolcu+çocuk<=9 kuralına göre yeniden hesapla.
+            if (typeof refreshStepperButtons === 'function') {
+                refreshStepperButtons('transfer-passengers', 1, 9);
+                refreshStepperButtons('transfer-child-count', 0, 4);
+                refreshStepperButtons('tahsis-passengers', 1, 9);
+                refreshStepperButtons('tahsis-child-count', 0, 4);
+            }
             ['transfer-child-seat', 'tahsis-child-seat'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.checked = false;
@@ -3435,6 +3474,16 @@
             goToStep('tahsis', 1);
 
             autoFillDateTime();
+
+            // Yolcu/çocuk stepper başlangıç buton kilitlerini de dinamik
+            // yolcu+çocuk<=9 kuralına göre hesapla (varsayılan 2/0 için pratikte
+            // hep açık ama tutarlılık için).
+            if (typeof refreshStepperButtons === 'function') {
+                refreshStepperButtons('transfer-passengers', 1, 9);
+                refreshStepperButtons('transfer-child-count', 0, 4);
+                refreshStepperButtons('tahsis-passengers', 1, 9);
+                refreshStepperButtons('tahsis-child-count', 0, 4);
+            }
 
             // Client-side validation on submit
             document.querySelectorAll('.form-body').forEach(function(form) {
