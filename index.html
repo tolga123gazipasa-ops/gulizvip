@@ -187,19 +187,34 @@
         var mapsCallbacks = [];
         var mapsLoadAttempted = false;
 
-        function fetchMapsConfig(cb) {
+        // Deploy anında Railway eski konteyneri kapatıp yenisini ayağa
+        // kaldırırken birkaç saniyelik kısa bir kesinti olabiliyor — tam o ana
+        // denk gelen bir istek "sunucuya bağlanılamıyor" hatası alır ama bu
+        // gerçek/kalıcı bir sorun değildir. Gerçekten kalıcı bir arıza (yanlış
+        // API anahtarı, kota vb.) ile bu geçici deploy penceresini ayırt etmek
+        // için önce birkaç kez kısa aralıklarla tekrar deniyoruz; sadece hepsi
+        // başarısız olursa hem sayfada hata gösteriyor hem admin'e Telegram
+        // bildirimi gönderiyoruz.
+        function fetchMapsConfig(cb, attempt) {
+            attempt = attempt || 1;
             fetch('/api/maps/config')
                 .then(function(r) { return r.json(); })
                 .then(function(d) {
                     if(d.success && d.apiKey) {
                         GOOGLE_MAPS_API_KEY = d.apiKey;
                         loadMapsApi();
+                    } else if(attempt < 3) {
+                        setTimeout(function() { fetchMapsConfig(cb, attempt + 1); }, 2500);
                     } else {
                         showMapError('API anahtari alinamadi');
                     }
                 })
                 .catch(function() {
-                    showMapError('Sunucuya baglanilamiyor');
+                    if(attempt < 3) {
+                        setTimeout(function() { fetchMapsConfig(cb, attempt + 1); }, 2500);
+                    } else {
+                        showMapError('Sunucuya baglanilamiyor');
+                    }
                 });
         }
 
