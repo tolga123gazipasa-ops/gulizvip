@@ -128,6 +128,15 @@ GOOGLE_MAPS_API_KEY = "AIzaSyD-IGkbR6iyxvdeQ_Cfekjks3KOWMD7RKw"
 # aynı hata devam eder, en azından sistem çökmez.
 GOOGLE_MAPS_SERVER_API_KEY = os.environ.get("GOOGLE_MAPS_SERVER_API_KEY", GOOGLE_MAPS_API_KEY)
 
+# GERÇEK BUG DÜZELTMESİ (18 Ağustos): admin panelindeki "Ödeme Linki Oluştur"
+# özelliği PAYMENT_PROVIDER adlı bir değişkeni kullanıyordu ama bu değişken
+# kodun HİÇBİR YERİNDE tanımlanmamıştı — buton her tıklandığında sunucu
+# NameError ile 500 hatası veriyordu, özellik tamamen çalışmıyordu. Artık
+# tanımlı — varsayılan olarak "garanti" (tek gerçekten çalışan, canlıda test
+# edilmiş sağlayıcı; Stripe/PayTR için TODO'lar hâlâ _generate_payment_link()
+# içinde duruyor, seçilirse buradan env var ile değiştirilir).
+PAYMENT_PROVIDER = os.environ.get("PAYMENT_PROVIDER", "garanti")
+
 # Admin tarafından belirlenen km başı birim fiyat (varsayılan: 25₺)
 UNIT_PRICE = 25.0
 
@@ -3663,6 +3672,17 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     telegram_msg += f"👶 <b>Çocuk:</b> {reservation['childCount']}{seat_note}\n"
                 telegram_msg += "🚐 <b>Takvimden admin tarafından girildi.</b>"
                 send_telegram(telegram_msg)
+                # GERÇEK EKSİK GİDERİLDİ (18 Ağustos): admin panelinden manuel girilen
+                # rezervasyonlarda müşteriye HİÇBİR ZAMAN onay e-postası gitmiyordu —
+                # sadece sitedeki normal (kendi kendine) rezervasyonlarda gidiyordu.
+                # Artık müşterinin e-postası varsa aynı şablonla (alış/varış/tarih/
+                # saat/tutar) onay e-postası gönderiliyor, telefonla gelen taleplerde
+                # de müşteri yazılı bir teyit alıyor.
+                if reservation.get("customerEmail"):
+                    try:
+                        send_confirmation_email(reservation)
+                    except Exception as e:
+                        print(f"[!] Manuel rezervasyon e-posta gönderme hatası: {e}")
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
             except Exception as e:

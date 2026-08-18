@@ -1054,6 +1054,9 @@
                             <div class="form-group" style="position:relative;"><label>Telefon</label><input type="text" id="cr-phone" autocomplete="off" oninput="crSearchCustomers(this.value)" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
                             <div id="cr-customer-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border-color);border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.12);z-index:20;max-height:220px;overflow-y:auto;"></div>
                         </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>E-posta (opsiyonel — girilirse müşteriye onay e-postası gider)</label><input type="email" id="cr-email" autocomplete="off" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
+                        </div>
                         <div id="cr-customer-card" style="display:none;margin-bottom:12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:12px 14px;font-size:13px;"></div>
                         <div class="form-row">
                             <div class="form-group"><label>Alış Noktası</label><input type="text" id="cr-pickup" placeholder="Adres yazmaya başlayın..." onchange="crCalculateDistance();" style="padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;"></div>
@@ -5119,6 +5122,7 @@
             vehicleUnitId: parseInt(document.getElementById('cr-vehicle-id').value),
             customerName: name,
             customerPhone: document.getElementById('cr-phone').value.trim(),
+            customerEmail: document.getElementById('cr-email').value.trim(),
             pickup: document.getElementById('cr-pickup').value.trim(),
             destination: document.getElementById('cr-destination').value.trim(),
             date: document.getElementById('cr-date').value,
