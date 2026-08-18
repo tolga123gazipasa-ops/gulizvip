@@ -1,6 +1,6 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-18 (yolcu/çocuk stepper + interlock, rezervasyon fiyat=0 bug'ı kalıcı çözüldü, Telegram bildirimleri iyileştirildi, Dönüş Rezervasyonu Linki özelliği eklendi — HEPSİ PUSH EDİLDİ VE CANLIDA DOĞRULANDI ✅)
+Son güncelleme: 2026-08-18 (yolcu/çocuk stepper + interlock, rezervasyon fiyat=0 bug'ı kalıcı çözüldü, Telegram bildirimleri iyileştirildi, Dönüş Rezervasyonu Linki özelliği eklendi ve CANLIDA DOĞRULANDI ✅ — ayrıca filo galeri kaybı bug'ı, "Ödeme Linki Oluştur" NameError'ı, admin manuel rezervasyon e-postası ve "Ödeme Linki Oluştur"un özet+kart/havale sayfasına genişletilmesi yapıldı, bunlar PUSH BEKLİYOR ⏳)
 
 ## GÜNCEL (18 Ağustos) — Booking formu iyileştirmeleri + kritik bug fix
 
@@ -106,9 +106,41 @@ sorunsuz açılıyordu — bu sitenin sorunu değil, Tolga'nın bilgisayarındak
 tarayıcı/DNS önbelleği kaynaklıydı (sert yenileme / gizli pencere / DNS
 flush ile çözülür), sunucu tarafında hiçbir sorun yoktu.
 
+**9. GERÇEK BUG — filo galeri görselleri kayboldu, kök neden bulundu ve
+kalıcı olarak düzeltildi.** Sebep: `load_vehicles()` fonksiyonu, veritabanına
+ULAŞILAMADIĞINDA da (geçici Railway deploy kesintisi gibi) "veri hiç yok"
+sanıp devreye giriyor ve varsayılan demo görselleri (1 gerçek + 2 stok
+fotoğraf) veritabanının üzerine KALICI olarak yazıyordu. Bugünkü onlarca
+deploy sırasındaki geçici bir bağlantı kesintisi tam bu şekilde gerçek
+galeri verinizi silmiş. Düzeltme: artık "veri gerçekten yok" ile "veritabanına
+şu an ulaşılamıyor" ayrı ayrı algılanıyor, sadece ilki için varsayılan
+yazılıyor. **Önemli: kaybolan fotoğraf dosyalarını ben geri getiremem —
+düzeltme canlıya çıktıktan sonra admin panelinden yeniden yüklemen gerekiyor.**
+Kod tarandı, bu tehlikeli kalıp sadece `load_vehicles()`'ta vardı, başka
+yerde yok.
+
+**10. 2 gerçek bug daha bulundu ve düzeltildi (admin'in yeni rezervasyon
+sistemi incelenirken ortaya çıktı):** (1) "Ödeme Linki Oluştur" butonu
+tanımsız bir `PAYMENT_PROVIDER` değişkeni yüzünden her tıklandığında
+sunucu hatası veriyordu, özellik tamamen çalışmıyordu — düzeltildi. (2)
+Takvimden admin'in girdiği manuel rezervasyonlarda müşteriye hiçbir zaman
+onay e-postası gitmiyordu (formda e-posta alanı bile yoktu) — forma e-posta
+alanı eklendi, girilirse onay e-postası gidiyor.
+
+**11. YENİ — "Ödeme Linki Oluştur" da Dönüş Rezervasyonu Linki gibi
+genişletildi.** Önceden bu link doğrudan çıplak bir kredi kartı formuna
+gidiyordu, havale seçeneği yoktu. Artık müşteri linke tıklayınca önce
+rezervasyonun tam özetini (alış/varış/tarih/saat/tutar) görüyor, sonra
+Kredi Kartı (Garanti BBVA) veya Havale/EFT seçiyor — havale seçerse IBAN
+bilgileri anında görünüyor, kart seçerse gerçek ödeme formuna yönleniyor.
+Aynı 1 saatlik süre sınırı ve çift-tıklama koruması burada da geçerli.
+
 ### Hemen Yapılması Gereken
-Yok — tüm commit'ler push edildi ve Railway'de canlı, doğrulandı. Branch
-origin ile senkron.
+- **git push origin main** kendi bilgisayarından — 2 commit push bekliyor
+  (madde 9-10-11 dahil, kod tarafında test edildi ama Railway'e henüz
+  deploy olmadı).
+- Push sonrası admin panelinden filo galeri fotoğraflarını yeniden yükle
+  (madde 9 — dosyalar kurtarılamıyor, sadece tekrar yükleme çözer).
 
 ### Açık / senin kararına kalan konular
 - **404 sayfası:** var olmayan bir adrese gidince şu an düzgün tasarlanmış hata
