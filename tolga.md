@@ -1,6 +1,72 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-17 (GTM eklendi, Railway build hatası araştırılıyor — ÇÖZÜLMEDİ ⚠️)
+Son güncelleme: 2026-08-18 (yolcu/çocuk stepper + interlock, rezervasyon fiyat=0 bug'ı kalıcı çözüldü, Telegram bildirimleri iyileştirildi — 2 commit push bekliyor ⚠️)
+
+## GÜNCEL (18 Ağustos) — Booking formu iyileştirmeleri + kritik bug fix
+
+**1. Yolcu/Çocuk sayısı artık +/− stepper (önceden dropdown'dı).** Küçük, kompakt
+butonlar (26px), min/maks'a gelince buton otomatik pasifleşiyor.
+
+**2. Yolcu + Çocuk toplamı VIP Vito kapasitesini (9) hiçbir zaman aşamıyor —
+uyarı mesajı bile yok, gerek kalmadan çalışıyor.** İkisi birbirine bağlı: biri
+artınca diğerinin izin verilen üst sınırı otomatik daralıyor (örn. çocuk 4'teyken
+yolcu en fazla 5'e çıkabiliyor), biri azalınca diğeri tekrar açılıyor. Değerler
+asla arkadan otomatik değiştirilmiyor, sadece ileri gidiş sınırlanıyor. Çocuk
+alanındaki kafa karıştırıcı "(maks. 4)" yazısı da kaldırıldı (artık tek referans
+"maks 9").
+
+**3. KRİTİK BUG BULUNDU VE ÇÖZÜLDÜ — bazı müşteriler fiyat=0 ile rezervasyon
+yapabiliyordu (reservation #107 örneği bununla ortaya çıktı).** Kök neden: fiyat
+hesaplaması sadece Google Places öneri listesinden bir adres SEÇİLDİĞİNDE
+tetikleniyordu — müşteri adresi elle yazıp/yapıştırıp öneriye tıklamadan devam
+ederse hiç hesaplanmıyordu, fiyat sessizce 0 gidiyordu. Çözüm (birkaç tur
+tartışıp basitleştirdik — önceki "arka planda sessizce geocode et" yaklaşımını
+sen reddettin, "neden kendini zorluyorsun" dedin, haklıydın): artık varış
+alanı öneri listesinden seçilmeden bir sonraki adıma geçilemiyor, kırmızı
+uyarı çıkıyor ("adresinizi bulamadık, öneri listesinden seçin"). Hiçbir
+istisna/override yok — bilinçli olarak. Alış noktasındaki eski davranış
+(anlık alan-dışı uyarısı) senin isteğinle aynen kaldı, sadece varış tarafı
+değişti.
+
+**4. Canlı site QA turu yapıldı (tüm yakın zamanlı değişiklikler tek tek test
+edildi), 2 gerçek bug daha bulundu ve düzeltildi:**
+   - Logoya tıklayıp forma sıfırlayınca Tahsis haritası bir daha hiç görünmüyordu
+     (reset kodu haritayı gizliyor ama tekrar göstermiyordu) — düzeltildi.
+   - Logoya tıklayınca tarih/saat alanları boşalıyor ve bir daha dolmuyordu —
+     düzeltildi, artık "bugün + 1 saat" ile otomatik doluyor.
+
+**5. Telegram bildirimleri iyileştirildi:**
+   - "Harita yüklenemedi" uyarısı deploy sonrası yanlışlıkla tetikleniyordu
+     (Railway'in konteyner değişim anındaki birkaç saniyelik kesintiye denk
+     geliyordu) — artık 2.5sn arayla 3 kez deneniyor, gerçekten kalıcı sorun
+     yoksa uyarı hiç gitmiyor.
+   - "Fiyat Hesapla" bildirimine artık sadece form tipi değil, müşterinin
+     seçtiği alış/varış (veya tahsiste alış+süre) ve tarih/saat de yazıyor —
+     ödeme adımına gelmeden vazgeçen müşterileri de artık görebiliyorsun.
+
+**6. SMS altyapısı konuşuldu** — şu an için kurulmadı, sadece fikir alışverişi
+yapıldı.
+
+**7. Şüpheli Google Cloud faturalandırma e-postası incelendi** — gerçek,
+oturum açık console'a girilip kontrol edildi: bakiye 0, kart geçerli, e-postanın
+iddiası doğrulanamadı. Muhtemelen phishing, aksiyon gerekmiyor.
+
+### Hemen Yapılması Gereken
+```
+cd C:\proje\gulizvip
+git push origin main
+```
+2 commit push bekliyor: harita retry fix + Telegram "Fiyat Hesapla" detay
+eklentisi. Push edilmeden Railway'e yansımaz.
+
+### Açık / senin kararına kalan konular
+- **404 sayfası:** var olmayan bir adrese gidince şu an düzgün tasarlanmış hata
+  sayfası yerine ham JSON dönüyor (`{"error": "Dosya bulunamadı"}`). Küçük bir
+  SEO/UX detayı, düzeltilsin mi diye sordum, henüz cevap vermedin.
+- **Rezervasyon #107**: hâlâ fiyatsız duruyor, admin panelden "Düzenle" ile elle
+  fiyat girmen gerekiyor (bug'dan önce oluşmuş, ben veri silemem/değiştiremem).
+- **Rezervasyon #112**: benim test verim, silinmesi gerekiyor (ben kalıcı veri
+  silemem, admin panelinden senin silmen lazım).
 
 ## AÇIK SORUN — Railway deploy build hatası (17 Ağustos)
 17 Ağustos'ta Google Tag Manager kodu eklendi (`GTM-58F7GC87`, commit `ff75e58`) ve
