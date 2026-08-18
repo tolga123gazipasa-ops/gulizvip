@@ -1065,6 +1065,50 @@ def get_config(key, default=None):
         return default
 
 
+def get_config_safe(key):
+    """get_config ile aynı sorguyu yapar ama 'veri yok' ile 'DB'ye hiç
+    ulaşılamadı' durumlarını AYIRT EDER — get_config'in ikisini de None
+    döndürmesi tehlikeli bir örüntüye yol açıyordu: bazı çağıranlar (örn.
+    load_vehicles) 'None döndüyse hiç veri yok, varsayılanları YAZ' mantığı
+    kuruyordu. Ama None, DB'nin container yeni başlarken henüz hazır olmadığı
+    kısa bir anda da dönebiliyordu — bu durumda gerçek veri hâlâ tabloda
+    duruyorken, üzerine varsayılan/demo veri kalıcı olarak yazılıp GERÇEK
+    VERİ KAYBOLUYORDU (18 Ağustos'ta filo galeri görsellerinin sıfırlanması
+    tam bu senaryoyla açıklandı — birden çok art arda deploy sırasında bir
+    container başlangıcında DB'ye erişim anlık aksamış, kod bunu 'veri hiç
+    yok' sanıp demo varsayılanı DB'ye geri yazmış).
+    Dönüş: (found: bool, value: str|None, db_reachable: bool)"""
+    if not HAS_PSYCOPG2:
+        return (False, None, False)
+    try:
+        conn = get_conn()
+        if not conn:
+            return (False, None, False)
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT value FROM config WHERE key = %s", (key,))
+                row = cur.fetchone()
+        conn.close()
+        if row:
+            return (True, row[0], True)
+        return (False, None, True)
+    except Exception as e:
+        print(f"[!] Config okuma hatası ({key}): {e}")
+        return (False, None, False)
+
+
+def get_json_config_safe(key):
+    """get_config_safe'in JSON'a çevrilmiş hali. Dönüş: (found, value, db_reachable)."""
+    found, raw, db_reachable = get_config_safe(key)
+    if not found:
+        return (False, None, db_reachable)
+    try:
+        return (True, json.loads(raw), db_reachable)
+    except Exception as e:
+        print(f"[!] JSON config parse hatası ({key}): {e}")
+        return (False, None, db_reachable)
+
+
 def set_config(key, value):
     """Config tablosuna bir değer yaz (upsert)."""
     if not HAS_PSYCOPG2:

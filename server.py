@@ -788,14 +788,42 @@ def save_page_content_to_json():
 
 def load_vehicles():
     """Önce PostgreSQL (config tablosu, key='vehicles'), yoksa vehicles.json,
-    o da yoksa varsayılan demo araç."""
+    o da yoksa varsayılan demo araç.
+
+    KRİTİK: DB'ye GERÇEKTEN ulaşılamadığı durumda (container yeni başlarken
+    DB henüz hazır olmayabilir) asla varsayılan demo veriyi DB'ye YAZMIYORUZ —
+    aksi halde gerçek/güncel filo verisi (yüklenmiş galeri görselleri dahil)
+    kalıcı olarak demo veriyle eziliyor. 18 Ağustos'ta yaşanan filo galeri
+    görsellerinin sıfırlanması bu bug yüzündendi. db.get_json_config_safe()
+    'veri yok' ile 'DB'ye ulaşılamadı' ayrımını yapıyor; sadece DB'ye
+    GERÇEKTEN ulaşılıp da satırın olmadığı doğrulanan (yani ilk kurulum)
+    durumda varsayılan yazılır."""
     global VEHICLES, VEHICLE_ID
-    db_data = db.get_json_config("vehicles")
-    if db_data is not None:
+    found, db_data, db_reachable = db.get_json_config_safe("vehicles")
+    if found:
         VEHICLES = db_data.get("vehicles", [])
         VEHICLE_ID = db_data.get("next_id", 1)
         print(f"[✓] load_vehicles() — PostgreSQL'den {len(VEHICLES)} araç yüklendi")
         return
+    if not db_reachable:
+        # DB'ye ulaşılamadı — "veri yok" değil "şu an bilmiyoruz" demek.
+        # Sadece salt-okunur JSON yedeğini dene, DB'ye HİÇBİR ŞEY YAZMA.
+        try:
+            if os.path.exists(VEHICLES_FILE):
+                with open(VEHICLES_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    VEHICLES = data.get("vehicles", [])
+                    VEHICLE_ID = data.get("next_id", 1)
+                    print(f"[✓] load_vehicles() — DB'ye ulaşılamadı, JSON yedeğinden {len(VEHICLES)} araç yüklendi")
+                    return
+        except Exception as e:
+            print(f"[!] Araç JSON yedeği okunamadı: {e}")
+        print("[!] load_vehicles(): DB'ye ulaşılamadı ve JSON yedeği de yok — varsayılanlar DB'ye YAZILMIYOR (veri kaybını önlemek için), bir sonraki başlangıçta tekrar denenecek")
+        VEHICLES = []
+        VEHICLE_ID = 1
+        return
+    # Buraya geldiysek DB'ye gerçekten ulaşıldı ve "vehicles" anahtarı hiç yok —
+    # bu artık güvenle "ilk kurulum" anlamına gelir, varsayılan yazılabilir.
     try:
         if os.path.exists(VEHICLES_FILE):
             with open(VEHICLES_FILE, "r", encoding="utf-8") as f:
