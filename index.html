@@ -1336,7 +1336,17 @@
                 </div>
                 <div id="transfer-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.availabilityWarning">Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</span></div>
                 <div class="form-grid">
-                    <div class="input-group"><label data-i18n="form.passengersLabel">Yolcu</label><div class="input-wrapper"><i class="fa-solid fa-users"></i><select id="transfer-passengers"><option data-i18n="form.passengersOpt">1 - 9 Kişi (VIP Vito)</option></select></div></div>
+                    <div class="input-group"><label data-i18n="form.passengersLabel">Yolcu Sayısı</label><div class="input-wrapper"><i class="fa-solid fa-users"></i><select id="transfer-passengers">
+                        <option value="1" data-i18n="form.passengers1">1 Kişi</option>
+                        <option value="2" selected data-i18n="form.passengers2">2 Kişi</option>
+                        <option value="3" data-i18n="form.passengers3">3 Kişi</option>
+                        <option value="4" data-i18n="form.passengers4">4 Kişi</option>
+                        <option value="5" data-i18n="form.passengers5">5 Kişi</option>
+                        <option value="6" data-i18n="form.passengers6">6 Kişi</option>
+                        <option value="7" data-i18n="form.passengers7">7 Kişi</option>
+                        <option value="8" data-i18n="form.passengers8">8 Kişi</option>
+                        <option value="9" data-i18n="form.passengers9">9 Kişi (VIP Vito, maksimum)</option>
+                    </select></div></div>
                     <div class="input-group"><label data-i18n="form.notesLabel">Notlar (Opsiyonel)</label><div class="input-wrapper"><i class="fa-solid fa-note-sticky"></i><input type="text" id="transfer-notes" placeholder="Özel istek, ek bilgi..." data-i18n-placeholder="form.notesPh"></div></div>
                 </div>
                 <div class="distance-info" id="distanceInfo" style="display:none;">
@@ -1448,6 +1458,17 @@
                     <div class="input-group"><label data-i18n="form.pickupDateLabel">Alış Tarihi</label><div class="input-wrapper"><i class="fa-regular fa-calendar"></i><input type="date" id="tahsis-date" required onchange="checkAvailability('tahsis')"></div></div>
                     <div class="input-group"><label data-i18n="form.pickupTimeLabel">Alış Saati</label><div class="input-wrapper"><i class="fa-regular fa-clock"></i><input type="time" id="tahsis-time" required onchange="checkAvailability('tahsis')"></div></div>
                     <div class="input-group"><label data-i18n="form.vehicleTypeLabel">Araç Tipi</label><div class="input-wrapper"><i class="fa-solid fa-car"></i><select><option data-i18n="form.vehicleTypeOpt">VIP Mercedes Vito</option></select></div></div>
+                    <div class="input-group"><label data-i18n="form.passengersLabel">Yolcu Sayısı</label><div class="input-wrapper"><i class="fa-solid fa-users"></i><select id="tahsis-passengers">
+                        <option value="1" data-i18n="form.passengers1">1 Kişi</option>
+                        <option value="2" selected data-i18n="form.passengers2">2 Kişi</option>
+                        <option value="3" data-i18n="form.passengers3">3 Kişi</option>
+                        <option value="4" data-i18n="form.passengers4">4 Kişi</option>
+                        <option value="5" data-i18n="form.passengers5">5 Kişi</option>
+                        <option value="6" data-i18n="form.passengers6">6 Kişi</option>
+                        <option value="7" data-i18n="form.passengers7">7 Kişi</option>
+                        <option value="8" data-i18n="form.passengers8">8 Kişi</option>
+                        <option value="9" data-i18n="form.passengers9">9 Kişi (VIP Vito, maksimum)</option>
+                    </select></div></div>
                 </div>
                 <div id="tahsis-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.availabilityWarning">Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</span></div>
                 <div class="vip-summary"><div class="title" data-i18n="form.estimatedPriceLabel">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div><small id="vipPriceFx" style="color:var(--text-gray);font-weight:500;"></small></div>
@@ -1903,7 +1924,10 @@
                 flightLabel:"Uçuş Numarası", flightPh:"Örn: TK2405 (Opsiyonel)",
                 dateLabel:"Tarih", timeLabel:"Saat",
                 availabilityWarning:"Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.",
-                passengersLabel:"Yolcu", passengersOpt:"1 - 9 Kişi (VIP Vito)",
+                passengersLabel:"Yolcu Sayısı",
+                passengers1:"1 Kişi", passengers2:"2 Kişi", passengers3:"3 Kişi",
+                passengers4:"4 Kişi", passengers5:"5 Kişi", passengers6:"6 Kişi",
+                passengers7:"7 Kişi", passengers8:"8 Kişi", passengers9:"9 Kişi (VIP Vito, maksimum)",
                 notesLabel:"Notlar (Opsiyonel)", notesPh:"Özel istek, ek bilgi...",
                 estimatedLabel:"Tahmini:", continueBtn:"Devam Et", backBtn:"Geri",
                 contactInfoTitle:"İletişim Bilgileri", nameLabel:"Adınız Soyadınız", namePh:"Adınız ve soyadınız",
@@ -2019,7 +2043,10 @@
                 flightLabel:"Flight Number", flightPh:"e.g. TK2405 (Optional)",
                 dateLabel:"Date", timeLabel:"Time",
                 availabilityWarning:"Our vehicles may be busy at this time slot — we can still take your reservation, our team will contact you shortly to confirm.",
-                passengersLabel:"Passengers", passengersOpt:"1 - 9 People (VIP Vito)",
+                passengersLabel:"Number of Passengers",
+                passengers1:"1 Person", passengers2:"2 People", passengers3:"3 People",
+                passengers4:"4 People", passengers5:"5 People", passengers6:"6 People",
+                passengers7:"7 People", passengers8:"8 People", passengers9:"9 People (VIP Vito, max)",
                 notesLabel:"Notes (Optional)", notesPh:"Special request, additional info...",
                 estimatedLabel:"Estimated:", continueBtn:"Continue", backBtn:"Back",
                 contactInfoTitle:"Contact Information", nameLabel:"Full Name", namePh:"Your first and last name",
@@ -2135,7 +2162,10 @@
                 flightLabel:"Номер рейса", flightPh:"Напр.: TK2405 (Необязательно)",
                 dateLabel:"Дата", timeLabel:"Время",
                 availabilityWarning:"В это время наши автомобили могут быть заняты — мы всё равно можем принять вашу заявку, наша команда свяжется с вами в ближайшее время для подтверждения.",
-                passengersLabel:"Пассажиры", passengersOpt:"1-9 человек (VIP Vito)",
+                passengersLabel:"Количество пассажиров",
+                passengers1:"1 человек", passengers2:"2 человека", passengers3:"3 человека",
+                passengers4:"4 человека", passengers5:"5 человек", passengers6:"6 человек",
+                passengers7:"7 человек", passengers8:"8 человек", passengers9:"9 человек (VIP Vito, максимум)",
                 notesLabel:"Примечания (необязательно)", notesPh:"Особые пожелания, доп. информация...",
                 estimatedLabel:"Примерно:", continueBtn:"Продолжить", backBtn:"Назад",
                 contactInfoTitle:"Контактная информация", nameLabel:"Имя и фамилия", namePh:"Ваше имя и фамилия",
@@ -3340,6 +3370,8 @@
                 }
                 payload.date = document.getElementById('tahsis-date').value;
                 payload.time = document.getElementById('tahsis-time').value;
+                var tahsisPassengers = document.getElementById('tahsis-passengers');
+                if (tahsisPassengers) payload.passengers = tahsisPassengers.value;
                 payload.customerName = document.getElementById('tahsis-name').value;
                 payload.customerPhone = document.getElementById('tahsis-phone').value;
                 payload.customerEmail = document.getElementById('tahsis-email').value;
