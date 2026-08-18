@@ -1751,6 +1751,35 @@ document.getElementById('cardForm').addEventListener('submit', function(e) {{
 </html>"""
 
 
+def _render_return_link_message_page(title, message):
+    """/donus/<id>/<token> geçersiz, süresi dolmuş veya rezervasyon bulunamadığında
+    gösterilen, sitenin geri kalanıyla görsel olarak tutarlı basit bir bilgi sayfası
+    (önceden çıplak bir '<h2>' etiketiydi, hiçbir yönlendirme/marka görünürlüğü yoktu)."""
+    return f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>{title} — Güliz VIP Transfer</title>
+<style>
+  body {{ margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:#0f172a; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }}
+  .card {{ background:#fff; border-radius:16px; padding:32px; max-width:420px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.35); text-align:center; }}
+  .card h2 {{ margin:0 0 10px; font-size:19px; color:#0f172a; }}
+  .card p {{ color:#64748b; font-size:14px; line-height:1.6; margin:0; }}
+  .icon {{ font-size:32px; margin-bottom:12px; }}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⏱️</div>
+    <h2>{title}</h2>
+    <p>{message}</p>
+  </div>
+</body>
+</html>"""
+
+
 def _render_return_reservation_page(reservation, token):
     """Admin'in 'Dönüş Rezervasyonu Oluştur' özelliğiyle ürettiği link (GET
     /donus/<id>/<token>) açıldığında gösterilir. Müşteri, önceden doldurulmuş
@@ -2459,20 +2488,28 @@ def generate_return_token(res_id):
     return f"{expiry}.{sig_b64}"
 
 def verify_return_token(res_id, token):
+    return _check_return_token(res_id, token) == "valid"
+
+def _check_return_token(res_id, token):
+    """verify_return_token'ın ayrıntılı hali — /donus/ sayfasında müşteriye doğru
+    mesajı gösterebilmek için (süresi dolmuş / geçersiz link ayrımı) 'valid',
+    'expired' veya 'invalid' döner."""
     if not token or "." not in token:
-        return False
+        return "invalid"
     try:
         expiry_str, sig_b64 = token.split(".", 1)
         expiry = int(expiry_str)
-        if time.time() > expiry:
-            return False  # süresi dolmuş
         payload = f"return:{res_id}:{expiry}"
         expected_sig = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).digest()
         pad = sig_b64 + "=" * (4 - len(sig_b64) % 4) if len(sig_b64) % 4 else sig_b64
         sig_bytes = base64.urlsafe_b64decode(pad)
-        return hmac.compare_digest(expected_sig, sig_bytes)
+        if not hmac.compare_digest(expected_sig, sig_bytes):
+            return "invalid"
+        if time.time() > expiry:
+            return "expired"
+        return "valid"
     except Exception:
-        return False
+        return "invalid"
 
 # ─── HTTP Handler ─────────────────────────────────────────────────────────────
 
@@ -2770,12 +2807,27 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     except ValueError:
                         res_id = None
                     token = parts[1]
-                if res_id is None or not verify_return_token(res_id, token):
-                    self._send_html("<h2>Bu bağlantı geçersiz veya süresi dolmuş.</h2>", 403)
+                token_status = _check_return_token(res_id, token) if res_id is not None else "invalid"
+                if token_status == "expired":
+                    self._send_html(_render_return_link_message_page(
+                        "Bu Bağlantının Süresi Dolmuş",
+                        "Dönüş rezervasyonu bağlantınızın geçerlilik süresi (1 saat) sona ermiş. "
+                        "Yeni bir bağlantı için lütfen Güliz VIP Transfer ile iletişime geçin."
+                    ), 403)
+                    return
+                if token_status != "valid":
+                    self._send_html(_render_return_link_message_page(
+                        "Bağlantı Geçersiz",
+                        "Bu bağlantı geçerli değil. Lütfen doğru bağlantıyı kullandığınızdan emin olun "
+                        "veya Güliz VIP Transfer ile iletişime geçin."
+                    ), 403)
                     return
                 target = next((r for r in RESERVATIONS if r.get("id") == res_id), None)
                 if target is None:
-                    self._send_html("<h2>Rezervasyon bulunamadı.</h2>", 404)
+                    self._send_html(_render_return_link_message_page(
+                        "Rezervasyon Bulunamadı",
+                        "Bu bağlantıya ait bir rezervasyon bulunamadı. Lütfen Güliz VIP Transfer ile iletişime geçin."
+                    ), 404)
                     return
                 self._send_html(_render_return_reservation_page(target, token))
                 return
@@ -3849,8 +3901,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 body = json.loads(self._read_body())
                 res_id = body.get("id")
                 token = body.get("token", "")
-                if not verify_return_token(res_id, token):
-                    self._send_error("Geçersiz veya süresi dolmuş bağlantı.", 403)
+                token_status = _check_return_token(res_id, token) if res_id is not None else "invalid"
+                if token_status == "expired":
+                    self._send_error("Bu bağlantının süresi dolmuş (1 saat geçmiş). Yeni bir bağlantı için lütfen Güliz VIP Transfer ile iletişime geçin.", 403)
+                    return
+                if token_status != "valid":
+                    self._send_error("Geçersiz bağlantı.", 403)
                     return
                 target = next((r for r in RESERVATIONS if r.get("id") == res_id), None)
                 if not target:
