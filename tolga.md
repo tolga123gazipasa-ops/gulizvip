@@ -4,6 +4,15 @@ Son güncelleme: 2026-08-18 (yolcu/çocuk stepper + interlock, rezervasyon fiyat
 
 ## GÜNCEL (18 Ağustos) — Booking formu iyileştirmeleri + kritik bug fix
 
+**Oturum kapanışı:** Bugün üretken bir gündü — yolcu/çocuk stepper + kapasite
+kilidi, rezervasyon fiyat=0 kritik bug'ı, harita/Telegram bildirim
+iyileştirmeleri ve komple yeni bir özellik (Dönüş Rezervasyonu Linki) aynı
+oturumda tasarlanıp kodlandı, test edildi, push edildi ve canlıda doğrulandı.
+Açık kod tarafı sorun yok. Tek not: Tolga'nın kendi bilgisayarındaki Chrome
+profilinde siteye giriş sorunu yaşandı (gizli pencerede/telefonda sorunsuzdu)
+— proje/sunucu tarafıyla ilgisi yok, tarayıcı önbellek/çerez temizliğiyle
+çözülüyor.
+
 **1. Yolcu/Çocuk sayısı artık +/− stepper (önceden dropdown'dı).** Küçük, kompakt
 butonlar (26px), min/maks'a gelince buton otomatik pasifleşiyor.
 
