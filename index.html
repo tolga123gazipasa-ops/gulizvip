@@ -3170,6 +3170,15 @@
 
             if (typeof calculateVipPrice === 'function') calculateVipPrice();
             if (typeof switchForm === 'function') switchForm('transfer');
+
+            // Tahsis haritası sadece alış noktasına ihtiyaç duyar (varış yok) —
+            // reset sonrası alış koordinatları zaten geçerli olduğu için, sayfa
+            // ilk açıldığındaki gibi haritayı hemen tekrar gösterelim. Aksi halde
+            // kullanıcı Tahsis sekmesine geçtiğinde harita, tekrar bir adres
+            // etkileşimi olana kadar boş/gizli kalıyordu.
+            if (selectedPickupLat !== null && typeof showRouteMap === 'function') {
+                setTimeout(function() { showRouteMap('tahsis'); }, 50);
+            }
         }
 
         function switchForm(formType) {
@@ -3190,6 +3199,32 @@
                 document.getElementById('form-tahsis').classList.add('active-form');
                 calculateVipPrice();
             }
+
+            // BUG DÜZELTMESİ: harita, sekme gizliyken (display:none) ilk kez
+            // oluşturulmuşsa (ör. sayfa açılışında arka planda tahsis haritası
+            // hazırlanırken hâlâ Transfer sekmesi açıksa) Google Maps 0x0 boyutla
+            // render ediyor ve sekmeye geçilince görünmüyor. Sekme her
+            // değiştiğinde ilgili haritaya "resize" tetikleyip yeniden
+            // ortalıyoruz — container artık gerçek boyutuna kavuşmuş oluyor.
+            setTimeout(function() {
+                var target = (formType === 'tahsis') ? 'tahsis' : 'transfer';
+                var state = routeMapState[target];
+                if (state && state.map && typeof google !== 'undefined' && google.maps) {
+                    google.maps.event.trigger(state.map, 'resize');
+                    if (state.pickupMarker && state.destMarker) {
+                        var bounds = new google.maps.LatLngBounds();
+                        bounds.extend(state.pickupMarker.getPosition());
+                        bounds.extend(state.destMarker.getPosition());
+                        state.map.fitBounds(bounds);
+                    } else if (state.pickupMarker) {
+                        state.map.setCenter(state.pickupMarker.getPosition());
+                        state.map.setZoom(14);
+                    } else if (state.destMarker) {
+                        state.map.setCenter(state.destMarker.getPosition());
+                        state.map.setZoom(14);
+                    }
+                }
+            }, 150);
         }
 
         // 2. YENİ YAPI: ADMİN PANELİNDEN GELEN DATA-PRICE HESAPLAMASI
