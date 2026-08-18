@@ -1662,8 +1662,14 @@ def _generate_payment_link(reservation, amount, currency, provider):
     (bkz. GET /odeme/garanti/<id> — orada kart formu + otomatik Garanti'ye post var)."""
     ref = uuid.uuid4().hex[:12]
     if provider == "garanti":
+        # Doğrudan kart formuna değil, önce müşterinin rezervasyonu bir bakışta
+        # görüp kart/havale seçtiği özet sayfasına (/odeme/onayla/<id>/<token>)
+        # yönlendiriyoruz — dönüş rezervasyonu linkiyle aynı desen (bkz.
+        # _render_return_reservation_page). "Kart" seçilirse o sayfa kendisi
+        # /odeme/garanti/<id>'e yönlendirir.
         base_url = os.environ.get("PUBLIC_BASE_URL", "https://gulizvip.com.tr")
-        url = f"{base_url}/odeme/garanti/{reservation.get('id')}"
+        token = generate_return_token(reservation.get("id"))
+        url = f"{base_url}/odeme/onayla/{reservation.get('id')}/{token}"
         return {"url": url, "intentId": f"garanti_{ref}", "provider": "garanti"}
     # Manuel/placeholder mod: operasyon ekibinin müşteriye ilettiği izlenebilir bir
     # referans linki — gerçek ödeme sayfasına yönlendirmez, sadece altyapıyı hazırlar.
@@ -1817,11 +1823,13 @@ def _render_return_link_message_page(title, message):
 </html>"""
 
 
-def _render_return_reservation_page(reservation, token):
-    """Admin'in 'Dönüş Rezervasyonu Oluştur' özelliğiyle ürettiği link (GET
-    /donus/<id>/<token>) açıldığında gösterilir. Müşteri, önceden doldurulmuş
-    rezervasyon bilgilerini salt-okunur bir özet olarak görür, sadece telefonunu
-    teyit edip ödeme yöntemini seçer — adres/tarih formlarını baştan doldurmaz."""
+def _render_return_reservation_page(reservation, token, is_return=True):
+    """Admin'in ürettiği link açıldığında gösterilir — iki kaynaktan gelebilir:
+    /donus/<id>/<token> ('Dönüş Rezervasyonu Oluştur') veya /odeme/onayla/<id>/<token>
+    ('Ödeme Linki Oluştur', genel rezervasyonlar için). Müşteri, önceden doldurulmuş
+    rezervasyon bilgilerini salt-okunur bir özet olarak görür, sadece telefonunu/
+    e-postasını teyit edip ödeme yöntemini seçer — adres/tarih formlarını baştan
+    doldurmaz. is_return sadece başlık/metin farkını belirler, akış aynıdır."""
     def esc(v):
         return str(v or "").replace("<", "&lt;").replace(">", "&gt;")
 
@@ -1840,13 +1848,16 @@ def _render_return_reservation_page(reservation, token):
     except Exception:
         expiry_label = ""
     expiry_note = f'<p style="font-size:12px;color:#94a3b8;text-align:center;margin:16px 0 0;">Bu bağlantı saat {expiry_label}\'e kadar geçerlidir.</p>' if expiry_label else ""
+    page_title = "Dönüş Rezervasyonunuz Hazır" if is_return else "Rezervasyonunuz Hazır"
+    html_title_tag = "Dönüş Rezervasyonu" if is_return else "Rezervasyon Onayı"
+    success_msg = "Teşekkürler! Dönüş rezervasyonunuz alındı." if is_return else "Teşekkürler! Rezervasyonunuz onaylandı."
     return f"""<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
-<title>Dönüş Rezervasyonu — Güliz VIP Transfer</title>
+<title>{html_title_tag} — Güliz VIP Transfer</title>
 <style>
   * {{ box-sizing: border-box; }}
   body {{ margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:#0f172a; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }}
@@ -1873,7 +1884,7 @@ def _render_return_reservation_page(reservation, token):
 </head>
 <body>
   <div class="card">
-    <h2>Dönüş Rezervasyonunuz Hazır</h2>
+    <h2>{page_title}</h2>
     <p class="sub">{esc(reservation.get('customerName'))} — Rezervasyon #{res_id}</p>
     <div class="summary">
       <div class="summary-row"><span>Alış Noktası</span><span>{esc(reservation.get('pickup'))}</span></div>
@@ -1895,7 +1906,7 @@ def _render_return_reservation_page(reservation, token):
       <div class="err" id="errBox"></div>
     </form>
     <div id="successBox" style="display:none;">
-      <p style="color:#16a34a;font-weight:600;margin-top:20px;">Teşekkürler! Dönüş rezervasyonunuz alındı.</p>
+      <p style="color:#16a34a;font-weight:600;margin-top:20px;">{success_msg}</p>
       <div id="ibanBox"></div>
     </div>
     {expiry_note}
@@ -2832,10 +2843,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     return
                 self._send_html(_render_garanti_payment_page(target))
                 return
-            if path.startswith("/donus/"):
-                # Admin panelindeki "Dönüş Rezervasyonu Oluştur" özelliğiyle üretilen link.
-                # Format: /donus/<id>/<token> — token doğrulanmadan hiçbir bilgi gösterilmez.
-                parts = path[len("/donus/"):].strip("/").split("/")
+            if path.startswith("/donus/") or path.startswith("/odeme/onayla/"):
+                # /donus/<id>/<token> — admin'in "Dönüş Rezervasyonu Oluştur" özelliğiyle
+                # ürettiği link. /odeme/onayla/<id>/<token> — admin'in "Ödeme Linki Oluştur"
+                # özelliğiyle ürettiği, aynı özet+kart/havale seçim sayfasını kullanan genel
+                # link. İkisi de aynı token mekanizmasını (bkz. generate_return_token) ve aynı
+                # onay uç noktasını (/api/public/return-reservation/confirm) kullanır; tek fark
+                # sayfa başlığı/metni (dönüşe özgü mü, genel mi).
+                is_return_link = path.startswith("/donus/")
+                prefix = "/donus/" if is_return_link else "/odeme/onayla/"
+                parts = path[len(prefix):].strip("/").split("/")
                 res_id = None
                 token = ""
                 if len(parts) >= 2:
@@ -2848,7 +2865,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if token_status == "expired":
                     self._send_html(_render_return_link_message_page(
                         "Bu Bağlantının Süresi Dolmuş",
-                        "Dönüş rezervasyonu bağlantınızın geçerlilik süresi (1 saat) sona ermiş. "
+                        "Bu bağlantının geçerlilik süresi (1 saat) sona ermiş. "
                         "Yeni bir bağlantı için lütfen Güliz VIP Transfer ile iletişime geçin."
                     ), 403)
                     return
@@ -2866,7 +2883,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         "Bu bağlantıya ait bir rezervasyon bulunamadı. Lütfen Güliz VIP Transfer ile iletişime geçin."
                     ), 404)
                     return
-                self._send_html(_render_return_reservation_page(target, token))
+                self._send_html(_render_return_reservation_page(target, token, is_return=is_return_link))
                 return
             if path == "/api/availability":
                 # FAZ 3: Sitede müsaitlik göstergesi. Filo tanımlı değilse (henüz araç birimi
@@ -3940,11 +3957,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 self._send_error("Geçersiz JSON.", 400)
             return
         if path == "/api/public/return-reservation/confirm":
-            # Dönüş rezervasyonu sayfasından (/donus/<id>/<token>) müşteri telefonunu
-            # teyit edip ödeme yöntemini seçtiğinde çağrılır. Kimlik doğrulaması yok
-            # (public) — ama token doğrulanmadan hiçbir kayıt güncellenmiyor, aksi
-            # halde biri rezervasyon ID'sini deneyerek başka müşterilerin telefon/
-            # ödeme bilgisini değiştirebilirdi.
+            # /donus/<id>/<token> (dönüş rezervasyonu) VE /odeme/onayla/<id>/<token>
+            # (admin'in genel "Ödeme Linki Oluştur" özelliği) sayfalarından, müşteri
+            # telefonunu/e-postasını teyit edip ödeme yöntemini seçtiğinde çağrılır.
+            # Kimlik doğrulaması yok (public) — ama token doğrulanmadan hiçbir kayıt
+            # güncellenmiyor, aksi halde biri rezervasyon ID'sini deneyerek başka
+            # müşterilerin telefon/ödeme bilgisini değiştirebilirdi.
             try:
                 body = json.loads(self._read_body())
                 res_id = body.get("id")
@@ -4011,6 +4029,13 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 save_reservations()
                 tip_etiket = "🚗 Transfer" if target.get("type") == "transfer" else "👑 Şoförlü Günlük VIP"
                 is_card_payment = payment_method == "kart"
+                # /donus/ (dönüş rezervasyonu) ve /odeme/onayla/ (admin'in genel "Ödeme
+                # Linki Oluştur" özelliği) aynı bu uç noktayı paylaşıyor — bildirim
+                # metninde doğru bağlamı göstermek için create-return'ün notes alanına
+                # yazdığı sabit önekten ayırt ediyoruz.
+                is_return_type = "Dönüş rezervasyonu —" in (target.get("notes") or "")
+                kayit_etiket = "Dönüş rezervasyonu" if is_return_type else "Rezervasyon"
+                emoji = "🔁" if is_return_type else "✅"
                 if is_card_payment:
                     # ÖNEMLİ: kredi kartı seçildiğinde müşteri HENÜZ ÖDEMEYİ TAMAMLAMADI —
                     # bir sonraki adımda /odeme/garanti/<id> kart formuna yönlenecek. Asıl
@@ -4020,36 +4045,36 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     # Burada erkenden "onaylandı" demek, ödeme hiç tamamlanmasa bile admin'e
                     # yanıltıcı bir bildirim gönderirdi.
                     send_telegram(
-                        f"🅿️ <b>Dönüş rezervasyonu oluşturuldu — kredi kartı ödemesi bekleniyor</b>\n"
+                        f"🅿️ <b>{kayit_etiket} — kredi kartı ödemesi bekleniyor</b>\n"
                         f"🆔 <b>#{target['id']}</b> — {tip_etiket}\n"
                         f"👤 {target.get('customerName','')} — 📞 {target.get('customerPhone','')}\n"
-                        f"💰 {target.get('price',0)}₺\n"
+                        f"💰 {target.get('price',0)} {target.get('currency','TRY')}\n"
                         f"<i>Ödeme onaylanınca ayrı bir bildirim gelecek.</i>"
                     )
                     _push_dashboard_notification(
-                        f"🅿️ Dönüş rezervasyonu #{target['id']} — kredi kartı ödemesi bekleniyor.",
+                        f"🅿️ {kayit_etiket} #{target['id']} — kredi kartı ödemesi bekleniyor.",
                         ntype="reservation", reservation_id=target["id"]
                     )
                 else:
                     send_telegram(
-                        f"🔁 <b>Yeni Dönüş Rezervasyonu #{target['id']}</b>\n"
+                        f"{emoji} <b>{kayit_etiket} Onaylandı #{target['id']}</b>\n"
                         f"📋 <b>Tür:</b> {tip_etiket}\n"
                         f"👤 <b>İsim:</b> {target.get('customerName','')}\n"
                         f"📞 <b>Telefon:</b> {target.get('customerPhone','')}\n"
                         f"📍 <b>Alış:</b> {target.get('pickup','')}\n"
                         f"🏁 <b>Varış:</b> {target.get('destination','')}\n"
                         f"📅 <b>Tarih:</b> {target.get('date','')} {target.get('time','')}\n"
-                        f"💰 <b>Ücret:</b> {target.get('price',0)}₺\n"
+                        f"💰 <b>Ücret:</b> {target.get('price',0)} {target.get('currency','TRY')}\n"
                         f"💳 <b>Ödeme:</b> Havale/EFT (müşteri kendi yapacak)"
                     )
                     _push_dashboard_notification(
-                        f"🔁 Dönüş rezervasyonu #{target['id']} oluşturuldu (havale).",
+                        f"{emoji} {kayit_etiket} #{target['id']} onaylandı (havale).",
                         ntype="reservation", reservation_id=target["id"]
                     )
                     try:
                         send_confirmation_email(target)
                     except Exception as e:
-                        print(f"[!] Dönüş rezervasyonu e-posta gönderme hatası: {e}")
+                        print(f"[!] Rezervasyon onay e-postası gönderme hatası: {e}")
                     # Havale seçiminde müşteri ödemeyi kendisi yapacağını teyit ettiği için
                     # (normal site rezervasyonundaki havale davranışıyla aynı mantık — bkz.
                     # POST /api/reservations), rezervasyon sayacı/toplam harcama hemen
@@ -4321,11 +4346,14 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"success": True})  # provider'a her zaman 200 dön, yeniden denemeyi önle
             return
         if path == "/api/admin/payments/create-link":
-            # Dövizli Ödeme Linki Oluşturma — provider-agnostic altyapı.
-            # NOT: Stripe/PayTR arasında henüz karar verilmedi. Bu uç gerçek bir ödeme
-            # sağlayıcısına bağlı DEĞİLDİR — rezervasyona bir "bekleyen ödeme linki" kaydı
-            # oluşturur ve provider seçilip API anahtarları tanımlandığında
-            # _generate_payment_link() içindeki TODO bloklarının doldurulması yeterlidir.
+            # Dövizli Ödeme Linki Oluşturma — admin panelinden manuel tetiklenir.
+            # Varsayılan sağlayıcı Garanti BBVA (PAYMENT_PROVIDER, bkz. yukarıda) —
+            # üretilen link /odeme/onayla/<id>/<token> özet+seçim sayfasına gider
+            # (bkz. _render_return_reservation_page), müşteri orada Kredi Kartı ya da
+            # Havale/EFT seçer. Kart seçilirse gerçek Garanti kart formuna
+            # (/odeme/garanti/<id>) yönlendirilir; başka bir provider tanımlanırsa
+            # _generate_payment_link() içindeki manuel/placeholder dala düşer (henüz
+            # gerçek bir ödeme sayfası yok).
             user = self._authenticate()
             if not user:
                 self._send_error("Yetkisiz erişim.", 401)
@@ -4352,16 +4380,26 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if target is None:
                     self._send_error("Rezervasyon bulunamadı.", 404)
                     return
+                # Linkteki tutar/para birimi admin'in az önce girdiği değerlerle
+                # eşleşsin diye rezervasyona yazılıyor. paymentMethod de bilerek
+                # boşa çekiliyor — müşteri /odeme/onayla sayfasında kart/havale
+                # seçene kadar ödeme yöntemi "belirsiz" sayılır; bu, aynı zamanda
+                # aynı çift-tıklama koruma mantığının (bkz. return-reservation/confirm)
+                # bu link için de sorunsuz çalışmasını sağlar.
+                with reservations_lock:
+                    target["price"] = amount
+                    target["currency"] = currency
+                    target["paymentMethod"] = ""
                 link_info = _generate_payment_link(target, amount, currency, provider)
                 with reservations_lock:
-                    target["currency"] = currency
                     target["paymentLink"] = link_info["url"]
                     target["stripePaymentIntentId"] = link_info.get("intentId", "")
                     target["paymentStatus"] = "link_created"
                 save_reservations()
                 try:
                     db.update_reservation_in_db(res_id, {
-                        "currency": currency, "paymentLink": link_info["url"],
+                        "price": amount, "currency": currency, "paymentMethod": "",
+                        "paymentLink": link_info["url"],
                         "stripePaymentIntentId": link_info.get("intentId", ""),
                         "paymentStatus": "link_created",
                     })

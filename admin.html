@@ -2705,7 +2705,7 @@
         .catch(function() { alert('Sunucu hatası'); });
     }
 
-    // ─── Dövizli Ödeme Linki (Stripe/PayTR altyapısı) ────────────────────────
+    // ─── Ödeme Linki Oluştur (özet + kart/havale seçim sayfasına yönlendirir) ─
     function openPaymentLinkModal(id) {
         var token = getToken();
         if(!token) { alert('Oturum süreniz dolmuş.'); return; }
@@ -2734,7 +2734,7 @@
                 '<option value="GBP"' + (r.currency === 'GBP' ? ' selected' : '') + '>GBP (£)</option>' +
                 '</select></div>' +
                 '</div>' +
-                '<p style="font-size:12px;color:#94A3B8;margin:0 0 16px;line-height:1.5;">Not: Kredi kartı sağlayıcısı (Stripe/PayTR) henüz seçilmedi — bu link, altyapı hazır olduğunda gerçek ödeme sayfasına yönlendirecek izlenebilir bir referans linkidir.</p>' +
+                '<p style="font-size:12px;color:#94A3B8;margin:0 0 16px;line-height:1.5;">Müşteri linke tıkladığında önce rezervasyon özetini görür, sonra Kredi Kartı (Garanti BBVA) veya Havale/EFT seçer — havale seçerse IBAN bilgileri anında gösterilir.</p>' +
                 '<button class="btn-approve" onclick="submitPaymentLink(' + r.id + ')" style="width:100%;padding:12px;font-size:14px;"><i class="fa-solid fa-link"></i> Linki Oluştur</button>' +
                 '</div></div>';
 
