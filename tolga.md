@@ -51,13 +51,28 @@ yapıldı.
 oturum açık console'a girilip kontrol edildi: bakiye 0, kart geçerli, e-postanın
 iddiası doğrulanamadı. Muhtemelen phishing, aksiyon gerekmiyor.
 
+**8. YENİ ÖZELLİK — Dönüş Rezervasyonu Linki:** Bir müşteri "dönüş hizmetini de
+sizden almak istiyorum" dediğinde, admin panelinde rezervasyon detayına
+"Dönüş Rezervasyonu Oluştur" butonu eklendi. Tıklayınca alış/varış ters
+çevrilmiş (tahsiste süre aynen) önceden dolu bir form açılıyor, sen sadece
+tarih/saat giriyorsun, fiyatı kontrol ediyorsun. Sistem müşteri ad/telefon/
+e-postasını orijinal rezervasyondan kopyalayıp yeni bir rezervasyon oluşturuyor
+ve tahmin edilemez, güvenli bir link üretiyor (linkteki numarayı değiştirerek
+başka müşterinin bilgisine erişilemiyor — kriptografik olarak imzalı). Linki
+WhatsApp'tan gönderiyorsun, müşteri açınca salt-okunur bir özet görüyor
+(alış/varış/tarih/saat/yolcu/ücret), sadece telefonunu teyit edip ödeme
+yöntemini (havale/kredi kartı) seçiyor — kredi kartı seçerse mevcut Garanti
+ödeme sayfasına yönleniyor, havale seçerse IBAN bilgileri çıkıyor. Onay
+gelince sana Telegram bildirimi + dashboard bildirimi gidiyor.
+
 ### Hemen Yapılması Gereken
 ```
 cd C:\proje\gulizvip
 git push origin main
 ```
-2 commit push bekliyor: harita retry fix + Telegram "Fiyat Hesapla" detay
-eklentisi. Push edilmeden Railway'e yansımaz.
+5 commit push bekliyor: harita retry fix, Telegram "Fiyat Hesapla" detay
+eklentisi, harita uyarısının kaldırılması, Dönüş Rezervasyonu Linki özelliği.
+Push edilmeden Railway'e yansımaz.
 
 ### Açık / senin kararına kalan konular
 - **404 sayfası:** var olmayan bir adrese gidince şu an düzgün tasarlanmış hata
