@@ -719,11 +719,11 @@
         .input-wrapper i { position: absolute; left: 16px; color: var(--primary-red); font-size: 18px; }
         .input-wrapper input, .input-wrapper select { width: 100%; padding: 18px 18px 18px 48px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 16px; font-weight: 600; color: var(--text-dark); background: var(--bg-light); outline: none; transition: var(--transition); -webkit-appearance: none; }
         .input-wrapper input:focus, .input-wrapper select:focus { border-color: var(--primary-navy); background: var(--pure-white); }
-        .qty-stepper { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 10px 8px 48px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-light); }
-        .qty-stepper .qty-btn { width: 38px; height: 38px; flex-shrink: 0; border: none; border-radius: 8px; background: var(--primary-navy); color: var(--pure-white); font-size: 20px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+        .qty-stepper { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px 8px 48px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-light); box-sizing: border-box; min-height: 40px; }
+        .qty-stepper .qty-btn { width: 26px; height: 26px; flex-shrink: 0; border: none; border-radius: 6px; background: var(--primary-navy); color: var(--pure-white); font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
         .qty-stepper .qty-btn:hover:not(:disabled) { background: var(--primary-red); }
         .qty-stepper .qty-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-        .qty-stepper .qty-value { font-size: 18px; font-weight: 700; color: var(--text-dark); min-width: 24px; text-align: center; }
+        .qty-stepper .qty-value { font-size: 15px; font-weight: 700; color: var(--text-dark); min-width: 16px; text-align: center; }
         .use-location-btn { position: relative; display: inline-flex; align-items: center; gap: 6px; background: var(--primary-red); border: none; color: var(--pure-white); font-size: 12px; font-weight: 700; cursor: pointer; padding: 9px 16px; border-radius: 20px; margin-top: 8px; align-self: flex-start; transition: var(--transition); box-shadow: 0 4px 10px rgba(227, 24, 55, 0.25); }
         .use-location-btn:hover { background: #b5122a; }
         .use-location-btn:disabled { opacity: 0.6; cursor: wait; }
@@ -1103,8 +1103,8 @@
             .input-group label { font-size: 10px; }
             .input-wrapper input, .input-wrapper select { padding: 14px 14px 14px 40px; font-size: 16px; }
             .input-wrapper i { left: 12px; font-size: 15px; }
-            .qty-stepper { padding: 6px 8px 6px 40px; }
-            .qty-stepper .qty-btn { width: 34px; height: 34px; font-size: 18px; }
+            .qty-stepper { padding: 6px 10px 6px 40px; gap: 10px; min-height: 36px; }
+            .qty-stepper .qty-btn { width: 24px; height: 24px; font-size: 14px; }
             .submit-btn, .next-btn, .back-btn, .final-btn { padding: 16px; font-size: 14px; }
             .step-indicator { gap: 4px; margin-bottom: 20px; }
             .step-num { font-size: 10px; }
