@@ -229,20 +229,9 @@
             document.head.appendChild(script);
         }
 
-        // Google Maps herhangi bir sebeple çalışmazsa (API anahtarı sorunu, kota,
-        // ağ engeli vb.) sadece sayfada sessizce bir hata göstermekle kalmayıp
-        // admin'e Telegram'dan da haber veriyoruz — aksi halde site "çalışıyor
-        // gibi görünür" ama arka planda kimse rezervasyon tamamlayamaz ve kimse
-        // fark etmeyebilir. Aynı oturumda tekrar tekrar bildirim göndermesin
-        // diye sadece ilk hatada bir kere gönderiyoruz.
-        var mapsErrorAlertSent = false;
         function showMapError(msg) {
             var el = document.getElementById('mapError');
             if(el) { el.textContent = msg; el.style.display = 'block'; }
-            if (!mapsErrorAlertSent && typeof gulizTracker !== 'undefined' && gulizTracker && typeof gulizTracker.trackEvent === 'function') {
-                mapsErrorAlertSent = true;
-                gulizTracker.trackEvent('⚠️ Google Maps ÇALIŞMIYOR', msg + ' | Sayfa: ' + window.location.href, true);
-            }
         }
 
         // Google Maps auth hatası yakalama
