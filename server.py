@@ -1813,9 +1813,12 @@ def _render_return_reservation_page(reservation, token):
     <form id="confirmForm">
       <label>Telefon Numaranız</label>
       <input id="phoneInput" required inputmode="tel" value="{esc(reservation.get('customerPhone'))}" placeholder="05XX XXX XX XX">
+      <label>E-posta Adresiniz</label>
+      <input id="emailInput" type="email" required value="{esc(reservation.get('customerEmail'))}" placeholder="ornek@eposta.com">
       <label>Ödeme Yöntemi</label>
-      <label class="pay-opt"><input type="radio" name="paymethod" value="havale" checked> Banka Havalesi / EFT</label>
+      <label class="pay-opt"><input type="radio" name="paymethod" value="havale"> Banka Havalesi / EFT</label>
       <label class="pay-opt"><input type="radio" name="paymethod" value="kart"> Kredi Kartı (Online)</label>
+      <div id="ibanPreview" style="display:none;"></div>
       <button type="submit" id="confirmBtn">Rezervasyonu Onayla</button>
       <div class="err" id="errBox"></div>
     </form>
@@ -1825,19 +1828,56 @@ def _render_return_reservation_page(reservation, token):
     </div>
   </div>
 <script>
+var bankAccountsCache = null;
+function fetchBankAccounts() {{
+  if (bankAccountsCache) return Promise.resolve(bankAccountsCache);
+  return fetch('/api/bank-accounts').then(function(r) {{ return r.json(); }}).then(function(bd) {{
+    bankAccountsCache = bd;
+    return bd;
+  }});
+}}
+function renderIban() {{
+  var html = '';
+  Object.keys(bankAccountsCache.accounts).forEach(function(k) {{
+    var acc = bankAccountsCache.accounts[k];
+    html += '<div class="iban-box"><b>' + acc.name + '</b>' + acc.accountHolder + '<br>' + acc.iban + '</div>';
+  }});
+  return html + '<p style="font-size:13px;color:#64748b;margin-top:10px;">Açıklama kısmına rezervasyon numaranızı (#{res_id}) yazmayı unutmayın.</p>';
+}}
+Array.prototype.forEach.call(document.querySelectorAll('input[name="paymethod"]'), function(radio) {{
+  radio.addEventListener('change', function() {{
+    var preview = document.getElementById('ibanPreview');
+    if (this.value === 'havale') {{
+      fetchBankAccounts().then(function(bd) {{
+        if (!bd.success) return;
+        preview.innerHTML = renderIban();
+        preview.style.display = 'block';
+      }});
+    }} else {{
+      preview.style.display = 'none';
+    }}
+  }});
+}});
 document.getElementById('confirmForm').addEventListener('submit', function(e) {{
   e.preventDefault();
-  var btn = document.getElementById('confirmBtn');
+  var checkedRadio = document.querySelector('input[name="paymethod"]:checked');
   var errBox = document.getElementById('errBox');
+  if (!checkedRadio) {{
+    errBox.textContent = 'Lütfen bir ödeme yöntemi seçin.';
+    errBox.style.display = 'block';
+    return;
+  }}
+  var btn = document.getElementById('confirmBtn');
   errBox.style.display = 'none';
   btn.disabled = true;
   btn.textContent = 'Gönderiliyor...';
   var phone = document.getElementById('phoneInput').value.trim();
-  var payMethod = document.querySelector('input[name="paymethod"]:checked').value;
+  var email = document.getElementById('emailInput').value.trim();
+  var payMethod = checkedRadio.value;
   fetch('/api/public/return-reservation/confirm', {{
     method: 'POST',
     headers: {{ 'Content-Type': 'application/json' }},
-    body: JSON.stringify({{ id: {res_id}, token: '{token}', phone: phone, paymentMethod: payMethod }})
+    body: JSON.stringify({{ id: {res_id}, token: '{token}', phone: phone, email: email, paymentMethod: payMethod }})
   }})
   .then(function(r) {{ return r.json(); }})
   .then(function(data) {{
@@ -1850,14 +1890,9 @@ document.getElementById('confirmForm').addEventListener('submit', function(e) {{
     }}
     document.getElementById('confirmForm').style.display = 'none';
     document.getElementById('successBox').style.display = 'block';
-    fetch('/api/bank-accounts').then(function(r) {{ return r.json(); }}).then(function(bd) {{
+    fetchBankAccounts().then(function(bd) {{
       if (!bd.success) return;
-      var html = '';
-      Object.keys(bd.accounts).forEach(function(k) {{
-        var acc = bd.accounts[k];
-        html += '<div class="iban-box"><b>' + acc.name + '</b>' + acc.accountHolder + '<br>' + acc.iban + '</div>';
-      }});
-      document.getElementById('ibanBox').innerHTML = html + '<p style="font-size:13px;color:#64748b;margin-top:10px;">Açıklama kısmına rezervasyon numaranızı (#{res_id}) yazmayı unutmayın.</p>';
+      document.getElementById('ibanBox').innerHTML = renderIban();
     }});
   }})
   .catch(function(err) {{
@@ -3800,32 +3835,68 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Rezervasyon bulunamadı.", 404)
                     return
                 phone = (body.get("phone") or "").strip()
-                payment_method = "kart" if body.get("paymentMethod") == "kart" else "havale"
+                email = (body.get("email") or "").strip()
+                raw_payment_method = body.get("paymentMethod") or ""
+                if raw_payment_method not in ("kart", "havale"):
+                    self._send_error("Ödeme yöntemi seçilmedi.", 400)
+                    return
+                payment_method = raw_payment_method
                 if phone:
                     target["customerPhone"] = phone
+                if email:
+                    target["customerEmail"] = email
                 target["paymentMethod"] = payment_method
-                fields_to_update = {"customerPhone": target["customerPhone"], "paymentMethod": target["paymentMethod"]}
+                fields_to_update = {
+                    "customerPhone": target["customerPhone"],
+                    "customerEmail": target["customerEmail"],
+                    "paymentMethod": target["paymentMethod"],
+                }
                 try:
                     db.update_reservation_in_db(res_id, fields_to_update)
                 except Exception as e:
                     print(f"[!] Dönüş rezervasyonu güncelleme hatası: {e}")
                 save_reservations()
                 tip_etiket = "🚗 Transfer" if target.get("type") == "transfer" else "👑 Şoförlü Günlük VIP"
-                send_telegram(
-                    f"🔁 <b>Dönüş rezervasyonu onaylandı #{target['id']}</b>\n"
-                    f"📋 <b>Tür:</b> {tip_etiket}\n"
-                    f"👤 <b>İsim:</b> {target.get('customerName','')}\n"
-                    f"📞 <b>Telefon:</b> {target.get('customerPhone','')}\n"
-                    f"📍 <b>Alış:</b> {target.get('pickup','')}\n"
-                    f"🏁 <b>Varış:</b> {target.get('destination','')}\n"
-                    f"📅 <b>Tarih:</b> {target.get('date','')} {target.get('time','')}\n"
-                    f"💰 <b>Ücret:</b> {target.get('price',0)}₺\n"
-                    f"💳 <b>Ödeme:</b> {'Kredi Kartı' if payment_method == 'kart' else 'Havale/EFT'}"
-                )
-                _push_dashboard_notification(
-                    f"🔁 Dönüş rezervasyonu #{target['id']} müşteri tarafından onaylandı.",
-                    ntype="reservation", reservation_id=target["id"]
-                )
+                is_card_payment = payment_method == "kart"
+                if is_card_payment:
+                    # ÖNEMLİ: kredi kartı seçildiğinde müşteri HENÜZ ÖDEMEYİ TAMAMLAMADI —
+                    # bir sonraki adımda /odeme/garanti/<id> kart formuna yönlenecek. Asıl
+                    # "ödendi/onaylandı" bildirimi ve onay e-postası, ödeme gerçekten
+                    # doğrulandığında (POST /api/payments/garanti/result, procreturncode 00)
+                    # gönderiliyor — aynen normal rezervasyon akışındaki gibi (bkz. /api/reservations).
+                    # Burada erkenden "onaylandı" demek, ödeme hiç tamamlanmasa bile admin'e
+                    # yanıltıcı bir bildirim gönderirdi.
+                    send_telegram(
+                        f"🅿️ <b>Dönüş rezervasyonu oluşturuldu — kredi kartı ödemesi bekleniyor</b>\n"
+                        f"🆔 <b>#{target['id']}</b> — {tip_etiket}\n"
+                        f"👤 {target.get('customerName','')} — 📞 {target.get('customerPhone','')}\n"
+                        f"💰 {target.get('price',0)}₺\n"
+                        f"<i>Ödeme onaylanınca ayrı bir bildirim gelecek.</i>"
+                    )
+                    _push_dashboard_notification(
+                        f"🅿️ Dönüş rezervasyonu #{target['id']} — kredi kartı ödemesi bekleniyor.",
+                        ntype="reservation", reservation_id=target["id"]
+                    )
+                else:
+                    send_telegram(
+                        f"🔁 <b>Yeni Dönüş Rezervasyonu #{target['id']}</b>\n"
+                        f"📋 <b>Tür:</b> {tip_etiket}\n"
+                        f"👤 <b>İsim:</b> {target.get('customerName','')}\n"
+                        f"📞 <b>Telefon:</b> {target.get('customerPhone','')}\n"
+                        f"📍 <b>Alış:</b> {target.get('pickup','')}\n"
+                        f"🏁 <b>Varış:</b> {target.get('destination','')}\n"
+                        f"📅 <b>Tarih:</b> {target.get('date','')} {target.get('time','')}\n"
+                        f"💰 <b>Ücret:</b> {target.get('price',0)}₺\n"
+                        f"💳 <b>Ödeme:</b> Havale/EFT (müşteri kendi yapacak)"
+                    )
+                    _push_dashboard_notification(
+                        f"🔁 Dönüş rezervasyonu #{target['id']} oluşturuldu (havale).",
+                        ntype="reservation", reservation_id=target["id"]
+                    )
+                    try:
+                        send_confirmation_email(target)
+                    except Exception as e:
+                        print(f"[!] Dönüş rezervasyonu e-posta gönderme hatası: {e}")
                 self._send_json({"success": True, "reservation": target})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
