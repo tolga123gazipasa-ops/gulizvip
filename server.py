@@ -3841,11 +3841,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Ödeme yöntemi seçilmedi.", 400)
                     return
                 payment_method = raw_payment_method
-                if phone:
-                    target["customerPhone"] = phone
-                if email:
-                    target["customerEmail"] = email
-                target["paymentMethod"] = payment_method
+                with reservations_lock:
+                    if phone:
+                        target["customerPhone"] = phone
+                    if email:
+                        target["customerEmail"] = email
+                    target["paymentMethod"] = payment_method
                 fields_to_update = {
                     "customerPhone": target["customerPhone"],
                     "customerEmail": target["customerEmail"],
@@ -3897,6 +3898,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         send_confirmation_email(target)
                     except Exception as e:
                         print(f"[!] Dönüş rezervasyonu e-posta gönderme hatası: {e}")
+                    # Havale seçiminde müşteri ödemeyi kendisi yapacağını teyit ettiği için
+                    # (normal site rezervasyonundaki havale davranışıyla aynı mantık — bkz.
+                    # POST /api/reservations), rezervasyon sayacı/toplam harcama hemen
+                    # güncelleniyor. Bu olmadan dönüş rezervasyonları müşterinin VIP
+                    # eşiğine (5+ rezervasyon) hiç katkı yapmıyordu.
+                    if target.get("customerId"):
+                        try:
+                            db.register_customer_booking(target["customerId"], target.get("price", 0))
+                        except Exception as e:
+                            print(f"[!] Müşteri rezervasyon sayacı güncelleme hatası: {e}")
                 self._send_json({"success": True, "reservation": target})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
