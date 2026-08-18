@@ -65,14 +65,25 @@ yöntemini (havale/kredi kartı) seçiyor — kredi kartı seçerse mevcut Garan
 ödeme sayfasına yönleniyor, havale seçerse IBAN bilgileri çıkıyor. Onay
 gelince sana Telegram bildirimi + dashboard bildirimi gidiyor.
 
+**8b. Dönüş Rezervasyonu Linki'nde 2 düzeltme yapıldı:** (1) Havale/kredi kartı
+artık varsayılan seçili değil, müşteri bilinçli seçiyor; havale seçince IBAN
+bilgileri submit beklemeden anında altta görünüyor; e-posta adresi alanı
+eklendi. (2) **GERÇEK BUG:** kredi kartı seçildiğinde müşteri ödemeyi henüz
+tamamlamadan sana "dönüş rezervasyonu onaylandı" diye Telegram gidiyordu —
+yanıltıcıydı. Artık kart seçiminde sadece "ödeme bekleniyor" bildirimi
+gidiyor, gerçek "ödendi" bildirimi + onay e-postası ödeme Garanti'den
+doğrulandığında geliyor (normal rezervasyon akışıyla aynı mantık). Havale
+seçiminde ise (müşteri kendi yatıracağını teyit ettiği için) bildirim +
+e-posta hemen gidiyor, bu kısım aynı kaldı.
+
 ### Hemen Yapılması Gereken
 ```
 cd C:\proje\gulizvip
 git push origin main
 ```
-5 commit push bekliyor: harita retry fix, Telegram "Fiyat Hesapla" detay
-eklentisi, harita uyarısının kaldırılması, Dönüş Rezervasyonu Linki özelliği.
-Push edilmeden Railway'e yansımaz.
+6 commit push bekliyor: harita retry fix, Telegram "Fiyat Hesapla" detay
+eklentisi, harita uyarısının kaldırılması, Dönüş Rezervasyonu Linki özelliği
++ üzerindeki düzeltmeler. Push edilmeden Railway'e yansımaz.
 
 ### Açık / senin kararına kalan konular
 - **404 sayfası:** var olmayan bir adrese gidince şu an düzgün tasarlanmış hata
