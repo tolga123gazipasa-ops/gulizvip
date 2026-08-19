@@ -1130,7 +1130,6 @@
         .mobile-book-bar { display: none; }
 
         /* Dönen müşteri bilgisi otomatik dolduğunda gösterilen küçük, şeffaf not */
-        .returning-customer-note { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 
         /* 2. adımda (İletişim Bilgileri) rezervasyon özeti — 1. adımda hesaplanan
            güzergah/KM/fiyat bilgisi adıma geçince kaybolmasın diye tekrar gösteriliyor */
@@ -1615,7 +1614,6 @@
                         <div class="step2-summary-row highlight"><i class="fa-solid fa-tag"></i> <span id="transfer-step2-price">—</span></div>
                     </div>
                     <div class="payment-section-title" data-i18n="form.contactInfoTitle">İletişim Bilgileri</div>
-                    <div class="returning-customer-note" id="transfer-returning-note" style="display:none;"><i class="fa-solid fa-circle-info"></i> <span data-i18n="form.returningCustomerNote">Önceki bilgileriniz kullanıldı, dilerseniz değiştirebilirsiniz.</span></div>
                     <div class="form-grid">
                         <div class="input-group"><label data-i18n="form.nameLabel">Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="transfer-name" placeholder="Adınız ve soyadınız" data-i18n-placeholder="form.namePh" required></div></div>
                         <div class="input-group"><label data-i18n="form.phoneLabel">Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="transfer-phone" placeholder="05XX XXX XX XX" required></div></div>
@@ -1737,7 +1735,6 @@
                         <div class="step2-summary-row highlight"><i class="fa-solid fa-tag"></i> <span id="tahsis-step2-price">—</span></div>
                     </div>
                     <div class="payment-section-title" data-i18n="form.contactInfoTitle">İletişim Bilgileri</div>
-                    <div class="returning-customer-note" id="tahsis-returning-note" style="display:none;"><i class="fa-solid fa-circle-info"></i> <span data-i18n="form.returningCustomerNote">Önceki bilgileriniz kullanıldı, dilerseniz değiştirebilirsiniz.</span></div>
                     <div class="form-grid">
                         <div class="input-group"><label data-i18n="form.nameLabel">Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="tahsis-name" placeholder="Adınız ve soyadınız" data-i18n-placeholder="form.namePh" required></div></div>
                         <div class="input-group"><label data-i18n="form.phoneLabel">Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="tahsis-phone" placeholder="05XX XXX XX XX" required></div></div>
@@ -2199,7 +2196,7 @@
                 notesLabel:"Notlar (Opsiyonel)", notesPh:"Özel istek, ek bilgi...",
                 vehicleUnitLabel:"1 Adet VIP Araç", passengerUnitShort:"Yolcu", childUnitShort:"Çocuk",
                 estimatedLabel:"Tahmini:", continueBtn:"Devam Et", backBtn:"Geri",
-                contactInfoTitle:"İletişim Bilgileri", step2SummaryTitle:"Rezervasyon Özeti", returningCustomerNote:"Önceki bilgileriniz kullanıldı, dilerseniz değiştirebilirsiniz.", nameLabel:"Adınız Soyadınız", namePh:"Adınız ve soyadınız",
+                contactInfoTitle:"İletişim Bilgileri", step2SummaryTitle:"Rezervasyon Özeti", nameLabel:"Adınız Soyadınız", namePh:"Adınız ve soyadınız",
                 phoneLabel:"Telefon Numaranız", phonePh:"05XX XXX XX XX",
                 emailLabel:"E-posta Adresiniz", emailPh:"ornek@email.com",
                 paymentMethodTitle:"Ödeme Yöntemi",
@@ -2324,7 +2321,7 @@
                 notesLabel:"Notes (Optional)", notesPh:"Special request, additional info...",
                 vehicleUnitLabel:"1 VIP Vehicle", passengerUnitShort:"Passenger(s)", childUnitShort:"Child(ren)",
                 estimatedLabel:"Estimated:", continueBtn:"Continue", backBtn:"Back",
-                contactInfoTitle:"Contact Information", step2SummaryTitle:"Booking Summary", returningCustomerNote:"We've filled in your previous details — feel free to change them.", nameLabel:"Full Name", namePh:"Your first and last name",
+                contactInfoTitle:"Contact Information", step2SummaryTitle:"Booking Summary", nameLabel:"Full Name", namePh:"Your first and last name",
                 phoneLabel:"Your Phone Number", phonePh:"05XX XXX XX XX",
                 emailLabel:"Your Email Address", emailPh:"example@email.com",
                 paymentMethodTitle:"Payment Method",
@@ -2449,7 +2446,7 @@
                 notesLabel:"Примечания (необязательно)", notesPh:"Особые пожелания, доп. информация...",
                 vehicleUnitLabel:"1 VIP автомобиль", passengerUnitShort:"пассажир(ов)", childUnitShort:"ребёнок/детей",
                 estimatedLabel:"Примерно:", continueBtn:"Продолжить", backBtn:"Назад",
-                contactInfoTitle:"Контактная информация", step2SummaryTitle:"Сводка бронирования", returningCustomerNote:"Мы заполнили ваши предыдущие данные — при необходимости их можно изменить.", nameLabel:"Имя и фамилия", namePh:"Ваше имя и фамилия",
+                contactInfoTitle:"Контактная информация", step2SummaryTitle:"Сводка бронирования", nameLabel:"Имя и фамилия", namePh:"Ваше имя и фамилия",
                 phoneLabel:"Ваш номер телефона", phonePh:"05XX XXX XX XX",
                 emailLabel:"Ваш адрес эл. почты", emailPh:"example@email.com",
                 paymentMethodTitle:"Способ оплаты",
@@ -2746,50 +2743,6 @@
             }, { threshold: 0 });
             observer.observe(engine);
         })();
-
-        // --- DÖNEN MÜŞTERİ İÇİN FORM HATIRLAMA (localStorage) ---
-        // Bir rezervasyon başarıyla tamamlandığında isim/telefon/e-posta SADECE bu
-        // tarayıcıda (localStorage), kimseyle paylaşılmadan saklanır. Aynı cihazdan
-        // tekrar gelindiğinde 2. adımdaki (İletişim Bilgileri) alanlar önceden
-        // doluysa dokunulmaz, boşsa sessizce doldurulur ve üstte küçük bir bilgi
-        // notu ("Önceki bilgileriniz kullanıldı...") gösterilir — şeffaflık için,
-        // ekstra bir onay tıklaması istemeden.
-        // Kayıt 10 günden eskiyse yok sayılır — paylaşılan cihazlarda (otel lobisi,
-        // acente bilgisayarı vb.) bir sonraki farklı müşterinin önceki kişinin bilgilerini
-        // süresiz görmesini engellemek + eski (değişmiş olabilecek) telefon/e-posta'nın
-        // tekrar doldurulmasını önlemek için (Tolga'nın isteğiyle eklendi, 19 Ağustos).
-        var RETURNING_CUSTOMER_TTL_MS = 10 * 24 * 60 * 60 * 1000;
-        function saveReturningCustomerInfo(name, phone, email) {
-            try {
-                if (!name && !phone && !email) return;
-                localStorage.setItem('guliz_customer_info', JSON.stringify({ name: name || '', phone: phone || '', email: email || '', savedAt: Date.now() }));
-            } catch (e) {}
-        }
-        function prefillReturningCustomerInfo() {
-            var saved;
-            try {
-                var raw = localStorage.getItem('guliz_customer_info');
-                if (!raw) return;
-                saved = JSON.parse(raw);
-            } catch (e) { return; }
-            if (!saved || (!saved.name && !saved.phone && !saved.email)) return;
-            if (saved.savedAt && (Date.now() - saved.savedAt) > RETURNING_CUSTOMER_TTL_MS) {
-                try { localStorage.removeItem('guliz_customer_info'); } catch (e) {}
-                return;
-            }
-            ['transfer', 'tahsis'].forEach(function(formType) {
-                var nameEl = document.getElementById(formType + '-name');
-                var phoneEl = document.getElementById(formType + '-phone');
-                var emailEl = document.getElementById(formType + '-email');
-                var filledAny = false;
-                if (nameEl && !nameEl.value && saved.name) { nameEl.value = saved.name; filledAny = true; }
-                if (phoneEl && !phoneEl.value && saved.phone) { phoneEl.value = saved.phone; filledAny = true; }
-                if (emailEl && !emailEl.value && saved.email) { emailEl.value = saved.email; filledAny = true; }
-                var note = document.getElementById(formType + '-returning-note');
-                if (note && filledAny) note.style.display = 'flex';
-            });
-        }
-        prefillReturningCustomerInfo();
 
         // --- MOBİL MENÜ AÇ/KAPAT ---
         function toggleMobileMenu() {
@@ -3656,14 +3609,6 @@
                 setTimeout(function() { showRouteMap('tahsis'); }, 50);
             }
 
-            // İletişim bilgileri de az önce temizlendi (satır 3305) — dönen
-            // müşteriyse hatırlanan bilgileri tekrar doldur, aksi halde reset
-            // sonrası boş kalırdı.
-            ['transfer-returning-note', 'tahsis-returning-note'].forEach(function(id) {
-                var note = document.getElementById(id);
-                if (note) note.style.display = 'none';
-            });
-            if (typeof prefillReturningCustomerInfo === 'function') prefillReturningCustomerInfo();
         }
 
         function switchForm(formType) {
@@ -4049,9 +3994,6 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if(data.success) {
-                    // Rezervasyon başarıyla oluşturuldu — bir sonraki ziyarette form
-                    // otomatik dolsun diye isim/telefon/e-postayı bu tarayıcıda sakla.
-                    saveReturningCustomerInfo(payload.customerName, payload.customerPhone, payload.customerEmail);
                     // Build summary details
                     var details = [];
                     details.push('Rezervasyon #' + data.reservation.id);
