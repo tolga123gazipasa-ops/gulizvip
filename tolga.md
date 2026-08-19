@@ -1,6 +1,33 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-19 (alış/varış noktası alanları baştan aşağı iyileştirildi — temizle butonu, listeden seçim zorunluluğu, hızlı öneri çipleri; admin panel mobil kart görünümü; mobil sabit rezervasyon barı; dönen müşteri hatırlama — HEPSİ PUSH EDİLDİ ✅, Railway deploy'u teyit edilmedi henüz)
+Son güncelleme: 2026-08-19 akşam (fiyatın araç başına olduğuna dair kullanıcı notu +
+Telegram "Fiyat Hesapla" bildirimine tarih/saat/uçuş no eklendi — 2 commit COMMIT
+EDİLDİ, henüz PUSH EDİLMEDİ, Tolga kendi bilgisayarından `git push origin main`
+yapacak)
+
+## GÜNCEL (19 Ağustos akşam) — "Fiyat araç başınadır" notu + Telegram bildirim detayı
+
+**Bağlam:** Tolga, kişi sayısı arttıkça fiyatın neden değişmediğini sordu (2 kişi de
+9 kişi de aynı fiyat). Açıklandı: fiyat kişi başı değil ARAÇ başına hesaplanıyor
+(transfer: KM × birim fiyat, tahsis: süreye göre sabit paket) — bu bilinçli bir
+model, büyük gruplar kişi başı çok daha avantajlı çıkıyor (özel araç kişi başı
+maliyeti düşürüyor). Kod değiştirilmedi, sadece bunu müşteriye netleştiren bir not
+eklendi.
+
+**1. Fiyat kutusunun altına "Fiyat araç başınadır, yolcu sayısına göre değişmez."
+notu eklendi** — hem Havalimanı VIP Transfer hem Tahsis formunda, fiyat/tahmini
+tutar gösteriminin hemen altında. TR/EN/RU üçünde de çevrildi. (commit `b945fcd`)
+
+**2. Telegram "Fiyat Hesapla" bildirimi netleştirildi.** Müşteri 1. adımdan 2. adıma
+geçtiğinde (yani fiyat hesaplanır hesaplanmaz) sana giden Telegram bildirimi artık
+tek satıra sıkışmış bilgi yerine ayrı satırlarda gösteriyor: Alış, Varış (veya
+Tahsis'te Süre), **Tarih, Saat**, ve doluysa **Uçuş No** — Tolga özellikle tarih/saat
+ve uçuş numarasının görünmesini istedi, ödeme adımına gelmeden vazgeçen müşterileri
+de artık net görebiliyorsun. (commit `7716d8f`)
+
+### Hemen Yapılması Gereken
+- **git push origin main** kendi bilgisayarından — 2 commit push bekliyor
+  (`b945fcd`, `7716d8f`), Railway'e henüz deploy olmadı.
 
 ## GÜNCEL (19 Ağustos) — Booking formu alış/varış alanları + mobil UX turu
 
