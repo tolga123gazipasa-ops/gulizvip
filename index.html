@@ -3296,11 +3296,14 @@
                 // rakam dışı karakterler filtrelenmiyordu. Bu yüzden "6555...5" gibi 40
                 // haneli anlamsız bir metin bile geçerli telefon sayılıp rezervasyon
                 // oluşturulabiliyordu; ekip müşteriyi aramaya çalışınca ulaşamıyordu (halbuki
-                // onay mesajında "5 dakika içinde arayacağız" deniyor). Artık sadece rakamlar
-                // sayılıyor ve TR cep/sabit hat için makul aralık (10-13 hane, +90 dahil) dışına
-                // çıkan girişler reddediliyor.
+                // onay mesajında "5 dakika içinde arayacağız" deniyor). Havalimanı transferi
+                // olduğu için yabancı (US/DE/RU vb.) numaralar da çok geliyor — sadece TR
+                // formatına (10-13 hane) kilitlemek yerine uluslararası E.164 standardının
+                // izin verdiği aralık (ülke kodu dahil 8-15 hane) kullanılıyor: hem gerçek
+                // dünyadaki hemen hemen tüm ülke numaralarını kabul eder hem de anlamsız
+                // (çok kısa/çok uzun) girişleri eler.
                 var phoneDigits = phoneField.value.replace(/\D/g, '');
-                if (phoneDigits.length < 10 || phoneDigits.length > 13) { shakeField(phoneField); phoneField.focus(); return; }
+                if (phoneDigits.length < 8 || phoneDigits.length > 15) { shakeField(phoneField); phoneField.focus(); return; }
                 // Email validation
                 if (!emailField.value.trim()) { shakeField(emailField); emailField.focus(); return; }
                 var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

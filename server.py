@@ -3843,9 +3843,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 # kontrol de zayıftı (sadece "en az 10 karakter"), 40 haneli anlamsız bir
                 # metin bile kaydedilebiliyordu; ekip müşteriyi aramaya çalışınca ulaşamıyordu.
                 # Frontend'deki kontrolle aynı kural burada da uygulanıyor (savunma amaçlı —
-                # API doğrudan çağrılırsa da geçersiz numara kaydedilmesin diye).
+                # API doğrudan çağrılırsa da geçersiz numara kaydedilmesin diye). Havalimanı
+                # transferi olduğu için yabancı numaralar da çok geliyor — TR formatına
+                # (10-13 hane) kilitlemek yerine E.164 uluslararası standardının izin
+                # verdiği aralık (8-15 hane) kullanılıyor.
                 phone_digits = re.sub(r"\D", "", reservation.get("customerPhone", ""))
-                if len(phone_digits) < 10 or len(phone_digits) > 13:
+                if len(phone_digits) < 8 or len(phone_digits) > 15:
                     self._send_error("Geçerli bir telefon numarası girin.", 400)
                     return
                 # Hizmet bölgesi doğrulama
