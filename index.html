@@ -313,6 +313,23 @@
             return ok;
         }
 
+        // Alış noktası kutusunun yanındaki çarpı (X) butonu — varsayılan
+        // "Gazipaşa Havalimanı" değerini (veya müşterinin yazdığı herhangi bir
+        // değeri) tek tıkla temizler, müşteri kendi adresini baştan yazabilsin
+        // diye. 'input' event'i elle tetikleniyor ki mevcut oninput handler'ı
+        // (checkServiceArea) ve varsa mesafe/harita hesaplamaları normal
+        // akışıyla aynı şekilde tepki versin.
+        function clearPickupField(inputId, warningId) {
+            var input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = '';
+            input.style.borderColor = '';
+            input.focus();
+            var warning = document.getElementById(warningId);
+            if (warning) warning.style.display = 'none';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
         // Yolcu ile çocuk sayısı alanlarını eşleştirir (transfer/tahsis formu
         // kendi içinde) — VIP Vito'nun fiziksel koltuk kapasitesi (9) hiçbir
         // zaman aşılmasın diye kullanılıyor.
@@ -779,6 +796,9 @@
         .input-wrapper i { position: absolute; left: 16px; color: var(--primary-red); font-size: 18px; }
         .input-wrapper input, .input-wrapper select { width: 100%; padding: 18px 18px 18px 48px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 16px; font-weight: 600; color: var(--text-dark); background: var(--bg-light); outline: none; transition: var(--transition); -webkit-appearance: none; }
         .input-wrapper input:focus, .input-wrapper select:focus { border-color: var(--primary-navy); background: var(--pure-white); }
+        .input-wrapper.clearable input { padding-right: 42px; }
+        .input-clear-btn { position: absolute; right: 12px; width: 26px; height: 26px; border: none; background: var(--border-light); color: var(--text-gray, #64748b); border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+        .input-clear-btn:hover { background: var(--primary-red); color: var(--pure-white); }
         .qty-stepper { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px 8px 48px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-light); box-sizing: border-box; min-height: 40px; }
         .qty-stepper .qty-btn { width: 26px; height: 26px; flex-shrink: 0; border: none; border-radius: 6px; background: var(--primary-navy); color: var(--pure-white); font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
         .qty-stepper .qty-btn:hover:not(:disabled) { background: var(--primary-red); }
@@ -1163,6 +1183,8 @@
             .input-group label { font-size: 10px; }
             .input-wrapper input, .input-wrapper select { padding: 14px 14px 14px 40px; font-size: 16px; }
             .input-wrapper i { left: 12px; font-size: 15px; }
+            .input-wrapper.clearable input { padding-right: 38px; }
+            .input-clear-btn { right: 10px; width: 24px; height: 24px; }
             .qty-stepper { padding: 6px 10px 6px 40px; gap: 10px; min-height: 36px; }
             .qty-stepper .qty-btn { width: 24px; height: 24px; font-size: 14px; }
             .submit-btn, .next-btn, .back-btn, .final-btn { padding: 16px; font-size: 14px; }
@@ -1413,8 +1435,9 @@
                     <div class="form-grid form-grid-3" id="transfer-pickup-grid">
                         <div class="input-group">
                             <label data-i18n="form.pickupLabel">Alış Noktası</label>
-                        <div class="input-wrapper"><i class="fa-solid fa-map-pin"></i>
+                        <div class="input-wrapper clearable"><i class="fa-solid fa-map-pin"></i>
                             <input type="text" id="pickup-input" value="Gazipaşa Havalimanı" placeholder="Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." data-i18n-placeholder="form.pickupPh" required oninput="checkServiceArea('pickup-input','pickup-area-warning')">
+                            <button type="button" class="input-clear-btn" aria-label="Alış noktasını temizle" onclick="clearPickupField('pickup-input','pickup-area-warning')"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <button type="button" class="use-location-btn" id="pickup-location-btn" onclick="useMyLocation('pickup-input','pickup-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button>
                         <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div>
@@ -1536,7 +1559,7 @@
 
                 <div class="form-step" id="tahsis-step1" style="display:block;">
                     <div class="form-grid">
-                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"></div><button type="button" class="use-location-btn" id="tahsis-location-btn" onclick="useMyLocation('tahsis-pickup-input','tahsis-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
+                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper clearable"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning')"><button type="button" class="input-clear-btn" aria-label="Alış noktasını temizle" onclick="clearPickupField('tahsis-pickup-input','tahsis-area-warning')"><i class="fa-solid fa-xmark"></i></button></div><button type="button" class="use-location-btn" id="tahsis-location-btn" onclick="useMyLocation('tahsis-pickup-input','tahsis-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div></div>
                     <div class="input-group"><label data-i18n="form.durationLabel">Tahsis Süresi</label>
                         <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
                             <select id="vDuration" onchange="calculateVipPrice()">
@@ -2477,7 +2500,12 @@
         })();
 
         // --- SES DOSYASINI OYNATMA FONKSİYONU ---
+        // Bildirim sesi kasıtlı olarak devre dışı bırakıldı (Tolga'nın isteğiyle).
+        // Çağıran yerler (yeni mesaj geldiğinde) hâlâ bu fonksiyonu çağırıyor,
+        // sadece burada erken çıkış yapılıyor — ses tekrar istenirse tek satır
+        // (aşağıdaki return) silinerek geri açılabilir.
         function playChatSound() {
+            return;
             var sound = document.getElementById("chatSound");
             sound.currentTime = 0;
             sound.play().catch(function(error) { console.log("Otomatik ses politikası engeli."); });
@@ -2780,14 +2808,10 @@
                 });
         }
 
-        // --- 3 SANİYE SONRA CANLI DESTEĞİ OTOMATİK AÇ ---
-        setTimeout(function() {
-            var widget = document.getElementById("chatWidget");
-            if (widget.style.display !== "flex") {
-                toggleChat();
-                playChatSound();
-            }
-        }, 3000);
+        // Canlı destek kutusu artık sayfa açılır açılmaz OTOMATİK açılmıyor
+        // (Tolga'nın isteğiyle kaldırıldı — rahatsız edici bulunuyordu). Kutu
+        // kapalı kalıyor, müşteri sağ alttaki "chatBtn"a bastığında toggleChat()
+        // ile kendisi açıyor.
 
         function submitContactForm(event) {
             event.preventDefault();
