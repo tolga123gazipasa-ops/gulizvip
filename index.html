@@ -1044,6 +1044,15 @@
         .scroll-top-btn.show { opacity: 1; visibility: visible; }
         .scroll-top-btn:hover { background: var(--primary-navy); transform: translateY(-3px); }
 
+        /* Sadece mobilde: rezervasyon formundan (#rezervasyon) uzaklaşınca beliren
+           sabit alt bar. Masaüstünde hiç render edilmiyor (display:none, media query
+           içinde açılıyor). Varsayılan olarak gizli — JS (bkz. initMobileBookBar)
+           #rezervasyon görünümden çıkınca .show class'ını ekliyor. */
+        .mobile-book-bar { display: none; }
+
+        /* Dönen müşteri bilgisi otomatik dolduğunda gösterilen küçük, şeffaf not */
+        .returning-customer-note { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
         .chat-widget { position: fixed; bottom: 90px; right: 30px; width: 320px; background: var(--pure-white); border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); z-index: 1000; display: none; flex-direction: column; overflow: hidden; border: 1px solid var(--border-light); }
         .chat-header { background: var(--primary-navy); color: var(--pure-white); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; }
         .chat-header button { background: none; border: none; color: var(--pure-white); cursor: pointer; font-size: 16px; }
@@ -1148,11 +1157,20 @@
             .header .container { gap: 8px; }
             .call-btn { padding: 10px 14px; font-size: 12px; }
             .logo-container img { height: 42px; }
-            .whatsapp-float { bottom: calc(16px + env(safe-area-inset-bottom)); left: 16px; padding: 12px 18px; font-size: 13px; }
+            .whatsapp-float { bottom: calc(72px + env(safe-area-inset-bottom)); left: 16px; padding: 12px 18px; font-size: 13px; }
             .whatsapp-float span { display: none; }
-            .chat-trigger { bottom: calc(16px + env(safe-area-inset-bottom)); right: 16px; padding: 12px 18px; font-size: 13px; }
-            .chat-widget { right: 16px; width: calc(100vw - 32px); max-width: 360px; bottom: calc(75px + env(safe-area-inset-bottom)); }
-            .scroll-top-btn { bottom: calc(75px + env(safe-area-inset-bottom)); left: 16px; width: 40px; height: 40px; }
+            .chat-trigger { bottom: calc(72px + env(safe-area-inset-bottom)); right: 16px; padding: 12px 18px; font-size: 13px; }
+            .chat-widget { right: 16px; width: calc(100vw - 32px); max-width: 360px; bottom: calc(131px + env(safe-area-inset-bottom)); }
+            .scroll-top-btn { bottom: calc(131px + env(safe-area-inset-bottom)); left: 16px; width: 40px; height: 40px; }
+            /* Sabit "Rezervasyon Yap" alt barı — sadece mobilde render edilir,
+               üstteki WhatsApp/canlı destek/yukarı çık butonları bunun 56px
+               yüksekliğine göre yukarı kaydırıldı (bkz. yukarıdaki bottom değerleri). */
+            .mobile-book-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1001;
+                height: 56px; padding-bottom: env(safe-area-inset-bottom); align-items: center; justify-content: center; gap: 8px;
+                background: var(--primary-red); color: var(--pure-white); border: none; font-weight: 700; font-size: 15px;
+                box-shadow: 0 -6px 18px rgba(0,0,0,0.18); cursor: pointer;
+                transform: translateY(100%); opacity: 0; transition: transform 0.25s ease, opacity 0.25s ease; }
+            .mobile-book-bar.show { transform: translateY(0); opacity: 1; }
             .modal-box { padding: 24px; margin: 10px; }
             .fleet-details { padding: 24px; }
             .fleet-main-img { height: 220px; }
@@ -1495,6 +1513,7 @@
                 <!-- Step 2: Kişisel Bilgiler -->
                 <div class="form-step" id="transfer-step2" style="display:none;">
                     <div class="payment-section-title" data-i18n="form.contactInfoTitle">İletişim Bilgileri</div>
+                    <div class="returning-customer-note" id="transfer-returning-note" style="display:none;"><i class="fa-solid fa-circle-info"></i> <span data-i18n="form.returningCustomerNote">Önceki bilgileriniz kullanıldı, dilerseniz değiştirebilirsiniz.</span></div>
                     <div class="form-grid">
                         <div class="input-group"><label data-i18n="form.nameLabel">Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="transfer-name" placeholder="Adınız ve soyadınız" data-i18n-placeholder="form.namePh" required></div></div>
                         <div class="input-group"><label data-i18n="form.phoneLabel">Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="transfer-phone" placeholder="05XX XXX XX XX" required></div></div>
@@ -1603,6 +1622,7 @@
                 <!-- Step 2: Kişisel Bilgiler -->
                 <div class="form-step" id="tahsis-step2" style="display:none;">
                     <div class="payment-section-title" data-i18n="form.contactInfoTitle">İletişim Bilgileri</div>
+                    <div class="returning-customer-note" id="tahsis-returning-note" style="display:none;"><i class="fa-solid fa-circle-info"></i> <span data-i18n="form.returningCustomerNote">Önceki bilgileriniz kullanıldı, dilerseniz değiştirebilirsiniz.</span></div>
                     <div class="form-grid">
                         <div class="input-group"><label data-i18n="form.nameLabel">Adınız Soyadınız</label><div class="input-wrapper"><i class="fa-solid fa-user"></i><input type="text" id="tahsis-name" placeholder="Adınız ve soyadınız" data-i18n-placeholder="form.namePh" required></div></div>
                         <div class="input-group"><label data-i18n="form.phoneLabel">Telefon Numaranız</label><div class="input-wrapper"><i class="fa-solid fa-phone"></i><input type="tel" id="tahsis-phone" placeholder="05XX XXX XX XX" required></div></div>
@@ -1955,9 +1975,15 @@
     </button>
 
     <a href="https://wa.me/902426062548" class="whatsapp-float"><i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i> WhatsApp</a>
-    
+
     <button class="chat-trigger" onclick="toggleChat()" id="chatBtn">
         <i class="fa-solid fa-comment-dots"></i> <span data-i18n="chat.triggerLabel">Canlı Destek</span>
+    </button>
+
+    <!-- Sadece mobilde: booking formundan uzaklaşınca (aşağı kaydırınca) beliren
+         sabit alt bar — hızlıca forma geri dönüp rezervasyona devam edebilsinler. -->
+    <button class="mobile-book-bar" id="mobileBookBar" onclick="scrollToBookingEngine()">
+        <i class="fa-solid fa-car"></i> <span data-i18n="mobileBookBar.label">Rezervasyon Yap</span>
     </button>
 
     <div class="chat-widget" id="chatWidget">
@@ -2050,7 +2076,7 @@
                 needsChildSeatLabel:"Bebek/çocuk koltuğu gerekiyor",
                 notesLabel:"Notlar (Opsiyonel)", notesPh:"Özel istek, ek bilgi...",
                 estimatedLabel:"Tahmini:", continueBtn:"Devam Et", backBtn:"Geri",
-                contactInfoTitle:"İletişim Bilgileri", nameLabel:"Adınız Soyadınız", namePh:"Adınız ve soyadınız",
+                contactInfoTitle:"İletişim Bilgileri", returningCustomerNote:"Önceki bilgileriniz kullanıldı, dilerseniz değiştirebilirsiniz.", nameLabel:"Adınız Soyadınız", namePh:"Adınız ve soyadınız",
                 phoneLabel:"Telefon Numaranız", phonePh:"05XX XXX XX XX",
                 emailLabel:"E-posta Adresiniz", emailPh:"ornek@email.com",
                 paymentMethodTitle:"Ödeme Yöntemi",
@@ -2139,6 +2165,7 @@
                 namePh:"Adınız Soyadınız", phonePh:"Telefon (05XX XXX XX XX)", startBtn:"Sohbete Başla",
                 editBtn:"Düzenle", messagePh:"Mesajınızı yazın...", triggerLabel:"Canlı Destek"
             },
+            mobileBookBar: { label:"Rezervasyon Yap" },
             successModal: { title:"Talebiniz Alındı!", desc:"Müsaitlik onayı ve net fiyat bilgilendirmesi için müşteri temsilcimiz <b>5 dakika içinde</b> sizinle iletişime geçecektir.", closeBtn:"Tamam, Teşekkürler" },
             routeModal: { title:"Hızlı Rezervasyon", subtitle:"Sık kullanılan rotalarımızdan birini seçin veya kendi rotanızı oluşturun.", altBtn:"Farklı Rota Oluştur" },
             destModal: { reserveBtn:"Bu Bölgeye Rezervasyon Yap" },
@@ -2171,7 +2198,7 @@
                 needsChildSeatLabel:"Baby/child seat needed",
                 notesLabel:"Notes (Optional)", notesPh:"Special request, additional info...",
                 estimatedLabel:"Estimated:", continueBtn:"Continue", backBtn:"Back",
-                contactInfoTitle:"Contact Information", nameLabel:"Full Name", namePh:"Your first and last name",
+                contactInfoTitle:"Contact Information", returningCustomerNote:"We've filled in your previous details — feel free to change them.", nameLabel:"Full Name", namePh:"Your first and last name",
                 phoneLabel:"Your Phone Number", phonePh:"05XX XXX XX XX",
                 emailLabel:"Your Email Address", emailPh:"example@email.com",
                 paymentMethodTitle:"Payment Method",
@@ -2260,6 +2287,7 @@
                 namePh:"Your Full Name", phonePh:"Phone (e.g. +90 5XX XXX XX XX)", startBtn:"Start Chat",
                 editBtn:"Edit", messagePh:"Type your message...", triggerLabel:"Live Support"
             },
+            mobileBookBar: { label:"Book Now" },
             successModal: { title:"Your Request Has Been Received!", desc:"Our customer representative will contact you <b>within 5 minutes</b> to confirm availability and provide exact pricing.", closeBtn:"OK, Thank You" },
             routeModal: { title:"Quick Booking", subtitle:"Choose one of our frequently used routes or create your own.", altBtn:"Create a Different Route" },
             destModal: { reserveBtn:"Book a Transfer to This Area" },
@@ -2292,7 +2320,7 @@
                 needsChildSeatLabel:"Нужно детское/автокресло",
                 notesLabel:"Примечания (необязательно)", notesPh:"Особые пожелания, доп. информация...",
                 estimatedLabel:"Примерно:", continueBtn:"Продолжить", backBtn:"Назад",
-                contactInfoTitle:"Контактная информация", nameLabel:"Имя и фамилия", namePh:"Ваше имя и фамилия",
+                contactInfoTitle:"Контактная информация", returningCustomerNote:"Мы заполнили ваши предыдущие данные — при необходимости их можно изменить.", nameLabel:"Имя и фамилия", namePh:"Ваше имя и фамилия",
                 phoneLabel:"Ваш номер телефона", phonePh:"05XX XXX XX XX",
                 emailLabel:"Ваш адрес эл. почты", emailPh:"example@email.com",
                 paymentMethodTitle:"Способ оплаты",
@@ -2381,6 +2409,7 @@
                 namePh:"Ваше имя и фамилия", phonePh:"Телефон (напр. +90 5XX XXX XX XX)", startBtn:"Начать чат",
                 editBtn:"Изменить", messagePh:"Введите сообщение...", triggerLabel:"Онлайн-поддержка"
             },
+            mobileBookBar: { label:"Забронировать" },
             successModal: { title:"Ваша заявка принята!", desc:"Наш представитель свяжется с вами <b>в течение 5 минут</b> для подтверждения наличия мест и точной стоимости.", closeBtn:"Хорошо, спасибо" },
             routeModal: { title:"Быстрое бронирование", subtitle:"Выберите один из наших популярных маршрутов или создайте свой.", altBtn:"Создать другой маршрут" },
             destModal: { reserveBtn:"Забронировать трансфер в этот район" },
@@ -2559,6 +2588,69 @@
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
+        // --- MOBİL "REZERVASYON YAP" ALT BARI ---
+        // Sadece mobilde anlamlı (masaüstünde .mobile-book-bar zaten display:none).
+        // Booking formu (#rezervasyon) ekranda görünürken bar gizli kalır — müşteri
+        // zaten formu gördüğü için gereksiz. Formdan aşağı kaydırılıp uzaklaşınca
+        // (IntersectionObserver ile) bar yavaşça belirir, tıklanınca forma geri
+        // döner. Yukarı kaydırıp form tekrar görününce bar tekrar gizlenir.
+        function scrollToBookingEngine() {
+            var engine = document.getElementById('rezervasyon');
+            if (engine) engine.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        (function initMobileBookBar() {
+            var bar = document.getElementById('mobileBookBar');
+            var engine = document.getElementById('rezervasyon');
+            if (!bar || !engine || typeof IntersectionObserver === 'undefined') return;
+            var hasScrolledPast = false; // form en az bir kez görünüp geçilene kadar bar hiç açılmasın
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        hasScrolledPast = true;
+                        bar.classList.remove('show');
+                    } else if (hasScrolledPast) {
+                        bar.classList.add('show');
+                    }
+                });
+            }, { threshold: 0 });
+            observer.observe(engine);
+        })();
+
+        // --- DÖNEN MÜŞTERİ İÇİN FORM HATIRLAMA (localStorage) ---
+        // Bir rezervasyon başarıyla tamamlandığında isim/telefon/e-posta SADECE bu
+        // tarayıcıda (localStorage), kimseyle paylaşılmadan saklanır. Aynı cihazdan
+        // tekrar gelindiğinde 2. adımdaki (İletişim Bilgileri) alanlar önceden
+        // doluysa dokunulmaz, boşsa sessizce doldurulur ve üstte küçük bir bilgi
+        // notu ("Önceki bilgileriniz kullanıldı...") gösterilir — şeffaflık için,
+        // ekstra bir onay tıklaması istemeden.
+        function saveReturningCustomerInfo(name, phone, email) {
+            try {
+                if (!name && !phone && !email) return;
+                localStorage.setItem('guliz_customer_info', JSON.stringify({ name: name || '', phone: phone || '', email: email || '' }));
+            } catch (e) {}
+        }
+        function prefillReturningCustomerInfo() {
+            var saved;
+            try {
+                var raw = localStorage.getItem('guliz_customer_info');
+                if (!raw) return;
+                saved = JSON.parse(raw);
+            } catch (e) { return; }
+            if (!saved || (!saved.name && !saved.phone && !saved.email)) return;
+            ['transfer', 'tahsis'].forEach(function(formType) {
+                var nameEl = document.getElementById(formType + '-name');
+                var phoneEl = document.getElementById(formType + '-phone');
+                var emailEl = document.getElementById(formType + '-email');
+                var filledAny = false;
+                if (nameEl && !nameEl.value && saved.name) { nameEl.value = saved.name; filledAny = true; }
+                if (phoneEl && !phoneEl.value && saved.phone) { phoneEl.value = saved.phone; filledAny = true; }
+                if (emailEl && !emailEl.value && saved.email) { emailEl.value = saved.email; filledAny = true; }
+                var note = document.getElementById(formType + '-returning-note');
+                if (note && filledAny) note.style.display = 'flex';
+            });
+        }
+        prefillReturningCustomerInfo();
 
         // --- MOBİL MENÜ AÇ/KAPAT ---
         function toggleMobileMenu() {
@@ -3267,6 +3359,15 @@
             if (selectedPickupLat !== null && typeof showRouteMap === 'function') {
                 setTimeout(function() { showRouteMap('tahsis'); }, 50);
             }
+
+            // İletişim bilgileri de az önce temizlendi (satır 3305) — dönen
+            // müşteriyse hatırlanan bilgileri tekrar doldur, aksi halde reset
+            // sonrası boş kalırdı.
+            ['transfer-returning-note', 'tahsis-returning-note'].forEach(function(id) {
+                var note = document.getElementById(id);
+                if (note) note.style.display = 'none';
+            });
+            if (typeof prefillReturningCustomerInfo === 'function') prefillReturningCustomerInfo();
         }
 
         function switchForm(formType) {
@@ -3652,6 +3753,9 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if(data.success) {
+                    // Rezervasyon başarıyla oluşturuldu — bir sonraki ziyarette form
+                    // otomatik dolsun diye isim/telefon/e-postayı bu tarayıcıda sakla.
+                    saveReturningCustomerInfo(payload.customerName, payload.customerPhone, payload.customerEmail);
                     // Build summary details
                     var details = [];
                     details.push('Rezervasyon #' + data.reservation.id);
