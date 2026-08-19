@@ -4500,7 +4500,23 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_json({"ok": True})
                     return
                 replied_text = reply_to.get("text", "") or reply_to.get("caption", "") or ""
-                import re
+                # GERÇEK KÖK NEDEN BULUNDU (19 Ağustos — canlı sitede rezervasyon
+                # tamamlama 502 Bad Gateway veriyordu, Railway loglarında tespit
+                # edildi): buradaki "import re" satırı GEREKSİZDİ — `re` zaten
+                # dosyanın en üstünde (satır 10) modül seviyesinde import edilmişti.
+                # Ama Python bir fonksiyonun İÇİNDE herhangi bir yerde bir isme
+                # atama/import yapılırsa, o ismi TÜM fonksiyon gövdesi için LOCAL
+                # kabul eder — kod akışında o satırdan ÖNCE gelse bile. do_POST()
+                # tek büyük bir fonksiyon (tüm POST endpoint'leri "if path=="
+                # zinciriyle aynı fonksiyonun içinde) ve bu satır sondaki
+                # /telegram-webhook dalındaydı. Sonuç: /api/reservations dalındaki
+                # (çok daha yukarıdaki) `re.sub(...)` çağrısı her seferinde
+                # "UnboundLocalError: cannot access local variable 're' where it
+                # is not associated with a value" ile patlıyordu — bu, yanıt hiç
+                # gönderilmeden bağlantının düşmesine, dolayısıyla Cloudflare'in
+                # "502 Bad Gateway" döndürmesine yol açıyordu. Müşteri rezervasyon
+                # YAPAMIYORDU. Çözüm: gereksiz yerel import'u sil, modül seviyesindeki
+                # `re` zaten yeterli.
                 session_match = re.search(r'([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})', replied_text)
                 if not session_match:
                     self._send_json({"ok": True})
