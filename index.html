@@ -1610,6 +1610,7 @@
                     <div class="step2-summary" id="transfer-step2-summary" style="display:none;">
                         <div class="step2-summary-title" data-i18n="form.step2SummaryTitle">Rezervasyon Özeti</div>
                         <div class="step2-summary-row"><i class="fa-solid fa-route"></i> <span id="transfer-step2-route">—</span></div>
+                        <div class="step2-summary-row"><i class="fa-solid fa-car"></i> <span id="transfer-step2-vehicle">—</span></div>
                         <div class="step2-summary-row"><i class="fa-solid fa-road"></i> <span id="transfer-step2-km">—</span></div>
                         <div class="step2-summary-row highlight"><i class="fa-solid fa-tag"></i> <span id="transfer-step2-price">—</span></div>
                     </div>
@@ -1725,6 +1726,7 @@
                     <div class="step2-summary" id="tahsis-step2-summary" style="display:none;">
                         <div class="step2-summary-title" data-i18n="form.step2SummaryTitle">Rezervasyon Özeti</div>
                         <div class="step2-summary-row"><i class="fa-solid fa-map-pin"></i> <span id="tahsis-step2-pickup">—</span></div>
+                        <div class="step2-summary-row"><i class="fa-solid fa-car"></i> <span id="tahsis-step2-vehicle">—</span></div>
                         <div class="step2-summary-row"><i class="fa-solid fa-hourglass-half"></i> <span id="tahsis-step2-duration">—</span></div>
                         <div class="step2-summary-row highlight"><i class="fa-solid fa-tag"></i> <span id="tahsis-step2-price">—</span></div>
                     </div>
@@ -2183,6 +2185,7 @@
                 childCountDecrease:"Çocuk sayısını azalt", childCountIncrease:"Çocuk sayısını artır",
                 needsChildSeatLabel:"Bebek/çocuk koltuğu gerekiyor",
                 notesLabel:"Notlar (Opsiyonel)", notesPh:"Özel istek, ek bilgi...",
+                vehicleUnitLabel:"1 Adet VIP Araç", passengerUnitShort:"Yolcu", childUnitShort:"Çocuk",
                 estimatedLabel:"Tahmini:", continueBtn:"Devam Et", backBtn:"Geri",
                 contactInfoTitle:"İletişim Bilgileri", step2SummaryTitle:"Rezervasyon Özeti", returningCustomerNote:"Önceki bilgileriniz kullanıldı, dilerseniz değiştirebilirsiniz.", nameLabel:"Adınız Soyadınız", namePh:"Adınız ve soyadınız",
                 phoneLabel:"Telefon Numaranız", phonePh:"05XX XXX XX XX",
@@ -2306,6 +2309,7 @@
                 childCountDecrease:"Decrease child count", childCountIncrease:"Increase child count",
                 needsChildSeatLabel:"Baby/child seat needed",
                 notesLabel:"Notes (Optional)", notesPh:"Special request, additional info...",
+                vehicleUnitLabel:"1 VIP Vehicle", passengerUnitShort:"Passenger(s)", childUnitShort:"Child(ren)",
                 estimatedLabel:"Estimated:", continueBtn:"Continue", backBtn:"Back",
                 contactInfoTitle:"Contact Information", step2SummaryTitle:"Booking Summary", returningCustomerNote:"We've filled in your previous details — feel free to change them.", nameLabel:"Full Name", namePh:"Your first and last name",
                 phoneLabel:"Your Phone Number", phonePh:"05XX XXX XX XX",
@@ -2429,6 +2433,7 @@
                 childCountDecrease:"Уменьшить количество детей", childCountIncrease:"Увеличить количество детей",
                 needsChildSeatLabel:"Нужно детское/автокресло",
                 notesLabel:"Примечания (необязательно)", notesPh:"Особые пожелания, доп. информация...",
+                vehicleUnitLabel:"1 VIP автомобиль", passengerUnitShort:"пассажир(ов)", childUnitShort:"ребёнок/детей",
                 estimatedLabel:"Примерно:", continueBtn:"Продолжить", backBtn:"Назад",
                 contactInfoTitle:"Контактная информация", step2SummaryTitle:"Сводка бронирования", returningCustomerNote:"Мы заполнили ваши предыдущие данные — при необходимости их можно изменить.", nameLabel:"Имя и фамилия", namePh:"Ваше имя и фамилия",
                 phoneLabel:"Ваш номер телефона", phonePh:"05XX XXX XX XX",
@@ -3129,6 +3134,15 @@
                 var destVal = document.getElementById('dest-input') ? document.getElementById('dest-input').value.trim() : '';
                 var routeEl = document.getElementById('transfer-step2-route');
                 if (routeEl) routeEl.textContent = pickupVal + (destVal ? ' → ' + destVal : '');
+                var vehicleEl = document.getElementById('transfer-step2-vehicle');
+                if (vehicleEl) {
+                    var trPax = document.getElementById('transfer-passengers') ? document.getElementById('transfer-passengers').value : '';
+                    var trChild = document.getElementById('transfer-child-count') ? document.getElementById('transfer-child-count').value : '0';
+                    var vehicleParts = [t('form.vehicleUnitLabel') || '1 Adet VIP Araç'];
+                    if (trPax) vehicleParts.push(trPax + ' ' + (t('form.passengerUnitShort') || 'Yolcu'));
+                    if (parseInt(trChild) > 0) vehicleParts.push(trChild + ' ' + (t('form.childUnitShort') || 'Çocuk'));
+                    vehicleEl.textContent = vehicleParts.join(' · ');
+                }
                 var distanceText = document.getElementById('distanceText') ? document.getElementById('distanceText').textContent : '';
                 var durationText = document.getElementById('durationText') ? document.getElementById('durationText').textContent : '';
                 var kmEl = document.getElementById('transfer-step2-km');
@@ -3147,6 +3161,15 @@
                 var tPickup = document.getElementById('tahsis-pickup-input') ? document.getElementById('tahsis-pickup-input').value.trim() : '';
                 var pickupEl = document.getElementById('tahsis-step2-pickup');
                 if (pickupEl) pickupEl.textContent = tPickup || '—';
+                var vehicleElT = document.getElementById('tahsis-step2-vehicle');
+                if (vehicleElT) {
+                    var tsPax = document.getElementById('tahsis-passengers') ? document.getElementById('tahsis-passengers').value : '';
+                    var tsChild = document.getElementById('tahsis-child-count') ? document.getElementById('tahsis-child-count').value : '0';
+                    var vehiclePartsT = [t('form.vehicleUnitLabel') || '1 Adet VIP Araç'];
+                    if (tsPax) vehiclePartsT.push(tsPax + ' ' + (t('form.passengerUnitShort') || 'Yolcu'));
+                    if (parseInt(tsChild) > 0) vehiclePartsT.push(tsChild + ' ' + (t('form.childUnitShort') || 'Çocuk'));
+                    vehicleElT.textContent = vehiclePartsT.join(' · ');
+                }
                 var vDuration = document.getElementById('vDuration');
                 var durationEl = document.getElementById('tahsis-step2-duration');
                 if (durationEl && vDuration && vDuration.selectedIndex >= 0) durationEl.textContent = vDuration.options[vDuration.selectedIndex].text;
