@@ -512,6 +512,26 @@
                     if (inputId === 'pickup-input' && typeof calculateTransferDistance === 'function') {
                         calculateTransferDistance();
                     }
+                    // BUG/UX DÜZELTMESİ (Tolga fark etti — Telegram'daki "Konumumu Kullan"
+                    // ziyaretçi bildirimlerinde müşteriler GPS konumunu (genelde ev/otel
+                    // adresi — havalimanına GİDİŞ yönü) alış noktasına başarıyla alıyor ama
+                    // sonrasında hiçbir fiyat çıkmıyordu, sanki sistem "kalmış" gibi
+                    // görünüyordu). Sebep bug değil, eksik bir yönlendirmeydi: fiyat
+                    // hesaplaması hem alış HEM varış noktası gerektiriyor — GPS sadece
+                    // ALIŞ'ı dolduruyor, varış hâlâ boşsa calculateTransferDistance() sessizce
+                    // hiçbir şey göstermeden çıkıyordu (bkz. yukarıdaki fonksiyon), müşteri de
+                    // bir sonraki adımın "şimdi nereye gideceğinizi yazın" olduğunu
+                    // anlamıyordu. Artık varış noktası hâlâ boşsa GPS başarılı olur olmaz
+                    // otomatik olarak oraya odaklanılıyor VE hızlı öneri çipleri (Gazipaşa/
+                    // Alanya/Antalya Havalimanı) hemen gösteriliyor — müşteri tek dokunuşla
+                    // varışı seçip anında fiyatı görebiliyor.
+                    if (inputId === 'pickup-input') {
+                        var destInputEl = document.getElementById('dest-input');
+                        if (destInputEl && !destInputEl.value.trim()) {
+                            if (typeof showDestQuickSuggest === 'function') showDestQuickSuggest();
+                            setTimeout(function() { destInputEl.focus(); }, 300);
+                        }
+                    }
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
 
