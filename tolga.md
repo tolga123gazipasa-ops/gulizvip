@@ -1,11 +1,16 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
 Son güncelleme: 2026-08-19 akşam (fiyatın araç başına olduğuna dair kullanıcı notu +
-Telegram "Fiyat Hesapla" bildirimine tarih/saat/uçuş no eklendi — 2 commit COMMIT
-EDİLDİ, henüz PUSH EDİLMEDİ, Tolga kendi bilgisayarından `git push origin main`
-yapacak)
+Telegram "Fiyat Hesapla" bildirimine tarih/saat/uçuş no + 2. adım özetine araç/yolcu/
+çocuk bilgisi eklendi — 4 commit COMMIT EDİLDİ, henüz PUSH EDİLMEDİ, Tolga kendi
+bilgisayarından `git push origin main` yapacak)
 
-## GÜNCEL (19 Ağustos akşam) — "Fiyat araç başınadır" notu + Telegram bildirim detayı
+## GÜNCEL (19 Ağustos akşam) — "Fiyat araç başınadır" notu + Telegram bildirim detayı + 2. adım özeti
+
+**3. 2. adımdaki (Kişisel Bilgiler) rezervasyon özetine araç/yolcu/çocuk satırı
+eklendi.** Güzergahın hemen altında artık "1 Adet VIP Araç · 2 Yolcu · 1 Çocuk"
+gibi bir satır görünüyor (çocuk 0 ise o kısım hiç yazılmıyor) — hem transfer hem
+tahsis formunda, TR/EN/RU. (commit `3ef0fec`)
 
 **Bağlam:** Tolga, kişi sayısı arttıkça fiyatın neden değişmediğini sordu (2 kişi de
 9 kişi de aynı fiyat). Açıklandı: fiyat kişi başı değil ARAÇ başına hesaplanıyor
@@ -26,8 +31,8 @@ ve uçuş numarasının görünmesini istedi, ödeme adımına gelmeden vazgeçe
 de artık net görebiliyorsun. (commit `7716d8f`)
 
 ### Hemen Yapılması Gereken
-- **git push origin main** kendi bilgisayarından — 2 commit push bekliyor
-  (`b945fcd`, `7716d8f`), Railway'e henüz deploy olmadı.
+- **git push origin main** kendi bilgisayarından — 4 commit push bekliyor
+  (`b945fcd`, `7716d8f`, `06a24dc`, `3ef0fec`), Railway'e henüz deploy olmadı.
 
 ## GÜNCEL (19 Ağustos) — Booking formu alış/varış alanları + mobil UX turu
 
