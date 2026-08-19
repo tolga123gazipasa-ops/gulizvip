@@ -3933,6 +3933,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     if reservation.get("childCount"):
                         seat_note = " (koltuk gerekiyor)" if reservation.get("needsChildSeat") else ""
                         telegram_rez += f"\n👶 <b>Çocuk:</b> {reservation['childCount']}{seat_note}"
+                    pay_method_val = reservation.get("paymentMethod")
+                    if pay_method_val == "nakit":
+                        telegram_rez += "\n💵 <b>Ödeme:</b> Araçta Nakit (ön ödeme yok — teyit için müşteriyi aramanız önerilir)"
+                    elif pay_method_val == "havale":
+                        telegram_rez += "\n🏦 <b>Ödeme:</b> Havale/EFT (müşteri kendi yapacak)"
                     send_telegram(telegram_rez)
                     # Rezervasyon onay e-postası gönder (sadece havale/manuel ödemede — kart
                     # ödemesinde onay e-postası ödeme doğrulanınca gönderilir, bkz. yukarıdaki not)

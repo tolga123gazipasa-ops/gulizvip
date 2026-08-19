@@ -955,6 +955,8 @@
         .payment-option-desc { font-size: 12px; color: var(--text-gray); margin-top: 2px; }
         .bank-details { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-top: 5px; }
         .bank-details-label { font-size: 13px; font-weight: 700; color: var(--text-gray); margin-bottom: 12px; }
+        .payment-nakit-note { display: flex; align-items: flex-start; gap: 8px; background: #fffbeb; color: #b45309; padding: 10px 14px; border-radius: 8px; margin-top: 10px; font-size: 12px; font-weight: 600; border: 1px solid #fde68a; }
+        .payment-nakit-note i { margin-top: 2px; flex-shrink: 0; }
         .bank-options { display: flex; flex-direction: column; gap: 10px; }
         .bank-option { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 2px solid #E2E8F0; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
         .bank-option input[type="radio"] { display: none; }
@@ -1646,7 +1648,15 @@
                                     <div class="payment-option-desc" data-i18n="form.payKartDesc">Güvenli ödeme sayfasına yönlendirilirsiniz.</div>
                                 </div>
                             </label>
+                            <label class="payment-option" id="transfer-pay-nakit-label">
+                                <input type="radio" name="transfer-paymethod" value="nakit">
+                                <div class="payment-option-info">
+                                    <div class="payment-option-title"><i class="fa-solid fa-money-bill-wave"></i> <span data-i18n="form.payNakit">Araçta Nakit Öde</span></div>
+                                    <div class="payment-option-desc" data-i18n="form.payNakitDesc">Ödemeyi transfer sırasında şoförümüze elden yapabilirsiniz.</div>
+                                </div>
+                            </label>
                         </div>
+                        <div class="payment-nakit-note" id="transfer-nakit-note" style="display:none;"><i class="fa-solid fa-circle-info"></i> <span data-i18n="form.payNakitCaution">Lütfen bu seçeneği yalnızca kesinleşmiş rezervasyonlarınız için kullanın — aracımız belirttiğiniz saatte orada olacaktır.</span></div>
                     </div>
                     <div class="bank-details" id="transfer-bank-details">
                         <div class="bank-details-label" data-i18n="form.bankSelectLabel">Banka Seçiniz</div>
@@ -1762,7 +1772,15 @@
                                     <div class="payment-option-desc" data-i18n="form.payKartDesc">Güvenli ödeme sayfasına yönlendirilirsiniz.</div>
                                 </div>
                             </label>
+                            <label class="payment-option" id="tahsis-pay-nakit-label">
+                                <input type="radio" name="tahsis-paymethod" value="nakit">
+                                <div class="payment-option-info">
+                                    <div class="payment-option-title"><i class="fa-solid fa-money-bill-wave"></i> <span data-i18n="form.payNakit">Araçta Nakit Öde</span></div>
+                                    <div class="payment-option-desc" data-i18n="form.payNakitDesc">Ödemeyi transfer sırasında şoförümüze elden yapabilirsiniz.</div>
+                                </div>
+                            </label>
                         </div>
+                        <div class="payment-nakit-note" id="tahsis-nakit-note" style="display:none;"><i class="fa-solid fa-circle-info"></i> <span data-i18n="form.payNakitCaution">Lütfen bu seçeneği yalnızca kesinleşmiş rezervasyonlarınız için kullanın — aracımız belirttiğiniz saatte orada olacaktır.</span></div>
                     </div>
                     <div class="bank-details" id="tahsis-bank-details">
                         <div class="bank-details-label" data-i18n="form.bankSelectLabel">Banka Seçiniz</div>
@@ -2194,6 +2212,8 @@
                 paymentMethodsLabel:"Ödeme, banka havalesi / EFT ile yapılmaktadır. Kredi kartı ile online ödeme yakında aktif olacaktır.",
                 payHavale:"Banka Havalesi / EFT", payHavaleDesc:"IBAN'a havale yapın, ekibimiz onaylasın.",
                 payKart:"Kredi Kartı (Online)", payKartDesc:"Güvenli ödeme sayfasına yönlendirilirsiniz.",
+                payNakit:"Araçta Nakit Öde", payNakitDesc:"Ödemeyi transfer sırasında şoförümüze elden yapabilirsiniz.",
+                payNakitCaution:"Lütfen bu seçeneği yalnızca kesinleşmiş rezervasyonlarınız için kullanın — aracımız belirttiğiniz saatte orada olacaktır.",
                 payRedirecting:"Ödeme sayfasına yönlendiriliyor...", payFailed:"Ödeme sayfası açılamadı: ",
                 bankSelectLabel:"Banka Seçiniz", completeBtn:"Rezervasyonu Tamamla",
                 pickupHotelLabel:"Araç Alış Noktası (Otel / Adres)", pickupHotelPh:"Aracın sizi alacağı konum",
@@ -2318,6 +2338,8 @@
                 paymentMethodsLabel:"Payment is made via bank transfer / EFT. Online credit card payment will be available soon.",
                 payHavale:"Bank Transfer / EFT", payHavaleDesc:"Transfer to our IBAN, our team will confirm.",
                 payKart:"Credit Card (Online)", payKartDesc:"You will be redirected to a secure payment page.",
+                payNakit:"Pay Cash in the Vehicle", payNakitDesc:"You can pay our driver in cash during the transfer.",
+                payNakitCaution:"Please only use this option if your booking is definite — our vehicle will be there at the time you specified.",
                 payRedirecting:"Redirecting to payment page...", payFailed:"Could not open payment page: ",
                 bankSelectLabel:"Select Bank", completeBtn:"Complete Reservation",
                 pickupHotelLabel:"Vehicle Pickup Location (Hotel / Address)", pickupHotelPh:"The location where the vehicle will pick you up",
@@ -2442,6 +2464,8 @@
                 paymentMethodsLabel:"Оплата производится банковским переводом. Онлайн-оплата картой скоро будет доступна.",
                 payHavale:"Банковский перевод", payHavaleDesc:"Переведите на IBAN, наша команда подтвердит.",
                 payKart:"Банковская карта (онлайн)", payKartDesc:"Вы будете перенаправлены на безопасную страницу оплаты.",
+                payNakit:"Оплата наличными в автомобиле", payNakitDesc:"Вы можете расплатиться с водителем наличными во время трансфера.",
+                payNakitCaution:"Пожалуйста, используйте этот вариант только если бронирование окончательное — наш автомобиль будет на месте в указанное время.",
                 payRedirecting:"Перенаправление на страницу оплаты...", payFailed:"Не удалось открыть страницу оплаты: ",
                 bankSelectLabel:"Выберите банк", completeBtn:"Завершить бронирование",
                 pickupHotelLabel:"Место подачи автомобиля (отель/адрес)", pickupHotelPh:"Место, где вас заберёт автомобиль",
@@ -3353,7 +3377,11 @@
                     var prefix = payRadio.name.split('-')[0]; // 'transfer' veya 'tahsis'
                     var bankDetails = document.getElementById(prefix + '-bank-details');
                     if(bankDetails) {
-                        bankDetails.style.display = (payRadio.value === 'kart') ? 'none' : '';
+                        bankDetails.style.display = (payRadio.value === 'havale') ? '' : 'none';
+                    }
+                    var nakitNote = document.getElementById(prefix + '-nakit-note');
+                    if(nakitNote) {
+                        nakitNote.style.display = (payRadio.value === 'nakit') ? 'flex' : 'none';
                     }
                 }
             }

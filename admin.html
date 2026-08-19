@@ -2494,7 +2494,7 @@
 
             var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
             var typeMap = { transfer: 'Havalimanı Transfer', tahsis: 'Şoförlü VIP Tahsis' };
-            var payMap = { kredi_karti: 'Kredi Kartı', havale: 'Havale/EFT' };
+            var payMap = { kredi_karti: 'Kredi Kartı', havale: 'Havale/EFT', nakit: 'Nakit (Araçta)' };
             var payStatusMap = { pending: 'Ödeme Bekliyor', confirmed: 'Ödeme Onaylandı', link_created: 'Ödeme Linki Gönderildi', paid: 'Ödendi ✅' };
             var statusClass = { pending: 'badge-pending', approved: 'badge-approved', completed: '', cancelled: '' };
             var durumHtml = '<span class="badge ' + (statusClass[r.status] || '') + '" style="' + (r.status === 'completed' ? 'background:#E2E8F0;color:#475569;' : r.status === 'cancelled' ? 'background:#FEE2E2;color:#DC2626;' : '') + '">' + (statusMap[r.status] || r.status) + '</span>';
@@ -3299,7 +3299,7 @@
 
         var html = '';
         var statusMap = { pending: 'Bekliyor', approved: 'Onaylandı', completed: 'Tamamlandı', cancelled: 'İptal Edildi' };
-        var payMap = { kredi_karti: 'Kredi Kartı', havale: 'Havale/EFT' };
+        var payMap = { kredi_karti: 'Kredi Kartı', havale: 'Havale/EFT', nakit: 'Nakit (Araçta)' };
         var payStatusMap = { pending: 'Bekliyor', confirmed: 'Onaylandı', link_created: 'Link Gönderildi', paid: 'Ödendi ✅' };
 
         for(var i = 0; i < filtered.length; i++) {
