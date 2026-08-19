@@ -1,9 +1,57 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-19 akşam (fiyatın araç başına olduğuna dair kullanıcı notu +
-Telegram "Fiyat Hesapla" bildirimine tarih/saat/uçuş no + 2. adım özetine araç/yolcu/
-çocuk bilgisi + ödeme yöntemlerine "Araçta Nakit Öde" eklendi — 7 commit COMMIT
-EDİLDİ, Tolga kendi bilgisayarından push edip deploy ediyor)
+Son güncelleme: 2026-08-19 gece (canlı sitede gerçek kullanıcı gibi hızlı rezervasyon
+akışı test edildi, 3 gerçek bug bulunup düzeltildi — bkz. aşağıdaki "Canlı QA" bölümü.
+Toplam 11 commit COMMIT EDİLDİ, henüz PUSH EDİLMEDİ)
+
+## GÜNCEL (19 Ağustos gece) — Canlı sitede "hızlı rezervasyon" testi, 3 gerçek bug bulundu
+
+**Bağlam:** Tolga "bir kullanıcı gibi siteye gir, hızlı rezervasyon almak istiyorsun,
+nerede eksiğimiz var" dedi. gulizvip.com.tr'ye canlı olarak (Chrome ile) gerçek bir
+müşteri gibi girip önce normal formu, sonra üst menüdeki "Hızlı Rezervasyon" (popüler
+rota kartları) akışını uçtan uca denedim. Normal form akışı (bu oturumda yapılan tüm
+iyileştirmelerle — 3 çip, özet kutuları, fiyat notu) sorunsuz ve gayet iyi çalışıyor.
+Ama "Hızlı Rezervasyon" — sitenin EN HIZLI rezervasyon yolu, tam da Tolga'nın sorduğu
+kısım — ciddi şekilde bozuktu:
+
+**1. GERÇEK BUG — Hızlı Rezervasyon'da müşteri hiçbir fiyat/güzergah görmeden
+rezervasyon tamamlıyordu.** Üst menüden "Hızlı Rezervasyon"a basıp bir rota kartına
+(örn. "Gazipaşa → Mahmutlar 2.500 TL") tıklayınca sistem doğrudan 2. adıma (İletişim
+Bilgileri) atlıyor — bu kısmen normal (hız için tasarlanmış) ama iki şey eksikti:
+(a) Alış noktası kutusuna "GZP" gibi ham bir kod yazılıyordu (müşteriye "Alış: GZP"
+diye anlamsız bir metin gösteriliyordu, "Alanya Gazipaşa Havalimanı" değil).
+(b) 2. adımdaki rezervasyon özeti (bu oturumda eklediğimiz güzergah/araç/KM/fiyat
+kutusu) HİÇ doldurulmuyordu — çünkü bu akış `nextStep()` fonksiyonunu değil doğrudan
+`goToStep()`'i çağırıyordu, özet fonksiyonu hiç tetiklenmiyordu. Sonuç: müşteri rota
+kartına tıkladıktan "Rezervasyonu Tamamla"ya basana kadar HİÇBİR fiyat/güzergah teyidi
+görmüyordu — 3. adım (Ödeme) ekranında bile sadece ödeme yöntemi seçenekleri vardı,
+fiyat yoktu. Gerçek parayla test ettim (rezervasyon #149, nakit seçtim): arka planda
+hesaplanan fiyat doğruydu (tam 2.500 TL, reklamdaki fiyatla birebir aynı) — yani
+finansal bir hata yoktu, sadece müşteriye hiç GÖSTERİLMİYORDU. Düzeltildi: artık (a)
+"GZP"/"AYT" gibi kodlar site genelinde kullanılan tam isimlere çevriliyor, (b) 2. adıma
+geçince özet hemen dolduruluyor, fiyat hesaplaması bitince (Google Maps API asenkron
+olduğu için) özet otomatik tazeleniyor. (commit `a462a41`)
+
+**2. GERÇEK BUG — telefon numarası validasyonu neredeyse hiç yoktu.** Tek kontrol "en
+az 10 karakter" idi, rakam dışı karakter filtrelenmiyordu, üst sınır yoktu. Test
+sırasında tarayıcıda (önceki bir test oturumundan localStorage'da kalmış) 40 haneli
+anlamsız bir "telefon numarası" otomatik doldu ve sistem bunu SORUNSUZ kabul etti. Bu
+ciddi bir sorun çünkü rezervasyon onay ekranında "müşteri temsilcimiz 5 dakika içinde
+sizinle iletişime geçecektir" yazıyor — geçersiz numarayla ekip müşteriyi arayamaz,
+rezervasyon fiilen kaybolur. Hem formda (frontend) hem sunucuda (backend, API'ye
+doğrudan istek atılsa bile) düzeltildi: artık sadece rakamlar sayılıyor, 10-13 hane
+(başında +90 dahil) dışına çıkan numaralar reddediliyor. (commit `15eb802`)
+
+**3. GERÇEK BUG (admin panel, ödeme onayı) — "Ödemeyi Onayla" butonu hiç
+çalışmıyordu + otomatik ödenen kart rezervasyonlarında "Onayla" butonu yanlışlıkla
+kilitliydi.** Bu tarama sırasında (canlı test değil, kod taraması) bulundu — ayrı bir
+maddede yukarıda zaten var, tekrar burada anmıyorum. (commit `51d06b9`)
+
+**Not — test verisi temizliği gerekiyor:** Yukarıdaki testler sırasında canlı sitede
+gerçek bir rezervasyon oluştu: **#149** (Gazipaşa→Mahmutlar, "tolga baba" adına, nakit
+ödeme, 2.500₺). Gerçek bir müşteri değil, benim testimdi — admin panelinden silmen
+gerekiyor (ben kalıcı veri silemem). Daha önceki test kaydı #112 hâlâ duruyorsa onu da
+aynı anda temizleyebilirsin.
 
 ## GÜNCEL (19 Ağustos akşam) — Ödeme yöntemlerine "Araçta Nakit Öde" eklendi
 
@@ -51,8 +99,10 @@ ve uçuş numarasının görünmesini istedi, ödeme adımına gelmeden vazgeçe
 de artık net görebiliyorsun. (commit `7716d8f`)
 
 ### Hemen Yapılması Gereken
-- Yok — Tolga bu oturumdaki tüm commit'leri (`b945fcd`den `be046ec`ye kadar, 7
-  commit) kendi bilgisayarından push edip deploy ediyor.
+- **git push origin main** kendi bilgisayarından — bu oturumdaki tüm commit'ler
+  (`b945fcd`'den `15eb802`'ye kadar, 11 commit) push bekliyor.
+- Push+deploy sonrası admin panelinden test rezervasyonu **#149**'u sil (bkz. yukarıki
+  not — canlı QA testi sırasında oluştu, gerçek müşteri değil).
 
 ## GÜNCEL (19 Ağustos) — Booking formu alış/varış alanları + mobil UX turu
 
