@@ -2,8 +2,28 @@
 
 Son güncelleme: 2026-08-19 akşam (fiyatın araç başına olduğuna dair kullanıcı notu +
 Telegram "Fiyat Hesapla" bildirimine tarih/saat/uçuş no + 2. adım özetine araç/yolcu/
-çocuk bilgisi eklendi — 4 commit COMMIT EDİLDİ, henüz PUSH EDİLMEDİ, Tolga kendi
-bilgisayarından `git push origin main` yapacak)
+çocuk bilgisi + ödeme yöntemlerine "Araçta Nakit Öde" eklendi — 7 commit COMMIT
+EDİLDİ, Tolga kendi bilgisayarından push edip deploy ediyor)
+
+## GÜNCEL (19 Ağustos akşam) — Ödeme yöntemlerine "Araçta Nakit Öde" eklendi
+
+**Bağlam:** Tolga ödeme seçeneklerine ne eklenebileceğini sordu, kendisi "araçta
+şoföre öde" fikrini önerdi. Konuşuldu: müşterinin gelmeyip aracın boşuna gitmesi
+riski havale seçeneğinden farklı değil (ikisinde de ödeme önceden garanti değil,
+havalede de admin elle onaylıyor) — bu yüzden ek bir doğrulama mekanizması
+eklenmedi, sadece Telegram'da nakit rezervasyonlar ayırt edilebilir yapıldı.
+
+**Havale/EFT ve Kredi Kartı'nın yanına 3. seçenek: "Araçta Nakit Öde".**
+(1) Fiyat kutusu tasarımı: sadece başlık + ikon, açıklama metni YOK — birkaç tur
+tartışıldı (önce uyarı notu eklendi, sonra "kredi kartı geçmez" bilgilendirmesi
+eklendi, Tolga son kararında ikisini de istemedi, sade tutuldu). (2) Seçilince
+banka/IBAN kutusu (daha önce hem havale hem karttan farklı davranıyordu, düzeltildi:
+artık sadece havale'de gösteriliyor). (3) Sana giden Telegram bildiriminde nakit
+seçilen rezervasyonlarda "💵 Ödeme: Araçta Nakit (ön ödeme yok — teyit için
+müşteriyi aramanız önerilir)" satırı çıkıyor, havalede "🏦 Ödeme: Havale/EFT"
+çıkıyor — böylece hangi rezervasyonun ön ödemesiz olduğunu Telegram'dan direkt
+görüyorsun. (4) Admin panelde de "Nakit (Araçta)" olarak düzgün etiketleniyor.
+TR/EN/RU üçünde de var. (commit'ler: `3b79788`, `6577857`, `be046ec`)
 
 ## GÜNCEL (19 Ağustos akşam) — "Fiyat araç başınadır" notu + Telegram bildirim detayı + 2. adım özeti
 
@@ -31,8 +51,8 @@ ve uçuş numarasının görünmesini istedi, ödeme adımına gelmeden vazgeçe
 de artık net görebiliyorsun. (commit `7716d8f`)
 
 ### Hemen Yapılması Gereken
-- **git push origin main** kendi bilgisayarından — 4 commit push bekliyor
-  (`b945fcd`, `7716d8f`, `06a24dc`, `3ef0fec`), Railway'e henüz deploy olmadı.
+- Yok — Tolga bu oturumdaki tüm commit'leri (`b945fcd`den `be046ec`ye kadar, 7
+  commit) kendi bilgisayarından push edip deploy ediyor.
 
 ## GÜNCEL (19 Ağustos) — Booking formu alış/varış alanları + mobil UX turu
 
