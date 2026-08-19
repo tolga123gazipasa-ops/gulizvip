@@ -3291,9 +3291,16 @@
                 var emailField = document.getElementById(formType + '-email');
                 if (!nameField.value.trim()) { shakeField(nameField); nameField.focus(); return; }
                 if (!phoneField.value.trim()) { shakeField(phoneField); phoneField.focus(); return; }
-                // Basic phone validation
-                var phone = phoneField.value.replace(/\s/g, '');
-                if (phone.length < 10) { shakeField(phoneField); phoneField.focus(); return; }
+                // GERÇEK BUG DÜZELTİLDİ (19 Ağustos, hızlı rezervasyon akışı canlı test
+                // edilirken bulundu): tek kontrol "en az 10 karakter" idi — üst sınır yoktu,
+                // rakam dışı karakterler filtrelenmiyordu. Bu yüzden "6555...5" gibi 40
+                // haneli anlamsız bir metin bile geçerli telefon sayılıp rezervasyon
+                // oluşturulabiliyordu; ekip müşteriyi aramaya çalışınca ulaşamıyordu (halbuki
+                // onay mesajında "5 dakika içinde arayacağız" deniyor). Artık sadece rakamlar
+                // sayılıyor ve TR cep/sabit hat için makul aralık (10-13 hane, +90 dahil) dışına
+                // çıkan girişler reddediliyor.
+                var phoneDigits = phoneField.value.replace(/\D/g, '');
+                if (phoneDigits.length < 10 || phoneDigits.length > 13) { shakeField(phoneField); phoneField.focus(); return; }
                 // Email validation
                 if (!emailField.value.trim()) { shakeField(emailField); emailField.focus(); return; }
                 var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

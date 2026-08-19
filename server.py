@@ -3838,6 +3838,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not reservation["customerName"] or not reservation["pickup"]:
                     self._send_error("Ad ve alış noktası zorunludur.", 400)
                     return
+                # GERÇEK BUG DÜZELTİLDİ (19 Ağustos, hızlı rezervasyon akışı canlı test
+                # edilirken bulundu): telefon numarası hiç doğrulanmıyordu — client-side
+                # kontrol de zayıftı (sadece "en az 10 karakter"), 40 haneli anlamsız bir
+                # metin bile kaydedilebiliyordu; ekip müşteriyi aramaya çalışınca ulaşamıyordu.
+                # Frontend'deki kontrolle aynı kural burada da uygulanıyor (savunma amaçlı —
+                # API doğrudan çağrılırsa da geçersiz numara kaydedilmesin diye).
+                phone_digits = re.sub(r"\D", "", reservation.get("customerPhone", ""))
+                if len(phone_digits) < 10 or len(phone_digits) > 13:
+                    self._send_error("Geçerli bir telefon numarası girin.", 400)
+                    return
                 # Hizmet bölgesi doğrulama
                 pickup_ok = is_in_service_area(reservation["pickup"])
                 dest_ok = is_in_service_area(reservation["destination"]) if reservation["destination"] else True
