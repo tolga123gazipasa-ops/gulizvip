@@ -2,9 +2,46 @@
 
 Son güncelleme: 2026-08-19 gece geç — **CANLI SİTEDE MÜŞTERİLER REZERVASYON
 YAPAMIYORDU (502 Bad Gateway), GERÇEK KÖK NEDEN BULUNDU VE DÜZELTİLDİ** (aşağıdaki
-ilk bölüme bak — Tolga Railway loglarını paylaştı, kesin teşhis kondu). Bu düzeltme
-dahil commit'ler hâlâ push/deploy bekliyor — **ACİLEN deploy edilmesi lazım,
-şu an canlıda müşteriler rezervasyon YAPAMIYOR.**
+ilk bölüme bak — Tolga Railway loglarını paylaştı, kesin teşhis kondu). Ayrıca bu
+502 düzeltmesinden SONRA, 502 gidince ortaya çıkan iki form-sıfırlama bug'ı daha
+bulunup düzeltildi (bkz. aşağıdaki iki yeni bölüm). **Tüm bu commit'ler hâlâ
+push/deploy bekliyor — ACİLEN deploy edilmesi lazım, şu an canlıda müşteriler
+rezervasyon YAPAMIYOR.**
+
+## ÇÖZÜLDÜ (henüz deploy edilmedi) — Admin panelde "Yeni Rezervasyon Ekle" kapanınca sıfırlanmıyordu
+
+**Bağlam:** Tolga admin panelinden bir müşteri için rezervasyon ekleyip
+kaydetti, sorun yoktu — ama sonra tekrar "Yeni Rezervasyon Ekle" ekranını
+açınca bir ÖNCEKİ müşterinin bilgilerinin (isim, telefon, alış/varış, tarih)
+hâlâ formda dolu olduğunu fark etti.
+
+**Sebep:** `toggleNewReservationForm()` fonksiyonu form kapanırken sadece
+harita/koordinat state'ini sıfırlıyordu (`adminSelectedPickupLat` vb.) — metin
+input'larına (`admin-customer-name`, `admin-customer-phone`,
+`admin-pickup-input`, `admin-dest-input`, `admin-service-type`,
+`admin-datetime`) hiç dokunmuyordu. Rezervasyon kaydedilince form otomatik
+kapanıyor (`adminSaveReservation()` içinde `toggleNewReservationForm()`
+çağrılıyor) ama alanlar temizlenmediği için bir dahaki açılışta eski veriler
+duruyordu — dikkatsizce "Kaydet"e basılırsa aynı bilgilerle yanlışlıkla ikinci
+bir rezervasyon oluşabilirdi. Düzeltildi: form kapanırken artık tüm alanlar
+(isim, telefon, alış, varış, hizmet tipi, tarih-saat, mesafe/süre/fiyat
+gösterimi) sıfırlanıyor. (commit `13eaf8c`)
+
+## ÇÖZÜLDÜ (henüz deploy edilmedi) — Nakit/havale ile rezervasyon tamamlanınca form sıfırlanmıyordu
+
+**Bağlam:** Tolga müşteri tarafında rezervasyonu "Araçta Nakit Öde" ile
+tamamladı, "Talebiniz Alındı!" popup'ı çıktı, kapattı — ama altta hâlâ
+doldurulmuş 3. adım (isim/telefon/ödeme seçimi) duruyordu, sanki hiçbir şey
+sıfırlanmamış gibi. Kredi kartıyla denendiğinde sorun yoktu çünkü o zaten
+tamamen ayrı bir ödeme sayfasına (`/odeme/garanti/<id>`) yönlendiriyor.
+
+**Sebep:** `closeModal()` fonksiyonu sadece popup'ı gizliyordu
+(`classList.remove('open')`), formu sıfırlayan hiçbir kod çağırmıyordu.
+Sitede zaten hazır bir `resetToHomeState()` fonksiyonu vardı (logo tıklayınca
+1. adıma dönen) — `closeModal()`'ın artık onu da çağırmasını sağladım, böylece
+nakit/havale de kredi kartı gibi temiz bir başlangıca dönüyor, kafa
+karışıklığı ve yanlışlıkla ikinci gönderim riski ortadan kalkıyor.
+(commit `a78db40`)
 
 ## ÇÖZÜLDÜ (henüz deploy edilmedi) — Rezervasyon tamamlanamıyordu: `UnboundLocalError` → 502 Bad Gateway
 
