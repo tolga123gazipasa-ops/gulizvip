@@ -2,11 +2,29 @@
 
 Son güncelleme: 2026-08-19 gece geç — **CANLI SİTEDE MÜŞTERİLER REZERVASYON
 YAPAMIYORDU (502 Bad Gateway), GERÇEK KÖK NEDEN BULUNDU VE DÜZELTİLDİ** (aşağıdaki
-ilk bölüme bak — Tolga Railway loglarını paylaştı, kesin teşhis kondu). Ayrıca bu
-502 düzeltmesinden SONRA, 502 gidince ortaya çıkan iki form-sıfırlama bug'ı daha
-bulunup düzeltildi (bkz. aşağıdaki iki yeni bölüm). **Tüm bu commit'ler hâlâ
-push/deploy bekliyor — ACİLEN deploy edilmesi lazım, şu an canlıda müşteriler
-rezervasyon YAPAMIYOR.**
+ilgili bölüme bak — Tolga Railway loglarını paylaştı, kesin teşhis kondu). Ayrıca
+502 düzeltmesinden SONRA iki form-sıfırlama bug'ı + bir GPS/fiyat UX eksiği daha
+bulunup düzeltildi (bkz. aşağıdaki bölümler). **Tüm bu commit'ler hâlâ push/deploy
+bekliyor — ACİLEN deploy edilmesi lazım, şu an canlıda müşteriler rezervasyon
+YAPAMIYOR.**
+
+## ÇÖZÜLDÜ (henüz deploy edilmedi) — "Konumumu Kullan" (GPS) sonrası fiyat hiç çıkmıyordu
+
+**Bağlam:** Tolga, Telegram'daki "Görünmez Ajan" ziyaretçi bildirimlerinde
+müşterilerin "Konumumu Kullan (GPS)" özelliğini kullandığını ama sonrasında
+fiyat/rezervasyon akışının ilerlemediğini fark etti — "giriyorlar konumunu
+çekiyorlar böyle kalıyorlar fiyat hesaplamıyorlar" dedi.
+
+**Sebep (bug değil, eksik yönlendirme):** GPS düğmesi sadece ALIŞ noktasını
+dolduruyor (müşterinin gerçek adresi — genelde ev/otel, havalimanına GİDİŞ
+yönü demek). Fiyat hesaplaması için hem alış HEM varış gerekiyor; varış hâlâ
+boşsa `calculateTransferDistance()` sessizce hiçbir şey göstermeden çıkıyordu
+— ne hata, ne yönlendirme. Müşteri konumunu verdikten sonra "şimdi nereye
+gideceğinizi de yazmanız lazım" adımını fark edemiyor, sistem donmuş/tepkisiz
+sanıyordu. Düzeltildi: GPS ile alış dolar dolmaz, varış hâlâ boşsa kutu
+otomatik odaklanıyor VE altında Gazipaşa/Alanya/Antalya Havalimanı hızlı öneri
+çipleri hemen beliriyor — müşteri tek dokunuşla varışı seçip anında fiyatı
+görebiliyor. (commit `5084c5b`)
 
 ## ÇÖZÜLDÜ (henüz deploy edilmedi) — Admin panelde "Yeni Rezervasyon Ekle" kapanınca sıfırlanmıyordu
 
