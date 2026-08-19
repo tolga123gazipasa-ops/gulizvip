@@ -3289,6 +3289,17 @@
 
             goToStep(formType, currentStep + 1);
 
+            // GERÇEK BUG: adımlar arası yükseklik farkı yüzünden (1. adım harita/chip'lerle
+            // uzun, 2. adım kısa) sayfa scroll pozisyonu pixel olarak sabit kalıyor ama
+            // form küçülünce altındaki "Hizmetlerimiz" bölümü yukarı kayıp görünüme
+            // giriyordu — müşteri "Devam Et"e basınca sanki başka bir bölüme atlamış gibi
+            // oluyor, yukarı kaydırmak zorunda kalıyordu. Yeni adımın başlığını (adım
+            // göstergesini) görünüme kaydırarak bunu engelliyoruz.
+            var stepIndicatorEl = document.getElementById(formType + '-indicator');
+            if (stepIndicatorEl) {
+                stepIndicatorEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
             // 1. adımdan 2. adıma geçildiyse (kişisel bilgiler), az önce hesaplanan
             // güzergah/KM/fiyat özetini orada da göster.
             if (currentStep === 1) {
