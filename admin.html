@@ -2508,18 +2508,23 @@
             var actionsHtml = '';
             // Approve & confirm payment for kredi_karti
             if(r.status === 'pending') {
-                var canApprove = (r.paymentMethod !== 'kredi_karti') || (r.paymentStatus === 'confirmed');
+                // 'paid' (Garanti webhook'u otomatik onayladı) ve 'confirmed' (admin elle
+                // onayladı) ikisi de "ödeme tamam" demek — sadece 'confirmed' kontrolü
+                // yüzünden otomatik ödenen kart rezervasyonlarında Onayla butonu yanlışlıkla
+                // kilitli kalıyordu, düzeltildi.
+                var paymentOk = r.paymentStatus === 'confirmed' || r.paymentStatus === 'paid';
+                var canApprove = (r.paymentMethod !== 'kredi_karti') || paymentOk;
                 actionsHtml = '<button class="btn-approve" onclick="adminUpdateReservation(' + r.id + ',\'approved\')" style="padding:8px 20px;font-size:14px;' + (canApprove ? '' : 'opacity:0.5;pointer-events:none;') + '" title="' + (canApprove ? 'Onayla' : 'Ödeme onaylanmadı') + '"><i class="fa-solid fa-check"></i> Onayla</button> ' +
                     '<button class="btn-danger" onclick="adminUpdateReservation(' + r.id + ',\'cancelled\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-times"></i> İptal Et</button>';
                 // Show confirm payment button for kredi_karti
-                if(r.paymentMethod === 'kredi_karti' && r.paymentStatus !== 'confirmed') {
+                if(r.paymentMethod === 'kredi_karti' && !paymentOk) {
                     actionsHtml += ' <button class="btn-confirm-payment" onclick="adminConfirmPayment(' + r.id + ')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-credit-card"></i> Ödemeyi Onayla</button>';
                 }
             } else if(r.status === 'approved') {
                 actionsHtml = '<button class="btn-approve" onclick="adminUpdateReservation(' + r.id + ',\'completed\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-check-double"></i> Tamamla</button> ' +
                     '<button class="btn-danger" onclick="adminUpdateReservation(' + r.id + ',\'cancelled\')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-times"></i> İptal Et</button>';
                 // Show confirm payment button even in approved state if not yet confirmed
-                if(r.paymentMethod === 'kredi_karti' && r.paymentStatus !== 'confirmed') {
+                if(r.paymentMethod === 'kredi_karti' && r.paymentStatus !== 'confirmed' && r.paymentStatus !== 'paid') {
                     actionsHtml += ' <button class="btn-confirm-payment" onclick="adminConfirmPayment(' + r.id + ')" style="padding:8px 20px;font-size:14px;"><i class="fa-solid fa-credit-card"></i> Ödemeyi Onayla</button>';
                 }
             }

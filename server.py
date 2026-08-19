@@ -5015,6 +5015,31 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     except Exception:
                         pass
                     self._send_json({"success": True, "message": "Rezervasyon silindi."})
+                elif action == "confirm-payment":
+                    # GERÇEK BUG DÜZELTİLDİ (19 Ağustos, komple sistem taraması): admin.html'deki
+                    # "Ödemeyi Onayla" butonu bu action'ı gönderiyordu ama sunucu tarafında hiç
+                    # işlenmiyordu — her tıklamada "Geçersiz aksiyon" hatası dönüyordu, buton
+                    # tamamen çalışmıyordu. Kredi kartı ödemesi normalde Garanti webhook'u ile
+                    # otomatik onaylanır (paymentStatus="paid") ama webhook başarısız olur/gecikirse
+                    # admin banka ekstresinden kontrol edip elle onaylayabilsin diye bu manuel
+                    # yedek yol var — artık gerçekten çalışıyor.
+                    res_id = body.get("id")
+                    if res_id is None:
+                        self._send_error("Rezervasyon ID gerekli.", 400)
+                        return
+                    for r in RESERVATIONS:
+                        if r.get("id") == res_id:
+                            with reservations_lock:
+                                r["paymentStatus"] = "confirmed"
+                                r["status"] = "approved"
+                            save_reservations()
+                            try:
+                                db.update_reservation_in_db(res_id, {"paymentStatus": "confirmed", "status": "approved"})
+                            except Exception:
+                                pass
+                            self._send_json({"success": True, "reservation": r})
+                            return
+                    self._send_error("Rezervasyon bulunamadı.", 404)
                 else:
                     self._send_error("Geçersiz aksiyon.", 400)
             except json.JSONDecodeError:
