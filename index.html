@@ -3267,14 +3267,18 @@
                         var trDest = document.getElementById('dest-input').value;
                         var trDate = document.getElementById('transfer-date').value;
                         var trTime = document.getElementById('transfer-time').value;
-                        step1Detail = 'Havalimanı Transferi | Alış: ' + trPickup + ' | Varış: ' + trDest + ' | ' + trDate + ' ' + trTime;
+                        var trFlight = document.getElementById('transfer-flight').value;
+                        step1Detail = 'Havalimanı VIP Transfer\nAlış: ' + trPickup + '\nVarış: ' + trDest +
+                            '\nTarih: ' + (trDate || '—') + '\nSaat: ' + (trTime || '—');
+                        if (trFlight) step1Detail += '\nUçuş No: ' + trFlight;
                     } else {
                         var tsPickup = document.getElementById('tahsis-pickup-input').value;
                         var durationSelect = document.getElementById('vDuration');
                         var tsDuration = durationSelect ? durationSelect.options[durationSelect.selectedIndex].text : '';
                         var tsDate = document.getElementById('tahsis-date').value;
                         var tsTime = document.getElementById('tahsis-time').value;
-                        step1Detail = 'Şoförlü Günlük VIP | Alış: ' + tsPickup + ' | Süre: ' + tsDuration + ' | ' + tsDate + ' ' + tsTime;
+                        step1Detail = 'Şoförlü Günlük VIP\nAlış: ' + tsPickup + '\nSüre: ' + tsDuration +
+                            '\nTarih: ' + (tsDate || '—') + '\nSaat: ' + (tsTime || '—');
                     }
                     gulizTracker.trackEvent('Fiyat Hesapla', step1Detail, true);
                 } else if (currentStep === 2) {
