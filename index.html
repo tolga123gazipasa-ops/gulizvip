@@ -3196,6 +3196,19 @@
             }
         }
 
+        // GERÇEK BUG DÜZELTİLDİ (19 Ağustos, hızlı rezervasyon akışı canlı test edilirken
+        // bulundu): "Hızlı Rezervasyon" modalından bir rota seçilince 2. adıma direkt
+        // atlanıyor ama fiyat/mesafe hesaplaması ASENKRON (Google Distance Matrix API
+        // çağrısı) tamamlanmadan özet doldurulduğu için "—" boş kalıyordu. Hesaplama
+        // (fetchDistance / priceFromDestFallback) her bittiğinde bu fonksiyon çağrılır —
+        // özet kutusu o an ekrandaysa (2. adımdaysak) güncel rakamlarla tazelenir.
+        function refreshStep2SummaryIfVisible() {
+            var s = document.getElementById('transfer-step2-summary');
+            if (s && s.style.display === 'block' && typeof populateStep2Summary === 'function') {
+                populateStep2Summary('transfer');
+            }
+        }
+
         function nextStep(formType, currentStep) {
             // Per-step validation
             if (formType === 'transfer') {
@@ -3457,7 +3470,32 @@
             }).join('');
         }
 
+        // Rota fiyat tablosunda alış noktası kısa kod olarak girilmiş olabilir (GZP/AYT) —
+        // müşteriye ham kod ("GZP") göstermemek için bilinen kodları site genelinde
+        // kullanılan okunabilir tam isme çeviriyoruz. Tanınmayan bir değer varsa
+        // (admin farklı bir yer adı girmişse) olduğu gibi bırakılır.
+        function normalizeRouteFromLabel(from) {
+            var f = (from || '').trim();
+            var upper = f.toUpperCase();
+            if (upper === 'GZP' || upper.indexOf('GZP') > -1 || upper.indexOf('GAZİPAŞA') > -1 || upper.indexOf('GAZIPASA') > -1) {
+                return 'Alanya Gazipaşa Havalimanı';
+            }
+            if (upper === 'AYT' || upper.indexOf('AYT') > -1 || upper.indexOf('ANTALYA') > -1) {
+                return 'Antalya Havalimanı';
+            }
+            return f;
+        }
+
         // Rota seçildiğinde formu doldur ve kaydır
+        //
+        // GERÇEK BUG DÜZELTİLDİ (19 Ağustos, hızlı rezervasyon akışı canlı test edilirken
+        // bulundu): "Hızlı Rezervasyon" modalından bir rota seçilince müşteri doğrudan
+        // 2. adıma (İletişim Bilgileri) atlıyordu ama (1) alış noktasına ham kod ("GZP")
+        // yazılıyordu — müşteriye "Alış: GZP" gibi anlamsız bir metin gösteriliyordu,
+        // (2) 2. adımdaki rezervasyon özeti (güzergah/KM/fiyat) hiç doldurulmuyordu —
+        // müşteri "Devam Et" ve "Rezervasyonu Tamamla"ya kadar HİÇBİR fiyat/güzergah
+        // teyidi görmeden ilerliyordu (fiyatın kendisi doğru hesaplanıyordu, sadece
+        // ekranda hiç görünmüyordu). İkisi de düzeltildi.
         function selectRoute(idx) {
             var route = ROUTE_PRICES[idx];
             if (!route) return;
@@ -3466,7 +3504,7 @@
             // Alış ve varış alanlarını doldur
             var pickupInput = document.getElementById('pickup-input');
             var destInput = document.getElementById('dest-input');
-            if (pickupInput) pickupInput.value = route.from;
+            if (pickupInput) pickupInput.value = normalizeRouteFromLabel(route.from);
             if (destInput) destInput.value = route.to;
             // Booking engine'e kaydır
             var engine = document.querySelector('.booking-engine');
@@ -3476,6 +3514,12 @@
             // Step 2'ye atla (varsayılan bilgi adımı)
             setTimeout(function() {
                 goToStep('transfer', 2);
+                // Güzergahı hemen göster (fiyat henüz hesaplanmamış olsa bile) —
+                // asenkron hesaplama bitince refreshStep2SummaryIfVisible() bu özeti
+                // otomatik tazeler.
+                if (typeof populateStep2Summary === 'function') {
+                    populateStep2Summary('transfer');
+                }
                 // Maps varsa mesafe hesapla
                 if (typeof showRouteMap === 'function') {
                     showRouteMap();
@@ -4399,6 +4443,7 @@
                             showFxEquivalent(price, 'priceEstimateFx');
 
                             distanceInfo.style.display = 'flex';
+                            refreshStep2SummaryIfVisible();
                         } else {
                             document.getElementById('distanceText').textContent = 'Mesafe hesaplanamadı';
                             priceFromDestFallback();
@@ -4603,6 +4648,7 @@
                     document.getElementById('durationText').textContent = '—';
                     document.getElementById('priceEstimate').textContent = r.price.toLocaleString('tr-TR') + ' ₺';
                     showFxEquivalent(r.price, 'priceEstimateFx');
+                    refreshStep2SummaryIfVisible();
                     return;
                 }
             }
@@ -4620,6 +4666,7 @@
             document.getElementById('durationText').textContent = '—';
             document.getElementById('priceEstimate').textContent = price.toLocaleString('tr-TR') + ' ₺';
             showFxEquivalent(price, 'priceEstimateFx');
+            refreshStep2SummaryIfVisible();
         }
 
         // Sayfa açılınca pickup input'ta varsayılan bir değer varsa geocode'la
