@@ -899,6 +899,9 @@
         .distance-detail { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--primary-navy); }
         .distance-detail i { color: var(--primary-red); font-size: 18px; width: 22px; text-align: center; }
         .distance-detail.highlight { background: var(--primary-navy); color: var(--pure-white); padding: 8px 18px; border-radius: 8px; }
+        /* Yolcu sayısı arttıkça/azaldıkça fiyatın DEĞİŞMEDİĞİNİ netleştiren not —
+           özel VIP transfer araç başına ücretlendirilir, kişi başına değil. */
+        .price-per-vehicle-note { flex-basis: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: var(--text-gray); font-weight: 600; margin-top: 4px; }
         .distance-detail.highlight i { color: #fbbf24; }
         .distance-detail.highlight strong { color: var(--pure-white); font-size: 18px; }
         .map-preview { width: 100%; height: 220px; border-radius: 12px; margin: 12px 0; border: 2px solid var(--border-light); overflow: hidden; }
@@ -914,7 +917,7 @@
         .badge i { color: var(--primary-navy); font-size: 18px; }
         .badge.highlight i { color: var(--primary-red); }
 
-        .vip-summary { background: #f8fafc; border: 1px dashed var(--border-light); border-radius: 8px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .vip-summary { background: #f8fafc; border: 1px dashed var(--border-light); border-radius: 8px; padding: 15px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .vip-summary .title { font-size: 13px; color: var(--text-gray); font-weight: 600; text-transform: uppercase; }
         .vip-summary .price { font-size: 24px; font-weight: 800; color: var(--primary-navy); }
         .vip-summary .price span { font-size: 14px; color: var(--primary-red); }
@@ -1589,6 +1592,7 @@
                         <i class="fa-solid fa-tag"></i>
                         <span><span data-i18n="form.estimatedLabel">Tahmini:</span> <strong id="priceEstimate">—</strong> <small id="priceEstimateFx" style="color:var(--text-gray);font-weight:500;"></small></span>
                     </div>
+                    <div class="price-per-vehicle-note"><i class="fa-solid fa-circle-info"></i> <span data-i18n="form.pricePerVehicleNote">Fiyat araç başınadır, yolcu sayısına göre değişmez.</span></div>
                 </div>
                 <div class="map-preview" id="mapPreview" style="display:none;">
                     <div id="routeMap" style="width:100%;height:220px;border-radius:12px;"></div>
@@ -1705,7 +1709,7 @@
                     <div class="input-group"><label>&nbsp;</label><label class="checkbox-row" for="tahsis-child-seat"><input type="checkbox" id="tahsis-child-seat"><span data-i18n="form.needsChildSeatLabel">Bebek/çocuk koltuğu gerekiyor</span></label></div>
                 </div>
                 <div id="tahsis-availability-warning" style="display:none; background:#fffbeb; color:#b45309; padding:8px 12px; border-radius:8px; margin-bottom:14px; font-size:13px; border:1px solid #fde68a;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.availabilityWarning">Bu saat diliminde araçlarımız yoğun olabilir — rezervasyonunuzu yine de alabiliriz, ekibimiz kısa süre içinde sizinle iletişime geçip teyit edecektir.</span></div>
-                <div class="vip-summary"><div class="title" data-i18n="form.estimatedPriceLabel">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div><small id="vipPriceFx" style="color:var(--text-gray);font-weight:500;"></small></div>
+                <div class="vip-summary"><div class="title" data-i18n="form.estimatedPriceLabel">Tahmini Hizmet Bedeli</div><div class="price" id="vipPriceDisplay">4.000 <span>₺</span></div><small id="vipPriceFx" style="color:var(--text-gray);font-weight:500;"></small><div class="price-per-vehicle-note"><i class="fa-solid fa-circle-info"></i> <span data-i18n="form.pricePerVehicleNote">Fiyat araç başınadır, yolcu sayısına göre değişmez.</span></div></div>
                 <div class="map-preview" id="tahsisMapPreview" style="display:none;">
                     <div id="tahsisRouteMap" style="width:100%;height:220px;border-radius:12px;"></div>
                 </div>
@@ -2165,7 +2169,7 @@
             tabs: { transfer:"Havalimanı VIP Transfer", tahsis:"Şoförlü VIP / Günlük Tahsis" },
             steps: { info1:"Transfer Bilgileri", info1Tahsis:"Tahsis Bilgileri", personal:"Kişisel Bilgiler", payment:"Ödeme" },
             form: {
-                pickupLabel:"Alış Noktası", pickupPh:"Alanya Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb.", quickSuggestGzp:"Alanya Gazipaşa Havalimanı", quickSuggestAlanya:"Alanya", quickSuggestAyt:"Antalya Havalimanı", quickSuggestLabel:"Hızlı seçim (ya da kendi adresinizi yazmaya devam edin)",
+                pickupLabel:"Alış Noktası", pickupPh:"Alanya Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb.", quickSuggestGzp:"Alanya Gazipaşa Havalimanı", quickSuggestAlanya:"Alanya", quickSuggestAyt:"Antalya Havalimanı", quickSuggestLabel:"Hızlı seçim (ya da kendi adresinizi yazmaya devam edin)", pricePerVehicleNote:"Fiyat araç başınadır, yolcu sayısına göre değişmez.",
                 areaWarning:"Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.",
                 destSelectWarning:"Adresinizi bulamadık. Lütfen mahalle, semt veya otel adı gibi anahtar kelimelerle arayın ve altta çıkan öneri listesinden birini seçin.",
                 pickupSelectWarning:"Adresinizi bulamadık. Lütfen mahalle, semt veya otel adı gibi anahtar kelimelerle arayın ve altta çıkan öneri listesinden birini seçin (ya da \"Konumumu Kullan\" seçeneğini kullanın).",
@@ -2288,7 +2292,7 @@
             tabs: { transfer:"Airport Transfer", tahsis:"Chauffeured VIP / Daily Hire" },
             steps: { info1:"Transfer Details", info1Tahsis:"Hire Details", personal:"Personal Details", payment:"Payment" },
             form: {
-                pickupLabel:"Pickup Location", pickupPh:"Alanya Gazipaşa Airport, Antalya Airport, hotel name, etc.", quickSuggestGzp:"Alanya Gazipaşa Airport", quickSuggestAlanya:"Alanya", quickSuggestAyt:"Antalya Airport", quickSuggestLabel:"Quick pick (or keep typing your own address)",
+                pickupLabel:"Pickup Location", pickupPh:"Alanya Gazipaşa Airport, Antalya Airport, hotel name, etc.", quickSuggestGzp:"Alanya Gazipaşa Airport", quickSuggestAlanya:"Alanya", quickSuggestAyt:"Antalya Airport", quickSuggestLabel:"Quick pick (or keep typing your own address)", pricePerVehicleNote:"Price is per vehicle, it doesn't change based on passenger count.",
                 areaWarning:"We do not provide service in this area. We only serve <strong>Gazipaşa, Alanya, Antalya</strong> and surrounding areas.",
                 destSelectWarning:"We couldn't find your address. Please search using keywords like the neighborhood, district, or hotel name, and select a result from the suggestion list below.",
                 pickupSelectWarning:"We couldn't find your address. Please search using keywords like the neighborhood, district, or hotel name, and select a result from the suggestion list below (or use \"Use My Location\").",
@@ -2411,7 +2415,7 @@
             tabs: { transfer:"Трансфер из аэропорта", tahsis:"VIP с водителем / Аренда на день" },
             steps: { info1:"Детали трансфера", info1Tahsis:"Детали аренды", personal:"Личные данные", payment:"Оплата" },
             form: {
-                pickupLabel:"Место посадки", pickupPh:"Аэропорт Аланья Газипаша, Аэропорт Анталии, название отеля и т.д.", quickSuggestGzp:"Аэропорт Аланья Газипаша", quickSuggestAlanya:"Аланья", quickSuggestAyt:"Аэропорт Анталии", quickSuggestLabel:"Быстрый выбор (или продолжайте вводить свой адрес)",
+                pickupLabel:"Место посадки", pickupPh:"Аэропорт Аланья Газипаша, Аэропорт Анталии, название отеля и т.д.", quickSuggestGzp:"Аэропорт Аланья Газипаша", quickSuggestAlanya:"Аланья", quickSuggestAyt:"Аэропорт Анталии", quickSuggestLabel:"Быстрый выбор (или продолжайте вводить свой адрес)", pricePerVehicleNote:"Цена указана за автомобиль и не зависит от количества пассажиров.",
                 areaWarning:"Мы не обслуживаем этот район. Мы работаем только в <strong>Газипаше, Алании, Анталии</strong> и их окрестностях.",
                 destSelectWarning:"Мы не смогли найти ваш адрес. Пожалуйста, введите ключевые слова (район, квартал, название отеля) и выберите вариант из списка предложений ниже.",
                 pickupSelectWarning:"Мы не смогли найти ваш адрес. Пожалуйста, введите ключевые слова (район, квартал, название отеля) и выберите вариант из списка предложений ниже (или используйте \"Определить моё местоположение\").",
