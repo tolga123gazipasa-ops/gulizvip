@@ -643,8 +643,8 @@ Push edince Railway otomatik deploy edecek (GitHub → Railway bağlı).
 ## Açık Kalanlar / Konuşulan Ama Henüz Karar Verilmeyenler
 
 - [ ] **Push + deploy** (yukarıda)
-- [ ] **Ödeme sağlayıcısı seçimi**: Stripe mi PayTR mi?
-- [ ] **aggregateRating gerçek değerleri**: `index.html` içindeki `"aggregateRating": {"ratingValue": "4.9", "reviewCount": "127"}` YER TUTUCUDUR — Google İşletme Profili'ndeki gerçek puanla güncellenmeli, aksi halde Google'ın sahte-yorum politikasını ihlal eder
+- [x] **Ödeme sağlayıcısı seçimi**: Garanti BBVA Sanal POS'a karar verildi, canlıda çalışıyor (Stripe/PayTR gündemden kalktı)
+- [x] **aggregateRating sahte verisi**: kaldırıldı, kodda artık hiç yok (kontrol edildi — index.html/server.py'de aggregateRating/ratingValue/reviewCount hiçbir yerde geçmiyor). Gerçek yorum/puan bölümü Tolga'nın isteğiyle şimdilik eklenmiyor.
 - [ ] **admin.html indeks kontrolü**: Search Console → URL denetimi'nden kontrol edilmedi, hâlâ açık
 - [ ] **Google Search Console'a sitemap gönderimi**: teyit edilmedi
 - [ ] **Opsiyonel `/iletisim` sayfası**: şu an anasayfanın bir bölümü, ayrı URL değil
