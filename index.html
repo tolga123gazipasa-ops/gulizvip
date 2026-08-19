@@ -2754,10 +2754,15 @@
         // doluysa dokunulmaz, boşsa sessizce doldurulur ve üstte küçük bir bilgi
         // notu ("Önceki bilgileriniz kullanıldı...") gösterilir — şeffaflık için,
         // ekstra bir onay tıklaması istemeden.
+        // Kayıt 10 günden eskiyse yok sayılır — paylaşılan cihazlarda (otel lobisi,
+        // acente bilgisayarı vb.) bir sonraki farklı müşterinin önceki kişinin bilgilerini
+        // süresiz görmesini engellemek + eski (değişmiş olabilecek) telefon/e-posta'nın
+        // tekrar doldurulmasını önlemek için (Tolga'nın isteğiyle eklendi, 19 Ağustos).
+        var RETURNING_CUSTOMER_TTL_MS = 10 * 24 * 60 * 60 * 1000;
         function saveReturningCustomerInfo(name, phone, email) {
             try {
                 if (!name && !phone && !email) return;
-                localStorage.setItem('guliz_customer_info', JSON.stringify({ name: name || '', phone: phone || '', email: email || '' }));
+                localStorage.setItem('guliz_customer_info', JSON.stringify({ name: name || '', phone: phone || '', email: email || '', savedAt: Date.now() }));
             } catch (e) {}
         }
         function prefillReturningCustomerInfo() {
@@ -2768,6 +2773,10 @@
                 saved = JSON.parse(raw);
             } catch (e) { return; }
             if (!saved || (!saved.name && !saved.phone && !saved.email)) return;
+            if (saved.savedAt && (Date.now() - saved.savedAt) > RETURNING_CUSTOMER_TTL_MS) {
+                try { localStorage.removeItem('guliz_customer_info'); } catch (e) {}
+                return;
+            }
             ['transfer', 'tahsis'].forEach(function(formType) {
                 var nameEl = document.getElementById(formType + '-name');
                 var phoneEl = document.getElementById(formType + '-phone');
