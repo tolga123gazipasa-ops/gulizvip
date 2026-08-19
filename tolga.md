@@ -1,9 +1,44 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-19 gece (canlı sitede gerçek kullanıcı gibi hızlı rezervasyon
-akışı test edildi, 3 gerçek bug bulunup düzeltildi + telefon validasyonu yabancı
-numaralara (US/DE/RU vb.) uygun genişletildi — bkz. aşağıdaki "Canlı QA" bölümü.
-Toplam 12 commit COMMIT EDİLDİ, Tolga deploy ediyor)
+Son güncelleme: 2026-08-19 gece geç — **CANLI SİTEDE KRİTİK/ACİL SUNUCU HATASI
+BULUNDU** (aşağıdaki ilk bölüme bak). Ayrıca 20 commit hâlâ push/deploy bekliyor.
+
+## ACİL — Canlı sitede rezervasyon tamamlanamıyor: sunucu 502 Bad Gateway veriyor
+
+**Bağlam:** Tolga hem admin panelinden hem normal müşteri olarak rezervasyon
+denedi, ikisinde de hata aldığını bildirdi ("sen bir girsene" dedi). Admin
+panelindeki hata daha önce (bu oturumda, local'de) telefon validasyonu yüzünden
+olduğu bulunup düzeltilmişti — ama o düzeltme HENÜZ DEPLOY EDİLMEDİ. Sonra Tolga
+normal müşteri olarak da hata aldığını söyleyince canlı siteye (gulizvip.com.tr)
+gerçek tarayıcıyla girip uçtan uca (rota seç → 2. adım bilgiler → 3. adım ödeme →
+"Rezervasyonu Tamamla") test ettim.
+
+**Bulgu: `POST /api/reservations` her denemede `502 Bad Gateway` dönüyor.**
+6 farklı denemede (farklı isim/telefon/saat kombinasyonlarıyla, hem UI üzerinden
+hem doğrudan `fetch()` ile) TUTARLI şekilde 502 aldım. Yanıt gövdesini inceledim:
+bu Railway'in değil, **Cloudflare'in kendi "502 Bad Gateway" hata sayfası**
+(`Server: cloudflare` header'ı, klasik Cloudflare hata şablonu). Yani Cloudflare,
+arkadaki Railway sunucusundan bu istek için hiç yanıt alamıyor — sunucu ya
+çöküyor ya da zaman aşımına uğruyor. Diğer her şey (ana sayfa, banka hesapları,
+Google Maps, uçuş verisi) sorunsuz yükleniyor — yani Railway uygulaması genel
+olarak AYAKTA, sorun özellikle rezervasyon oluşturma kodunda.
+
+**Not: bu, benim local'deki `server.py`'de değil.** Bu oturumda yaptığım tüm
+düzeltmeler (telefon validasyonu, CRM, vs.) sadece local'de, henüz push/deploy
+edilmedi — yani canlıda çalışan kod muhtemelen daha eski/farklı bir sürüm
+("Railway rollback sonrası mock-only sürüm" notuyla uyumlu). Sunucu tarafında
+gerçek exception/stack trace'i görebilmek için Railway'in deploy log'larına
+bakman gerekiyor (bana o erişim yok) — muhtemel şüpheliler: `DATABASE_URL`
+bağlantısı (rollback sonrası eski/yanlış bir Postgres'e işaret ediyor olabilir,
+bağlantı denemesi zaman aşımına uğrayıp isteği bloke ediyor olabilir), veya
+Resend/Telegram bildirim çağrılarından biri senkron olarak takılıp isteği asıyor
+olabilir. **Öneri: Railway log'larını aç, en son 502 zamanına denk gelen hatayı
+bul, gerekirse mevcut 20 commit'i push edip yeniden deploy et** (yerel kod zaten
+telefon validasyonu ve diğer düzeltmeleri içeriyor, sorunun kaynağı olmayabilir
+ama en azından mevcut bug'ların bir kısmını çözer).
+
+**Test verisi notu:** Bu tur canlı denemelerin hepsi 502 ile başarısız oldu, yani
+sahte bir rezervasyon KAYDEDİLMEDİ (silinecek bir şey yok bu testten).
 
 ## GÜNCEL (19 Ağustos gece) — Canlı sitede "hızlı rezervasyon" testi, 3 gerçek bug bulundu
 

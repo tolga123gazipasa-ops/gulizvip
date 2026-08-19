@@ -48,11 +48,26 @@ except ImportError:
 # ─── Connection ─────────────────────────────────────────────────────────────────
 
 def get_conn():
-    """DATABASE_URL environment variable'ından PostgreSQL bağlantısı al."""
+    """DATABASE_URL environment variable'ından PostgreSQL bağlantısı al.
+
+    ÖNEMLİ (19 Ağustos — canlı sitede 502 Bad Gateway tespit edilip araştırılırken
+    bulundu): connect_timeout hiç ayarlanmamıştı. DATABASE_URL yanlış/eski bir
+    veritabanını gösteriyorsa (ör. Railway rollback sonrası) veya hedef host
+    ağ seviyesinde erişilemezse (aktif "connection refused" değil, sessizce
+    paket düşüyorsa), psycopg2/libpq bağlantı denemesi işletim sisteminin TCP
+    timeout süresine kadar (genelde 60-130+ saniye) BEKLER. Bu süre Cloudflare'in
+    origin'den yanıt bekleme süresini (~100sn) aşınca Cloudflare bağlantıyı
+    kesip müşteriye "502 Bad Gateway" döndürüyor — sunucu tarafında hâlâ hiçbir
+    hata/log oluşmadan, istek sessizce asılı kalmış oluyor. connect_timeout=5
+    ile bu bekleme en fazla 5 saniyeye iniyor; save_reservation_to_db() zaten
+    her durumda except ile sarılı olduğu için bağlantı 5sn'de başarısız olursa
+    fonksiyon hızlıca None döner ve rezervasyon JSON dosya yedeğine düşer —
+    müşteri 502 yerine normal "rezervasyon alındı" yanıtını görür.
+    """
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
         return None
-    return psycopg2.connect(db_url, sslmode="require")
+    return psycopg2.connect(db_url, sslmode="require", connect_timeout=5)
 
 
 # ─── Table Creation ─────────────────────────────────────────────────────────────

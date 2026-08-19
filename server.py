@@ -3986,6 +3986,22 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                             print(f"[tracking] Identity matched: session {rez_session_id} → {display_name}")
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)
+            except Exception as e:
+                # ÖNEMLİ (19 Ağustos — canlı sitede rezervasyon denemesi Cloudflare'den
+                # "502 Bad Gateway" ile dönüyordu, araştırılırken eklendi): bu blokta
+                # daha önce SADECE json.JSONDecodeError yakalanıyordu — DB/ağ
+                # katmanında beklenmeyen herhangi bir hata (ör. veritabanı bağlantısı
+                # patlarsa) burada YAKALANMADAN yukarı fırlıyor, bağlantı hiç yanıt
+                # almadan düşüyor, Cloudflare da origin'den cevap gelmeyince 502
+                # döndürüyordu — müşteri "sunucu hatası" görüp rezervasyon
+                # yapamıyordu. Artık ne olursa olsun (JSON değil, DB hatası, vs.)
+                # temiz bir JSON hata yanıtı dönüyor; bağlantı asla sessizce asılı
+                # kalmıyor.
+                print(f"[!] /api/reservations beklenmeyen hata: {e}")
+                try:
+                    self._send_error("Rezervasyon kaydedilirken beklenmeyen bir hata oluştu. Lütfen tekrar deneyin veya bizi arayın.", 500)
+                except Exception:
+                    pass
             return
         if path == "/api/public/return-reservation/confirm":
             # /donus/<id>/<token> (dönüş rezervasyonu) VE /odeme/onayla/<id>/<token>
