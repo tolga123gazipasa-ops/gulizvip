@@ -330,6 +330,43 @@
             input.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
+        // Alan boşken (çarpıya yanlışlıkla basılmış olabilir) input'un hemen
+        // altında tıklanabilir bir "Alanya Gazipaşa Havalimanı" çipi gösterir —
+        // dolu haldeyken gizlenir. clearPickupField zaten 'input' event'i
+        // tetiklediği için bu, temizleme butonuyla otomatik çalışır.
+        function togglePickupQuickSuggest(inputId, suggestId) {
+            var input = document.getElementById(inputId);
+            var suggest = document.getElementById(suggestId);
+            if (!input || !suggest) return;
+            suggest.style.display = input.value.trim() ? 'none' : 'block';
+        }
+
+        // Hızlı öneri çipine tıklanınca alanı varsayılan değerle doldurur VE
+        // gerçek bir seçim gibi işaretler (pickupSelectedText + koordinat) —
+        // aksi halde "listeden seçim zorunlu" kuralına takılıp ileri gidilemezdi.
+        function restoreDefaultPickup(inputId) {
+            var input = document.getElementById(inputId);
+            if (!input) return;
+            var defaultText = 'Alanya Gazipaşa Havalimanı';
+            input.value = defaultText;
+            input.style.borderColor = '';
+            var known = (typeof resolveLocation === 'function') ? resolveLocation(defaultText) : null;
+            selectedPickupLat = known ? known.lat : null;
+            selectedPickupLng = known ? known.lng : null;
+            pickupSelectedText = defaultText;
+            var isTahsis = (inputId === 'tahsis-pickup-input');
+            var warnId = isTahsis ? 'tahsis-area-warning' : 'pickup-area-warning';
+            var selWarnId = isTahsis ? 'tahsis-select-warning' : 'pickup-select-warning';
+            var suggestId = isTahsis ? 'tahsis-pickup-quick-suggest' : 'pickup-quick-suggest';
+            if (typeof hidePickupSelectWarning === 'function') hidePickupSelectWarning(inputId, selWarnId);
+            if (typeof checkServiceArea === 'function') checkServiceArea(inputId, warnId);
+            var suggest = document.getElementById(suggestId);
+            if (suggest) suggest.style.display = 'none';
+            if (typeof showRouteMap === 'function') showRouteMap(isTahsis ? 'tahsis' : 'transfer');
+            if (!isTahsis && typeof calculateTransferDistance === 'function') calculateTransferDistance();
+            input.focus();
+        }
+
         // Yolcu ile çocuk sayısı alanlarını eşleştirir (transfer/tahsis formu
         // kendi içinde) — VIP Vito'nun fiziksel koltuk kapasitesi (9) hiçbir
         // zaman aşılmasın diye kullanılıyor.
@@ -804,6 +841,12 @@
         .input-clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; padding: 0; margin: 0; line-height: 1; box-sizing: border-box; border: none; background: var(--border-light); color: var(--text-gray, #64748b); border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); z-index: 2; }
         .input-clear-btn i { position: static; left: auto; top: auto; color: inherit; font-size: 12px; }
         .input-clear-btn:hover { background: var(--primary-red); color: var(--pure-white); }
+
+        /* Alış noktası çarpıyla temizlenince (yanlışlıkla basılmış olabilir diye)
+           altta çıkan hızlı geri-yükleme çipi */
+        .pickup-quick-suggest { margin-top: 8px; }
+        .quick-suggest-chip { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; color: #1d4ed8; border: 1px dashed #93c5fd; border-radius: 20px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .quick-suggest-chip:hover { background: #dbeafe; border-color: #60a5fa; }
         .qty-stepper { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px 8px 48px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-light); box-sizing: border-box; min-height: 40px; }
         .qty-stepper .qty-btn { width: 26px; height: 26px; flex-shrink: 0; border: none; border-radius: 6px; background: var(--primary-navy); color: var(--pure-white); font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
         .qty-stepper .qty-btn:hover:not(:disabled) { background: var(--primary-red); }
@@ -1467,8 +1510,11 @@
                         <div class="input-group">
                             <label data-i18n="form.pickupLabel">Alış Noktası</label>
                         <div class="input-wrapper clearable"><i class="fa-solid fa-map-pin"></i>
-                            <input type="text" id="pickup-input" value="Alanya Gazipaşa Havalimanı" placeholder="Alanya Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." data-i18n-placeholder="form.pickupPh" required oninput="checkServiceArea('pickup-input','pickup-area-warning'); invalidatePickupSelection('pickup-input','pickup-select-warning')">
+                            <input type="text" id="pickup-input" value="Alanya Gazipaşa Havalimanı" placeholder="Alanya Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb." data-i18n-placeholder="form.pickupPh" required oninput="checkServiceArea('pickup-input','pickup-area-warning'); invalidatePickupSelection('pickup-input','pickup-select-warning'); togglePickupQuickSuggest('pickup-input','pickup-quick-suggest')">
                             <button type="button" class="input-clear-btn" aria-label="Alış noktasını temizle" onclick="clearPickupField('pickup-input','pickup-area-warning')"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="pickup-quick-suggest" id="pickup-quick-suggest" style="display:none;">
+                            <button type="button" class="quick-suggest-chip" onclick="restoreDefaultPickup('pickup-input')"><i class="fa-solid fa-plane-arrival"></i> <span data-i18n="form.quickSuggestGzp">Alanya Gazipaşa Havalimanı</span></button>
                         </div>
                         <button type="button" class="use-location-btn" id="pickup-location-btn" onclick="useMyLocation('pickup-input','pickup-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button>
                         <div id="pickup-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div>
@@ -1598,7 +1644,7 @@
 
                 <div class="form-step" id="tahsis-step1" style="display:block;">
                     <div class="form-grid">
-                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper clearable"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Alanya Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning'); invalidatePickupSelection('tahsis-pickup-input','tahsis-select-warning')"><button type="button" class="input-clear-btn" aria-label="Alış noktasını temizle" onclick="clearPickupField('tahsis-pickup-input','tahsis-area-warning')"><i class="fa-solid fa-xmark"></i></button></div><button type="button" class="use-location-btn" id="tahsis-location-btn" onclick="useMyLocation('tahsis-pickup-input','tahsis-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div><div id="tahsis-select-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.pickupSelectWarning">Adresinizi bulamadık. Lütfen mahalle, semt veya otel adı gibi anahtar kelimelerle arayın ve altta çıkan öneri listesinden birini seçin (ya da "Konumumu Kullan" seçeneğini kullanın).</span></div></div>
+                    <div class="input-group"><label data-i18n="form.pickupHotelLabel">Araç Alış Noktası (Otel / Adres)</label><div class="input-wrapper clearable"><i class="fa-solid fa-map-pin"></i><input type="text" id="tahsis-pickup-input" value="Alanya Gazipaşa Havalimanı" placeholder="Aracın sizi alacağı konum" data-i18n-placeholder="form.pickupHotelPh" required oninput="checkServiceArea('tahsis-pickup-input','tahsis-area-warning'); invalidatePickupSelection('tahsis-pickup-input','tahsis-select-warning'); togglePickupQuickSuggest('tahsis-pickup-input','tahsis-pickup-quick-suggest')"><button type="button" class="input-clear-btn" aria-label="Alış noktasını temizle" onclick="clearPickupField('tahsis-pickup-input','tahsis-area-warning')"><i class="fa-solid fa-xmark"></i></button></div><div class="pickup-quick-suggest" id="tahsis-pickup-quick-suggest" style="display:none;"><button type="button" class="quick-suggest-chip" onclick="restoreDefaultPickup('tahsis-pickup-input')"><i class="fa-solid fa-plane-arrival"></i> <span data-i18n="form.quickSuggestGzp">Alanya Gazipaşa Havalimanı</span></button></div><button type="button" class="use-location-btn" id="tahsis-location-btn" onclick="useMyLocation('tahsis-pickup-input','tahsis-area-warning', this)"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="form.useLocationBtn">Konumumu Kullan</span><span class="location-tooltip" data-i18n="form.useLocationTooltip">Konumunuzdan aracın sizi alması için bu seçeneği tıklayın</span></button><div id="tahsis-area-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n-html="form.areaWarning">Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.</span></div><div id="tahsis-select-warning" style="display:none; background:#fef2f2; color:#dc2626; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:13px; border:1px solid #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="form.pickupSelectWarning">Adresinizi bulamadık. Lütfen mahalle, semt veya otel adı gibi anahtar kelimelerle arayın ve altta çıkan öneri listesinden birini seçin (ya da "Konumumu Kullan" seçeneğini kullanın).</span></div></div>
                     <div class="input-group"><label data-i18n="form.durationLabel">Tahsis Süresi</label>
                         <div class="input-wrapper"><i class="fa-solid fa-hourglass-half"></i>
                             <select id="vDuration" onchange="calculateVipPrice()">
@@ -2087,7 +2133,7 @@
             tabs: { transfer:"Havalimanı VIP Transfer", tahsis:"Şoförlü VIP / Günlük Tahsis" },
             steps: { info1:"Transfer Bilgileri", info1Tahsis:"Tahsis Bilgileri", personal:"Kişisel Bilgiler", payment:"Ödeme" },
             form: {
-                pickupLabel:"Alış Noktası", pickupPh:"Alanya Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb.",
+                pickupLabel:"Alış Noktası", pickupPh:"Alanya Gazipaşa Havalimanı, Antalya Havalimanı, otel adı vb.", quickSuggestGzp:"Alanya Gazipaşa Havalimanı",
                 areaWarning:"Bu bölgede hizmet vermemekteyiz. Yalnızca <strong>Gazipaşa, Alanya, Antalya</strong> ve çevresinde hizmet vermekteyiz.",
                 destSelectWarning:"Adresinizi bulamadık. Lütfen mahalle, semt veya otel adı gibi anahtar kelimelerle arayın ve altta çıkan öneri listesinden birini seçin.",
                 pickupSelectWarning:"Adresinizi bulamadık. Lütfen mahalle, semt veya otel adı gibi anahtar kelimelerle arayın ve altta çıkan öneri listesinden birini seçin (ya da \"Konumumu Kullan\" seçeneğini kullanın).",
@@ -2210,7 +2256,7 @@
             tabs: { transfer:"Airport Transfer", tahsis:"Chauffeured VIP / Daily Hire" },
             steps: { info1:"Transfer Details", info1Tahsis:"Hire Details", personal:"Personal Details", payment:"Payment" },
             form: {
-                pickupLabel:"Pickup Location", pickupPh:"Alanya Gazipaşa Airport, Antalya Airport, hotel name, etc.",
+                pickupLabel:"Pickup Location", pickupPh:"Alanya Gazipaşa Airport, Antalya Airport, hotel name, etc.", quickSuggestGzp:"Alanya Gazipaşa Airport",
                 areaWarning:"We do not provide service in this area. We only serve <strong>Gazipaşa, Alanya, Antalya</strong> and surrounding areas.",
                 destSelectWarning:"We couldn't find your address. Please search using keywords like the neighborhood, district, or hotel name, and select a result from the suggestion list below.",
                 pickupSelectWarning:"We couldn't find your address. Please search using keywords like the neighborhood, district, or hotel name, and select a result from the suggestion list below (or use \"Use My Location\").",
@@ -2333,7 +2379,7 @@
             tabs: { transfer:"Трансфер из аэропорта", tahsis:"VIP с водителем / Аренда на день" },
             steps: { info1:"Детали трансфера", info1Tahsis:"Детали аренды", personal:"Личные данные", payment:"Оплата" },
             form: {
-                pickupLabel:"Место посадки", pickupPh:"Аэропорт Аланья Газипаша, Аэропорт Анталии, название отеля и т.д.",
+                pickupLabel:"Место посадки", pickupPh:"Аэропорт Аланья Газипаша, Аэропорт Анталии, название отеля и т.д.", quickSuggestGzp:"Аэропорт Аланья Газипаша",
                 areaWarning:"Мы не обслуживаем этот район. Мы работаем только в <strong>Газипаше, Алании, Анталии</strong> и их окрестностях.",
                 destSelectWarning:"Мы не смогли найти ваш адрес. Пожалуйста, введите ключевые слова (район, квартал, название отеля) и выберите вариант из списка предложений ниже.",
                 pickupSelectWarning:"Мы не смогли найти ваш адрес. Пожалуйста, введите ключевые слова (район, квартал, название отеля) и выберите вариант из списка предложений ниже (или используйте \"Определить моё местоположение\").",
