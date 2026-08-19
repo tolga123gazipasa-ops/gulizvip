@@ -4053,6 +4053,15 @@
         }
         function closeModal() {
             document.getElementById('successModal').classList.remove('open');
+            // BUG DÜZELTMESİ (Tolga fark etti, 19 Ağustos): nakit/havale ile
+            // rezervasyon tamamlanınca "Talebiniz Alındı!" popup'ı kapatılınca
+            // altında hâlâ doldurulmuş 3. adım (isim/telefon/ödeme seçimi) duruyordu
+            // — form hiç sıfırlanmıyordu. Kredi kartında sorun yoktu çünkü o zaten
+            // ayrı bir sayfaya (/odeme/garanti/<id>) yönlendiriyor, eski form geride
+            // kalıyor. Artık popup kapanınca form da (kredi kartındaki gibi) temiz
+            // bir başlangıç durumuna dönüyor — hem kafa karışıklığını hem yanlışlıkla
+            // aynı bilgilerle ikinci bir rezervasyon gönderme riskini önlüyor.
+            if (typeof resetToHomeState === 'function') resetToHomeState();
         }
 
         // 5b. KONUM ÇÖZÜMLEME (Geocoding API üzerinden + client-side fallback)
