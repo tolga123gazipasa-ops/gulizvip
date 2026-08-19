@@ -2475,6 +2475,30 @@
             adminSelectedPickupLng = null;
             adminSelectedDestLat = null;
             adminSelectedDestLng = null;
+            // GERÇEK BUG DÜZELTİLDİ (Tolga fark etti, 19 Ağustos): burada sadece
+            // harita/koordinat state'i sıfırlanıyordu, metin alanları (isim, telefon,
+            // alış/varış, tarih-saat) hiç temizlenmiyordu. Rezervasyon kaydedilip form
+            // kapandıktan sonra "Yeni Rezervasyon Ekle" tekrar açılınca bir önceki
+            // müşterinin bilgileri hâlâ formda duruyordu — dikkatsizce "Kaydet"e
+            // basılırsa AYNI bilgilerle ikinci (yanlış) bir rezervasyon oluşabilirdi.
+            var nameEl = document.getElementById('admin-customer-name');
+            if (nameEl) nameEl.value = '';
+            var phoneEl = document.getElementById('admin-customer-phone');
+            if (phoneEl) phoneEl.value = '';
+            var pickupEl = document.getElementById('admin-pickup-input');
+            if (pickupEl) pickupEl.value = '';
+            var destEl = document.getElementById('admin-dest-input');
+            if (destEl) destEl.value = '';
+            var serviceTypeEl = document.getElementById('admin-service-type');
+            if (serviceTypeEl) serviceTypeEl.selectedIndex = 0;
+            var datetimeEl = document.getElementById('admin-datetime');
+            if (datetimeEl) datetimeEl.value = '';
+            var distText = document.getElementById('admin-distance-text');
+            if (distText) distText.textContent = '—';
+            var durText = document.getElementById('admin-duration-text');
+            if (durText) durText.textContent = '—';
+            var priceText = document.getElementById('admin-price-estimate');
+            if (priceText) priceText.textContent = '—';
         }
     }
 
