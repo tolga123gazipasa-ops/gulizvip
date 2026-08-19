@@ -3847,10 +3847,21 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 # transferi olduğu için yabancı numaralar da çok geliyor — TR formatına
                 # (10-13 hane) kilitlemek yerine E.164 uluslararası standardının izin
                 # verdiği aralık (8-15 hane) kullanılıyor.
-                phone_digits = re.sub(r"\D", "", reservation.get("customerPhone", ""))
-                if len(phone_digits) < 8 or len(phone_digits) > 15:
-                    self._send_error("Geçerli bir telefon numarası girin.", 400)
-                    return
+                #
+                # GERÇEK BUG DÜZELTİLDİ (aynı gün, hemen sonra fark edildi): bu kontrol
+                # unconditional'dı ve admin panelindeki "Yeni Rezervasyon Ekle" formu da
+                # AYNI /api/reservations endpoint'ini kullanıyor — o formda telefon
+                # ZORUNLU DEĞİL (admin bazen telefonu sonradan öğrenip eklemek için boş
+                # bırakabilir). Sonuç: Tolga admin panelinden telefon girmeden rezervasyon
+                # eklemeye çalışınca "sunucu hatası" alıyordu. Artık telefon alanı BOŞSA
+                # hiç kontrol edilmiyor (admin akışı bozulmuyor), sadece DOLU ama geçersiz
+                # (çok kısa/çok uzun) girilirse reddediliyor.
+                raw_phone = (reservation.get("customerPhone") or "").strip()
+                if raw_phone:
+                    phone_digits = re.sub(r"\D", "", raw_phone)
+                    if len(phone_digits) < 8 or len(phone_digits) > 15:
+                        self._send_error("Geçerli bir telefon numarası girin.", 400)
+                        return
                 # Hizmet bölgesi doğrulama
                 pickup_ok = is_in_service_area(reservation["pickup"])
                 dest_ok = is_in_service_area(reservation["destination"]) if reservation["destination"] else True
