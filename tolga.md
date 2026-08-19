@@ -1,6 +1,73 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-18 (yolcu/çocuk stepper + interlock, rezervasyon fiyat=0 bug'ı kalıcı çözüldü, Telegram bildirimleri iyileştirildi, Dönüş Rezervasyonu Linki özelliği eklendi ve CANLIDA DOĞRULANDI ✅ — ayrıca filo galeri kaybı bug'ı, "Ödeme Linki Oluştur" NameError'ı, admin manuel rezervasyon e-postası ve "Ödeme Linki Oluştur"un özet+kart/havale sayfasına genişletilmesi yapıldı, bunlar PUSH BEKLİYOR ⏳)
+Son güncelleme: 2026-08-19 (alış/varış noktası alanları baştan aşağı iyileştirildi — temizle butonu, listeden seçim zorunluluğu, hızlı öneri çipleri; admin panel mobil kart görünümü; mobil sabit rezervasyon barı; dönen müşteri hatırlama — HEPSİ PUSH EDİLDİ ✅, Railway deploy'u teyit edilmedi henüz)
+
+## GÜNCEL (19 Ağustos) — Booking formu alış/varış alanları + mobil UX turu
+
+**Oturum özeti:** Bugün üç ana başlık üzerinde çalışıldı: (1) alış/varış noktası
+alanlarının kullanılabilirliği baştan aşağı iyileştirildi, (2) admin panel ve
+site genelinde mobil deneyim iyileştirmeleri yapıldı, (3) küçük ama gerçek
+birkaç bug bulunup düzeltildi. Hepsi push edildi, `git log origin/main..HEAD`
+boş — branch senkron.
+
+**1. Alış noktasına "temizle" (X) butonu eklendi.** Varsayılan "Gazipaşa
+Havalimanı" metnini silmek isteyen müşteri artık kutunun sağındaki çarpıya
+basıp tek tıkla temizleyebiliyor. İlk versiyonda CSS bozukluğu vardı (çarpı
+ikonu kutunun dışına, sola fırlıyordu) — bulunup düzeltildi.
+
+**2. Canlı destek iyileştirmeleri:** bildirim sesi kapatıldı, sayfa açılır
+açılmaz 3 saniye sonra otomatik açılan canlı destek kutusu kaldırıldı — artık
+sadece müşteri butona basınca açılıyor.
+
+**3. "Havalimanı Transfer" sekmesi/başlığı → "Havalimanı VIP Transfer" oldu**
+(marka vurgusu, "sıradan transferci değiliz" isteğiyle).
+
+**4. Admin panel mobil kart görünümü:** Dashboard'daki "Son Gelen Rezervasyon
+Talepleri" ve "Tüm Rezervasyonlar" tabloları artık telefonda yatay kaydırma
+yerine tek sütun kart listesi olarak görünüyor (CSS-only, JS'e dokunulmadı).
+Diğer tablolar (uçuş, radar, ayarlar) şimdilik eski halinde.
+
+**5. Mobilde sabit "Rezervasyon Yap" barı:** booking formundan aşağı kaydırılıp
+uzaklaşılınca ekranın altında beliriyor, tıklanınca forma geri dönüyor.
+WhatsApp/canlı destek butonları üst üste binmesin diye yukarı kaydırıldı.
+
+**6. Dönen müşteri form hatırlama:** rezervasyon tamamlanınca isim/telefon/
+e-posta sadece o tarayıcıda (localStorage) saklanıyor, sonraki ziyarette 2.
+adımdaki boş alanlar sessizce doluyor + küçük bir "önceki bilgileriniz
+kullanıldı" notu çıkıyor.
+
+**7. GERÇEK BUG BULUNDU VE ÇÖZÜLDÜ — alış noktasında "fiyat=0" bug'ının ikiz
+kardeşi.** Varış noktasında zaten vardı: listeden seçim yapılmadan (elle
+yazılıp) ilerlemeye çalışan müşteride fiyat hesaplanmıyordu, bu yüzden "listeden
+seçim zorunlu" kuralı getirilmişti. Aynı risk alış noktasında da vardı — çarpıyla
+temizleyip öneri listesinden seçmeden kendi adresini yazan müşteride ESKİ/
+varsayılan koordinatlarla SESSİZCE YANLIŞ fiyat hesaplanabiliyordu (0 değil,
+yanlış bir sayı — fark edilmesi çok daha zordu). Aynı kural artık alış noktası
+için de var: listeden/GPS'ten gerçek seçim yapılmadan ileri gidilemiyor. Node
+ile 3 senaryo (varsayılan/serbest yazım/gerçek seçim) simüle edilip doğrulandı.
+
+**7b. Varsayılan alış metni** "Gazipaşa Havalimanı" → **"Alanya Gazipaşa
+Havalimanı"** oldu (havalimanının nerede olduğu daha net olsun diye). Harita/
+fiyat hesaplaması hâlâ doğru havalimanı koordinatlarına (36.2992, 32.3014)
+çözümleniyor — gerçek kaynaklarla (Wikipedia, Travelmath) karşılaştırıp
+doğruladım, ~10 metre farkla birebir aynı.
+
+**7c. 2. adımda (İletişim Bilgileri) rezervasyon özeti eklendi** — güzergah,
+KM/süre, tahmini fiyat (TL + $/€) artık kişisel bilgi girerken de görünüyor.
+Önceden 1. adım gizlenince bu bilgiler tamamen kayboluyordu.
+
+**7d. Alış + varış alanlarına 3'lü hızlı öneri çipi eklendi:** Alanya Gazipaşa
+Havalimanı / Alanya / Antalya Havalimanı. Alış noktası çarpıyla temizlenince,
+varış noktası da boşken tıklanınca (focus) çıkıyor. Üçü de doğru/farklı
+koordinatlere çözümlendiği Node ile doğrulandı. Çiplerin "tek seçenekmiş gibi"
+görünmemesi için üstlerine "✨ Hızlı seçim (ya da kendi adresinizi yazmaya
+devam edin)" notu eklendi.
+
+### Hemen Yapılması Gereken
+- Railway deploy'unu kontrol et / canlıda hızlıca gözden geçir (özellikle alış
+  noktası akışı — X butonu, 3 çip, "listeden seçim zorunlu" kuralı).
+- Tartışılıp ertelenen: SMS bildirimi, dönen müşteri yorumu/değerlendirme
+  bölümü (bilinçli olarak eklenmedi, istenmedi).
 
 ## GÜNCEL (18 Ağustos) — Booking formu iyileştirmeleri + kritik bug fix
 
