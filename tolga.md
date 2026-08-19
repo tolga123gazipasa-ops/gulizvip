@@ -1,8 +1,9 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
 Son güncelleme: 2026-08-19 gece (canlı sitede gerçek kullanıcı gibi hızlı rezervasyon
-akışı test edildi, 3 gerçek bug bulunup düzeltildi — bkz. aşağıdaki "Canlı QA" bölümü.
-Toplam 11 commit COMMIT EDİLDİ, henüz PUSH EDİLMEDİ)
+akışı test edildi, 3 gerçek bug bulunup düzeltildi + telefon validasyonu yabancı
+numaralara (US/DE/RU vb.) uygun genişletildi — bkz. aşağıdaki "Canlı QA" bölümü.
+Toplam 12 commit COMMIT EDİLDİ, Tolga deploy ediyor)
 
 ## GÜNCEL (19 Ağustos gece) — Canlı sitede "hızlı rezervasyon" testi, 3 gerçek bug bulundu
 
@@ -39,8 +40,13 @@ anlamsız bir "telefon numarası" otomatik doldu ve sistem bunu SORUNSUZ kabul e
 ciddi bir sorun çünkü rezervasyon onay ekranında "müşteri temsilcimiz 5 dakika içinde
 sizinle iletişime geçecektir" yazıyor — geçersiz numarayla ekip müşteriyi arayamaz,
 rezervasyon fiilen kaybolur. Hem formda (frontend) hem sunucuda (backend, API'ye
-doğrudan istek atılsa bile) düzeltildi: artık sadece rakamlar sayılıyor, 10-13 hane
-(başında +90 dahil) dışına çıkan numaralar reddediliyor. (commit `15eb802`)
+doğrudan istek atılsa bile) düzeltildi. İlk düzeltmede aralık TR formatına göre (10-13
+hane) dardı — Tolga havalimanı transferinde yabancı müşteri oranının yüksek olduğunu
+hatırlattı, aralık uluslararası E.164 standardına göre (8-15 hane) genişletildi; `+`
+işareti (veya `00` ile başlayan uluslararası arama öneki) zaten sorunsuz kabul ediliyor
+çünkü rakam olmayan her karakter sayımdan önce siliniyor. Telefon kutuları zaten
+`type="tel"` ile tanımlı, mobilde otomatik telefon tuş takımı açılıyor (bu koddaydı,
+yeni eklenmedi). (commit'ler: `15eb802`, `5239c16`)
 
 **3. GERÇEK BUG (admin panel, ödeme onayı) — "Ödemeyi Onayla" butonu hiç
 çalışmıyordu + otomatik ödenen kart rezervasyonlarında "Onayla" butonu yanlışlıkla
@@ -100,7 +106,7 @@ de artık net görebiliyorsun. (commit `7716d8f`)
 
 ### Hemen Yapılması Gereken
 - **git push origin main** kendi bilgisayarından — bu oturumdaki tüm commit'ler
-  (`b945fcd`'den `15eb802`'ye kadar, 11 commit) push bekliyor.
+  (`b945fcd`'den `5239c16`'ya kadar, 12 commit) push bekliyor.
 - Push+deploy sonrası admin panelinden test rezervasyonu **#149**'u sil (bkz. yukarıki
   not — canlı QA testi sırasında oluştu, gerçek müşteri değil).
 
