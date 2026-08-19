@@ -3847,8 +3847,10 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not dest_ok:
                     self._send_error("Üzgünüz, bu varış noktası hizmet bölgemiz dışındadır. Yalnızca Gazipaşa, Alanya ve Antalya bölgelerinde hizmet vermekteyiz.", 400)
                     return
-                # Not: Kredi kartı ile online ödeme entegrasyonu kaldırıldı — tüm rezervasyonlar
-                # (banka havalesi / araçta ödeme) doğrudan kaydediliyor, operasyon ekibi takip ediyor.
+                # Not: Rezervasyon, ödeme yöntemi ne olursa olsun (havale/nakit/kart) doğrudan
+                # kaydediliyor. Kredi kartı seçiminde ödeme /odeme/garanti/<id> sayfasında
+                # ayrıca tamamlanıyor (bkz. aşağıdaki is_card_payment dalı); havale/nakit'te
+                # operasyon ekibi rezervasyonu doğrudan takip ediyor.
 
                 # FAZ 3: Siteden gelen otomatik rezervasyonu çakışmayan ilk müsait araca ata.
                 auto_dur = reservation.get("estimatedDurationMinutes") or _reservation_duration_minutes(reservation)
