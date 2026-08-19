@@ -1,44 +1,63 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-19 gece geç — **CANLI SİTEDE KRİTİK/ACİL SUNUCU HATASI
-BULUNDU** (aşağıdaki ilk bölüme bak). Ayrıca 20 commit hâlâ push/deploy bekliyor.
+Son güncelleme: 2026-08-19 gece geç — **CANLI SİTEDE MÜŞTERİLER REZERVASYON
+YAPAMIYORDU (502 Bad Gateway), GERÇEK KÖK NEDEN BULUNDU VE DÜZELTİLDİ** (aşağıdaki
+ilk bölüme bak — Tolga Railway loglarını paylaştı, kesin teşhis kondu). Bu düzeltme
+dahil commit'ler hâlâ push/deploy bekliyor — **ACİLEN deploy edilmesi lazım,
+şu an canlıda müşteriler rezervasyon YAPAMIYOR.**
 
-## ACİL — Canlı sitede rezervasyon tamamlanamıyor: sunucu 502 Bad Gateway veriyor
+## ÇÖZÜLDÜ (henüz deploy edilmedi) — Rezervasyon tamamlanamıyordu: `UnboundLocalError` → 502 Bad Gateway
 
 **Bağlam:** Tolga hem admin panelinden hem normal müşteri olarak rezervasyon
-denedi, ikisinde de hata aldığını bildirdi ("sen bir girsene" dedi). Admin
-panelindeki hata daha önce (bu oturumda, local'de) telefon validasyonu yüzünden
-olduğu bulunup düzeltilmişti — ama o düzeltme HENÜZ DEPLOY EDİLMEDİ. Sonra Tolga
-normal müşteri olarak da hata aldığını söyleyince canlı siteye (gulizvip.com.tr)
-gerçek tarayıcıyla girip uçtan uca (rota seç → 2. adım bilgiler → 3. adım ödeme →
-"Rezervasyonu Tamamla") test ettim.
+denedi, ikisinde de hata aldığını bildirdi. Canlı siteye (gulizvip.com.tr)
+gerçek tarayıcıyla girip uçtan uca test ettim, `POST /api/reservations` her
+denemede (6 farklı denemede, UI + doğrudan `fetch()`) tutarlı şekilde
+`502 Bad Gateway` (Cloudflare'in kendi hata sayfası — origin'den hiç yanıt
+gelmiyor) verdiğini doğruladım. Önce "DB bağlantısı zaman aşımına uğruyor
+olabilir" diye şüphelenip `db.py`'ye `connect_timeout=5` ekledim (makul bir
+sağlamlaştırma ama asıl sebep değilmiş) — **sonra Tolga Railway'in Deploy
+Logs'undan gerçek Python traceback'ini paylaştı, kesin kök neden ortaya çıktı:**
 
-**Bulgu: `POST /api/reservations` her denemede `502 Bad Gateway` dönüyor.**
-6 farklı denemede (farklı isim/telefon/saat kombinasyonlarıyla, hem UI üzerinden
-hem doğrudan `fetch()` ile) TUTARLI şekilde 502 aldım. Yanıt gövdesini inceledim:
-bu Railway'in değil, **Cloudflare'in kendi "502 Bad Gateway" hata sayfası**
-(`Server: cloudflare` header'ı, klasik Cloudflare hata şablonu). Yani Cloudflare,
-arkadaki Railway sunucusundan bu istek için hiç yanıt alamıyor — sunucu ya
-çöküyor ya da zaman aşımına uğruyor. Diğer her şey (ana sayfa, banka hesapları,
-Google Maps, uçuş verisi) sorunsuz yükleniyor — yani Railway uygulaması genel
-olarak AYAKTA, sorun özellikle rezervasyon oluşturma kodunda.
+```
+File "/app/server.py", line 3861, in do_POST
+    phone_digits = re.sub(r"\D", "", raw_phone)
+UnboundLocalError: cannot access local variable 're' where it is not associated with a value
+```
 
-**Not: bu, benim local'deki `server.py`'de değil.** Bu oturumda yaptığım tüm
-düzeltmeler (telefon validasyonu, CRM, vs.) sadece local'de, henüz push/deploy
-edilmedi — yani canlıda çalışan kod muhtemelen daha eski/farklı bir sürüm
-("Railway rollback sonrası mock-only sürüm" notuyla uyumlu). Sunucu tarafında
-gerçek exception/stack trace'i görebilmek için Railway'in deploy log'larına
-bakman gerekiyor (bana o erişim yok) — muhtemel şüpheliler: `DATABASE_URL`
-bağlantısı (rollback sonrası eski/yanlış bir Postgres'e işaret ediyor olabilir,
-bağlantı denemesi zaman aşımına uğrayıp isteği bloke ediyor olabilir), veya
-Resend/Telegram bildirim çağrılarından biri senkron olarak takılıp isteği asıyor
-olabilir. **Öneri: Railway log'larını aç, en son 502 zamanına denk gelen hatayı
-bul, gerekirse mevcut 20 commit'i push edip yeniden deploy et** (yerel kod zaten
-telefon validasyonu ve diğer düzeltmeleri içeriyor, sorunun kaynağı olmayabilir
-ama en azından mevcut bug'ların bir kısmını çözer).
+**Gerçek sebep:** `do_POST` fonksiyonu TÜM POST endpoint'lerini tek dev bir
+fonksiyon içinde `if path == ...` zinciriyle yönetiyor. Bu fonksiyonun çok daha
+aşağısında, `/telegram-webhook` dalının içinde, gereksiz bir `import re` satırı
+vardı (dosyanın en üstünde zaten `import re` var, satır 10). Python bir
+fonksiyonun HERHANGİ bir yerinde bir isme atama/import yapılırsa o ismi TÜM
+fonksiyon gövdesi için local sayar — kod akışında daha ÖNCE gelen kullanımlar
+için bile. Sonuç: `/api/reservations` dalındaki (çok daha yukarıdaki) `re.sub()`
+çağrısı, dosyanın en altındaki alakasız bir webhook kodundaki gereksiz import
+yüzünden HER SEFERİNDE çöküyordu. Bu, yanıt hiç gönderilmeden bağlantının
+düşmesine yol açıyordu — Cloudflare origin'den cevap alamayınca 502 döndürüyordu.
+**Müşteri tarafında sonuç: "Sunucuya bağlanılamadı" hatası, rezervasyon hiç
+kaydedilmiyordu.** Muhtemelen bu bug uzun süredir oradaydı (telefon validasyonu
+kodu `re.sub` kullanmaya başladığından beri) — telefon validasyonu eklenene kadar
+fark edilmemiş olabilir.
 
-**Test verisi notu:** Bu tur canlı denemelerin hepsi 502 ile başarısız oldu, yani
-sahte bir rezervasyon KAYDEDİLMEDİ (silinecek bir şey yok bu testten).
+**Düzeltme (3 commit, sırayla):**
+1. `44a46cf` — `db.py`: `psycopg2.connect()`'e `connect_timeout=5` eklendi (asıl
+   sebep değilmiş ama makul bir sağlamlaştırma, DB gerçekten erişilemez olursa
+   isteğin süresiz asılı kalmasını önlüyor, JSON yedeğe hızlıca düşüyor).
+2. Aynı commit'te: `/api/reservations`'ta sadece `json.JSONDecodeError`
+   yakalanıyordu, artık genel `except Exception` de var — gelecekte benzer bir
+   hata çıkarsa yine temiz bir JSON hata dönecek, bağlantı asla sessizce
+   asılı kalmayacak.
+3. `cb17a8f` — **asıl kök neden**: `/telegram-webhook` içindeki gereksiz
+   `import re` satırı silindi.
+
+**Veri kaybı riski yok:** Test denemelerinin hepsi 502 ile başarısız oldu, sahte
+bir rezervasyon kaydedilmedi. Ayrıca DB yazımı başarısız olursa rezervasyon
+`reservations.json`'a düşüyor + admin paneline "DB'ye yazılamadı" uyarısı +
+Telegram bildirimi zaten DB durumundan bağımsız gönderiliyor — yani "başarılı"
+görünüp hiçbir yere kaydedilmeyen bir senaryo yok.
+
+**ÇOK ÖNEMLİ: bu düzeltme henüz canlıya deploy edilmedi.** Push edip deploy
+eder etmez canlıda tekrar test edip doğrulayacağım.
 
 ## GÜNCEL (19 Ağustos gece) — Canlı sitede "hızlı rezervasyon" testi, 3 gerçek bug bulundu
 
