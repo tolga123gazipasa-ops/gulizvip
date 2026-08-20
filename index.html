@@ -2628,6 +2628,22 @@
             // localStorage'ı da 'tr' olarak günceller (kendi kendini düzeltir).
             var lang = window.SITE_LANG || 'tr';
             applyLanguage(lang);
+
+            // GERÇEK BUG DÜZELTİLDİ (Tolga fark etti, 20 Ağustos): üst menü ve footer'daki
+            // "Filomuz", "Hizmetler", "İletişim" vb. bağlantılar hep sabit "/#filo" gibi
+            // Türkçe köke işaret ediyordu — /en/ veya /ru/ sayfasındaki bir ziyaretçi bu
+            // linke tıklayınca tarayıcı GERÇEK bir sayfa yüklemesi yapıyordu ("/" ile "/en/"
+            // farklı adresler), "/" her zaman Türkçe açıldığı için (yukarıdaki nottaki
+            // bilinçli tasarım) ziyaretçi anında Türkçe'ye düşüyordu — dil tercihi
+            // "unutuluyormuş" gibi görünüyordu. Çözüm: sayfa dili İngilizce/Rusça ise, aynı
+            // köke ait tüm "/#..." bağlantılarını "/en/#..." veya "/ru/#..." olacak şekilde
+            // yeniden yazıyoruz — böylece ziyaretçi hangi dildeyse tıkladığı bağlantı da onu
+            // koruyor.
+            if (lang !== 'tr') {
+                document.querySelectorAll('a[href^="/#"]').forEach(function(a) {
+                    a.setAttribute('href', '/' + lang + a.getAttribute('href'));
+                });
+            }
         })();
 
         (function handlePaymentReturn() {
