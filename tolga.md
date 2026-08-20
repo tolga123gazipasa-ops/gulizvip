@@ -1,12 +1,47 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
-Son güncelleme: 2026-08-19 gece geç — **CANLI SİTEDE MÜŞTERİLER REZERVASYON
-YAPAMIYORDU (502 Bad Gateway), GERÇEK KÖK NEDEN BULUNDU VE DÜZELTİLDİ** (aşağıdaki
-ilgili bölüme bak — Tolga Railway loglarını paylaştı, kesin teşhis kondu). Ayrıca
-502 düzeltmesinden SONRA iki form-sıfırlama bug'ı + bir GPS/fiyat UX eksiği daha
-bulunup düzeltildi (bkz. aşağıdaki bölümler). **Tüm bu commit'ler hâlâ push/deploy
-bekliyor — ACİLEN deploy edilmesi lazım, şu an canlıda müşteriler rezervasyon
-YAPAMIYOR.**
+Son güncelleme: 2026-08-20 — **CANLI SİTEDE MÜŞTERİLER REZERVASYON YAPAMIYORDU
+(502 Bad Gateway), GERÇEK KÖK NEDEN BULUNDU VE DÜZELTİLDİ** (aşağıdaki ilgili
+bölüme bak — Tolga Railway loglarını paylaştı, kesin teşhis kondu). Ayrıca 502
+düzeltmesinden SONRA iki form-sıfırlama bug'ı + bir GPS/fiyat UX eksiği + bir
+dil-unutma linki bug'ı bulunup düzeltildi, üstüne dördüncü dil olarak **Almanca
+(de) tam destek** eklendi (bkz. aşağıdaki bölümler). **Tüm bu commit'ler hâlâ
+push/deploy bekliyor — ACİLEN deploy edilmesi lazım, şu an canlıda müşteriler
+rezervasyon YAPAMIYOR.**
+
+## YENİ ÖZELLİK (henüz deploy edilmedi) — Almanca (de) dil desteği eklendi
+
+**Bağlam:** Tolga, az önce düzeltilen "dil unutuluyor" bug'ının ardından
+"bir de almancayı ekle alman bayrağıyla, aynı şekilde dili unutmasın" dedi.
+
+**Yapılanlar:**
+- `index.html` I18N objesine tam bir `de:` bloğu eklendi — tr/en/ru ile
+  **birebir aynı 200 anahtar** (nav, form, hizmetler, filo, S.S.S, iletişim,
+  footer, hata sayfaları, canlı destek, uyarılar — hepsi). Node ile otomatik
+  parite kontrolü yapıldı, hiçbir eksik/fazla anahtar yok.
+- Dil seçici dropdown'a (üst menü, bayrak ikonu) siyah-kırmızı-sarı Alman
+  bayrağı eklendi, `switchLanguage('de')` → `/de/`.
+- `switchLanguage()` ve `applyLanguage()` fonksiyonları `/de/` rotasını ve
+  Alman bayrağını (flagSvgs) tanıyacak şekilde genişletildi.
+- Garanti BBVA kart ödeme dönüş ekranındaki (`handlePaymentReturn`)
+  başarılı/başarısız/iptal/doğrulanıyor metinleri de Almanca'ya çevrildi.
+- Head'deki hreflang bloğu tr/en/ru/de/x-default olarak dörtlü yapıldı.
+- **Az önce düzeltilen "dil unutma" bug'ının fix'i zaten genel yazılmıştı**
+  (`if (lang !== 'tr')` — sadece 'en'/'ru' değil) — yani Almanca için AYRI bir
+  düzeltme gerekmedi, otomatik olarak çalışıyor: `/de/` sayfasındaki biri
+  menüden "Filomuz"a tıklarsa artık Türkçe'ye değil `/de/#filo`'ya gidiyor.
+- **Backend (`server.py`):** `LANG_META["de"]` (title/description/OG/Twitter
+  meta etiketleri), `PAGE_TRANSLATIONS["de"]` (Hakkımızda, Gizlilik, Mesafeli
+  Satış, Teslimat/İade, İade Şartları — 5 hukuki sayfanın TAM Almanca
+  çevirisi), `og_locale` haritasına `de_DE`, ve `/en/`, `/ru/` kontrolü
+  yapılan HER yere (`/de/` ana sayfa rotası, `/de/sayfa/<slug>`,
+  `/de/<rota-slug>` yönlendirmesi, sitemap.xml hreflang alternates) `"de"`
+  eklendi.
+- **Doğrulama:** `python3 -m py_compile server.py` + `node --check` (JS) +
+  server.py'yi modül olarak import edip `_render_lang_page('de')`,
+  `_render_sayfa_page('hakkimizda','de')`, `get_page_data('gizlilik','de')`
+  gerçekten doğru Almanca içerik döndürüyor mu diye canlı fonksiyon testi
+  yapıldı — hepsi geçti. (commit `4300052`)
 
 ## ÇÖZÜLDÜ (henüz deploy edilmedi) — /en veya /ru sayfasında menüye tıklayınca Türkçe'ye düşüyordu
 
