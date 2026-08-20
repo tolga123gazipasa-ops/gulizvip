@@ -8,6 +8,26 @@ bulunup düzeltildi (bkz. aşağıdaki bölümler). **Tüm bu commit'ler hâlâ 
 bekliyor — ACİLEN deploy edilmesi lazım, şu an canlıda müşteriler rezervasyon
 YAPAMIYOR.**
 
+## ÇÖZÜLDÜ (henüz deploy edilmedi) — /en veya /ru sayfasında menüye tıklayınca Türkçe'ye düşüyordu
+
+**Bağlam:** Tolga fark etti: kullanıcı /en (İngilizce) sayfasındayken üst
+menüden "Filomuz"a tıklayınca sayfa aniden Türkçe'ye dönüyordu — "kullanıcının
+dil tercihi unutuluyor" dedi.
+
+**Sebep:** Üst menü ve footer'daki TÜM bağlantılar (Hizmetler, Filomuz,
+Bölgeler, Canlı Uçuşlar, İletişim, S.S.S — 11 link) HTML'de sabit `/#filo`
+gibi Türkçe köke işaret ediyordu, hangi dildeki sayfada olunursa olsun. `/en/`
+sayfasındayken bu linke tıklamak `/` ile FARKLI bir adrese (`/en/` değil `/`)
+gerçek bir sayfa yüklemesi yaptırıyordu — ve "/" sunucu tarafında her zaman
+Türkçe açılıyor (bu, önceki bir oturumda BİLİNÇLİ olarak öyle yapılmıştı —
+dilin localStorage'da yanlışlıkla "yapışmasını" önlemek için, bkz. koddaki
+`initLanguage()` yorum notu). Yani iki ayrı doğru karar bir araya gelince
+(dil sadece URL'den okunsun + linkler sabit Türkçe köke gitsin) beklenmedik
+bir yan etki doğurmuş: dil, tam da menüye tıklayınca kayboluyormuş.
+Düzeltildi: sayfa İngilizce/Rusça ise, tüm bu `/#...` linkleri sayfa
+yüklenirken otomatik olarak `/en/#...` veya `/ru/#...`'ya çevriliyor —
+ziyaretçi hangi dildeyse menüde gezinirken de o dilde kalıyor. (commit `35069a8`)
+
 ## ÇÖZÜLDÜ (henüz deploy edilmedi) — "Konumumu Kullan" (GPS) sonrası fiyat hiç çıkmıyordu
 
 **Bağlam:** Tolga, Telegram'daki "Görünmez Ajan" ziyaretçi bildirimlerinde
