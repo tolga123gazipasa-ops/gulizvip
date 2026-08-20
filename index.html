@@ -2306,7 +2306,7 @@
                 e500Title:"Bağlantı Güncelleniyor", e500Desc:"Şu anda sistemimizde kısa süreli bir bakım yapılmaktadır. Lütfen birkaç dakika sonra tekrar deneyin.", refreshBtn:"Sayfayı Yenile"
             },
             chat: {
-                assistantName:"Güliz Asistan", startPrompt:"Sohbete başlamadan önce size nasıl hitap edelim?",
+                assistantName:"Güliz Asistan", greeting:"Merhaba, ben Güliz Asistan. Gazipaşa ve Antalya havalimanlarından Alanya bölgesine VIP transferleriniz için size nasıl yardımcı olabilirim?", startPrompt:"Sohbete başlamadan önce size nasıl hitap edelim?",
                 namePh:"Adınız Soyadınız", phonePh:"Telefon (05XX XXX XX XX)", startBtn:"Sohbete Başla",
                 editBtn:"Düzenle", messagePh:"Mesajınızı yazın...", triggerLabel:"Canlı Destek"
             },
@@ -2431,7 +2431,7 @@
                 e500Title:"Connection Updating", e500Desc:"Our system is currently undergoing brief maintenance. Please try again in a few minutes.", refreshBtn:"Refresh Page"
             },
             chat: {
-                assistantName:"Güliz Assistant", startPrompt:"Before we start chatting, how should we address you?",
+                assistantName:"Güliz Assistant", greeting:"Hello, I'm Güliz Assistant. How can I help you with your VIP transfer from Gazipaşa and Antalya airports to the Alanya region?", startPrompt:"Before we start chatting, how should we address you?",
                 namePh:"Your Full Name", phonePh:"Phone (e.g. +90 5XX XXX XX XX)", startBtn:"Start Chat",
                 editBtn:"Edit", messagePh:"Type your message...", triggerLabel:"Live Support"
             },
@@ -2556,7 +2556,7 @@
                 e500Title:"Обновление соединения", e500Desc:"В настоящее время в нашей системе проводится кратковременное обслуживание. Пожалуйста, повторите попытку через несколько минут.", refreshBtn:"Обновить страницу"
             },
             chat: {
-                assistantName:"Ассистент Güliz", startPrompt:"Прежде чем начать чат, как к вам обращаться?",
+                assistantName:"Ассистент Güliz", greeting:"Здравствуйте, я Ассистент Güliz. Чем я могу помочь вам с VIP-трансфером из аэропортов Газипаша и Анталия в регион Алании?", startPrompt:"Прежде чем начать чат, как к вам обращаться?",
                 namePh:"Ваше имя и фамилия", phonePh:"Телефон (напр. +90 5XX XXX XX XX)", startBtn:"Начать чат",
                 editBtn:"Изменить", messagePh:"Введите сообщение...", triggerLabel:"Онлайн-поддержка"
             },
@@ -2681,7 +2681,7 @@
                 e500Title:"Verbindung wird aktualisiert", e500Desc:"Unser System durchläuft derzeit eine kurze Wartung. Bitte versuchen Sie es in ein paar Minuten erneut.", refreshBtn:"Seite neu laden"
             },
             chat: {
-                assistantName:"Güliz Assistent", startPrompt:"Bevor wir mit dem Chat beginnen, wie sollen wir Sie ansprechen?",
+                assistantName:"Güliz Assistent", greeting:"Hallo, ich bin der Güliz Assistent. Wie kann ich Ihnen bei Ihrem VIP-Transfer von den Flughäfen Gazipaşa und Antalya in die Region Alanya helfen?", startPrompt:"Bevor wir mit dem Chat beginnen, wie sollen wir Sie ansprechen?",
                 namePh:"Ihr vollständiger Name", phonePh:"Telefon (z.B. +90 5XX XXX XX XX)", startBtn:"Chat starten",
                 editBtn:"Bearbeiten", messagePh:"Schreiben Sie Ihre Nachricht...", triggerLabel:"Live-Support"
             },
@@ -3104,7 +3104,7 @@
                                 localStorage.setItem('chatLastId', chatLastId);
                             }
                             if (msg.sessionId === chatSessionId && msg.isAdmin) {
-                                chatBody.innerHTML += '<div class="msg-bot"><strong>Güliz Asistan:</strong><br>' + escapeHtml(msg.message) + '</div>';
+                                chatBody.innerHTML += '<div class="msg-bot"><strong>' + t('chat.assistantName') + ':</strong><br>' + escapeHtml(msg.message) + '</div>';
                                 added = true;
                             }
                         });
@@ -3147,7 +3147,7 @@
                             }
                             if (msg.sessionId === chatSessionId) {
                                 if (msg.isAdmin) {
-                                    chatBody.innerHTML += '<div class="msg-bot"><strong>Güliz Asistan:</strong><br>' + escapeHtml(msg.message) + '</div>';
+                                    chatBody.innerHTML += '<div class="msg-bot"><strong>' + t('chat.assistantName') + ':</strong><br>' + escapeHtml(msg.message) + '</div>';
                                 } else {
                                     chatBody.innerHTML += '<div class="msg-user">' + escapeHtml(msg.message) + '</div>';
                                 }
@@ -3156,7 +3156,12 @@
                         });
                     }
                     if (!added) {
-                        chatBody.innerHTML = '<div class="msg-bot"><strong>Güliz Asistan:</strong><br>Merhaba, ben Güliz Asistan. Gazipaşa ve Antalya havalimanlarından Alanya bölgesine VIP transferleriniz için size nasıl yardımcı olabilirim?</div>';
+                        // BUG DÜZELTMESİ (Tolga fark etti, 20 Ağustos): bu karşılama mesajı
+                        // hep sabit Türkçe metindi — hangi dilde olursa olsun (EN/RU/DE)
+                        // hep Türkçe gösteriliyordu. Artık t('chat.greeting') ile seçili
+                        // dile göre değişiyor. "Güliz" markası kasıtlı olarak HİÇBİR dilde
+                        // çevrilmiyor (bkz. I18N.*.chat.greeting/assistantName) — özel isim.
+                        chatBody.innerHTML = '<div class="msg-bot"><strong>' + t('chat.assistantName') + ':</strong><br>' + t('chat.greeting') + '</div>';
                     }
                     chatBody.scrollTop = chatBody.scrollHeight;
                 })
