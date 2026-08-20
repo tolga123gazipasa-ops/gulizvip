@@ -60,12 +60,13 @@
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://gulizvip.com.tr/">
 
-    <!-- Hreflang: /en/ ve /ru/ artık gerçek, sunucu taraflı dil sürümleri (bkz. server.py
-         _render_lang_page). Karşılıklı (reciprocal) hreflang seti — bu üçlü tr/en/ru/x-default
-         hem ana sayfada hem /en/ hem /ru/ sürümünde aynı şekilde yer alır. -->
+    <!-- Hreflang: /en/, /ru/ ve /de/ artık gerçek, sunucu taraflı dil sürümleri (bkz. server.py
+         _render_lang_page). Karşılıklı (reciprocal) hreflang seti — bu dörtlü tr/en/ru/de/x-default
+         hem ana sayfada hem /en/ hem /ru/ hem /de/ sürümünde aynı şekilde yer alır. -->
     <link rel="alternate" hreflang="tr" href="https://gulizvip.com.tr/">
     <link rel="alternate" hreflang="en" href="https://gulizvip.com.tr/en/">
     <link rel="alternate" hreflang="ru" href="https://gulizvip.com.tr/ru/">
+    <link rel="alternate" hreflang="de" href="https://gulizvip.com.tr/de/">
     <link rel="alternate" hreflang="x-default" href="https://gulizvip.com.tr/">
 
     <meta property="og:title" content="Gazipaşa & Antalya Havalimanı VIP Transfer Hizmetleri | Güliz VIP">
@@ -1480,6 +1481,9 @@
                         <div class="flag-item" onclick="switchLanguage('ru')">
                             <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#fff"/><rect y="8" width="36" height="8" fill="#0039A6"/><rect y="16" width="36" height="8" fill="#D52B1E"/></svg>
                         </div>
+                        <div class="flag-item" onclick="switchLanguage('de')">
+                            <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="8" fill="#000000"/><rect y="8" width="36" height="8" fill="#DD0000"/><rect y="16" width="36" height="8" fill="#FFCE00"/></svg>
+                        </div>
                     </div>
                 </div>
                 <a href="tel:+902426062548" onclick="gtag('event', 'conversion', {'send_to': 'AW-18372593815/MuZuCM6Gr-EcEJeR3rhE'});" class="call-btn"><i class="fa-solid fa-phone"></i> +90 242 606 25 48</a>
@@ -2568,6 +2572,131 @@
                 contactFailed:"Не удалось отправить сообщение: ", contactFailedGeneric:"Не удалось отправить сообщение. Пожалуйста, попробуйте позже.",
                 unknownError:"Неизвестная ошибка"
             }
+        },
+        de: {
+            nav: { hizmetler:"Leistungen", filo:"Unsere Flotte", blog:"Reiseziele", ucusEkrani:"Live-Flüge", iletisim:"Kontakt", sss:"FAQ" },
+            header: { cta:"Schnelle Buchung", hamburgerAria:"Menü öffnen/schließen" },
+            tabs: { transfer:"Flughafentransfer", tahsis:"Chauffeurservice / Tagesmiete" },
+            steps: { info1:"Transferdetails", info1Tahsis:"Mietdetails", personal:"Persönliche Daten", payment:"Zahlung" },
+            form: {
+                pickupLabel:"Abholort", pickupPh:"Flughafen Alanya Gazipaşa, Flughafen Antalya, Hotelname usw.", quickSuggestGzp:"Flughafen Alanya Gazipaşa", quickSuggestAlanya:"Alanya", quickSuggestAyt:"Flughafen Antalya", quickSuggestLabel:"Schnellauswahl (oder geben Sie Ihre eigene Adresse ein)", pricePerVehicleNote:"Der Preis gilt pro Fahrzeug und ändert sich nicht je nach Personenzahl.",
+                areaWarning:"Wir bieten in diesem Gebiet keinen Service an. Wir sind nur in <strong>Gazipaşa, Alanya, Antalya</strong> und Umgebung tätig.",
+                destSelectWarning:"Wir konnten Ihre Adresse nicht finden. Bitte suchen Sie mit Stichwörtern wie Stadtteil, Bezirk oder Hotelname und wählen Sie ein Ergebnis aus der Vorschlagsliste unten.",
+                pickupSelectWarning:"Wir konnten Ihre Adresse nicht finden. Bitte suchen Sie mit Stichwörtern wie Stadtteil, Bezirk oder Hotelname und wählen Sie ein Ergebnis aus der Vorschlagsliste unten (oder verwenden Sie \"Meinen Standort verwenden\").",
+                destLabel:"Zielort", destPh:"Mahmutlar, Avsallar, Hotelname usw.",
+                flightLabel:"Flugnummer", flightPh:"z.B. TK2405 (Optional)",
+                dateLabel:"Datum", timeLabel:"Uhrzeit",
+                availabilityWarning:"Unsere Fahrzeuge könnten zu dieser Zeit ausgelastet sein — wir können Ihre Reservierung trotzdem entgegennehmen, unser Team wird sich in Kürze zur Bestätigung mit Ihnen in Verbindung setzen.",
+                passengersLabel:"Anzahl der Passagiere (max. 9)",
+                passengersDecrease:"Passagierzahl verringern", passengersIncrease:"Passagierzahl erhöhen",
+                childCountLabel:"Anzahl der Kinder",
+                childCountDecrease:"Kinderzahl verringern", childCountIncrease:"Kinderzahl erhöhen",
+                needsChildSeatLabel:"Baby-/Kindersitz erforderlich",
+                notesLabel:"Anmerkungen (Optional)", notesPh:"Besondere Wünsche, zusätzliche Informationen...",
+                vehicleUnitLabel:"1 VIP-Fahrzeug", passengerUnitShort:"Passagier(e)", childUnitShort:"Kind(er)",
+                estimatedLabel:"Geschätzt:", continueBtn:"Weiter", backBtn:"Zurück",
+                contactInfoTitle:"Kontaktinformationen", step2SummaryTitle:"Buchungsübersicht", nameLabel:"Vollständiger Name", namePh:"Ihr Vor- und Nachname",
+                phoneLabel:"Ihre Telefonnummer", phonePh:"05XX XXX XX XX",
+                emailLabel:"Ihre E-Mail-Adresse", emailPh:"beispiel@email.com",
+                paymentMethodTitle:"Zahlungsmethode",
+                paymentMethodsLabel:"Die Zahlung erfolgt per Banküberweisung / EFT. Die Online-Zahlung mit Kreditkarte wird in Kürze verfügbar sein.",
+                payHavale:"Banküberweisung / EFT", payHavaleDesc:"Überweisen Sie auf unsere IBAN, unser Team bestätigt den Eingang.",
+                payKart:"Kreditkarte (Online)", payKartDesc:"Sie werden zu einer sicheren Zahlungsseite weitergeleitet.",
+                payNakit:"Bar im Fahrzeug bezahlen",
+                payRedirecting:"Weiterleitung zur Zahlungsseite...", payFailed:"Zahlungsseite konnte nicht geöffnet werden: ",
+                bankSelectLabel:"Bank auswählen", completeBtn:"Reservierung abschließen",
+                pickupHotelLabel:"Abholort des Fahrzeugs (Hotel / Adresse)", pickupHotelPh:"Der Ort, an dem das Fahrzeug Sie abholt",
+                durationLabel:"Mietdauer",
+                duration4:"4 Stunden (Stadtrundfahrt)", duration8:"8 Stunden (Halbtagestour)",
+                duration12:"12 Stunden (Langstreckentour)", duration24:"Ganzer Tag (24 Stunden mit Chauffeur)",
+                pickupDateLabel:"Abholdatum", pickupTimeLabel:"Abholzeit",
+                vehicleTypeLabel:"Fahrzeugtyp", vehicleTypeOpt:"VIP Mercedes Vito",
+                estimatedPriceLabel:"Geschätzte Servicegebühr",
+                useLocationBtn:"Meinen Standort verwenden",
+                useLocationTooltip:"Klicken Sie diese Option an, damit das Fahrzeug Sie an Ihrem Standort abholt",
+                geoLoading:"Standort wird ermittelt...",
+                geoNotSupported:"Ihr Browser unterstützt keine Standortdienste. Sie können die Adresse manuell eingeben.",
+                geoFailed:"Ihr Standort konnte nicht ermittelt werden. Sie können die Adresse manuell eingeben.",
+                geoDenied:"Standortzugriff verweigert. Sie können mit der manuellen Eingabe der Adresse fortfahren.",
+                geoTimeout:"Zeitüberschreitung bei der Standortanfrage. Bitte versuchen Sie es erneut oder geben Sie die Adresse manuell ein.",
+                geoOutOfArea:"Ihr aktueller Standort scheint außerhalb von Alanya/Gazipaşa zu liegen — falls Sie im Voraus buchen, ist das kein Problem, der Abholort wurde als \"Flughafen Alanya Gazipaşa\" beibehalten. Sie können ihn bei Bedarf ändern."
+            },
+            hizmetler: {
+                title:"Unsere Premium-Dienstleistungen",
+                subtitle:"Wir bieten exklusive Transportlösungen, die Luxus, Sicherheit und Komfort in der Region Antalya und Gazipaşa vereinen.",
+                s1t:"Flughafentransfer", s1d:"Empfangsservice mit Namensschild an den Flughäfen Antalya (AYT) und Gazipaşa (GZP), mit direktem Transport ohne Wartezeit zu Ihrem Hotel.",
+                s2t:"Chauffeurservice VIP-Miete", s2d:"Ein luxuriöser Vito mit professionellem Fahrer, ganz Ihnen gewidmet — ob für ein paar Stunden in der Stadt oder eine ganztägige Route.",
+                s3t:"Firmenlösungen", s3d:"Prestigeträchtige, pünktliche Transportplanung für Ihre Geschäftstreffen, Konferenzen und besonderen VIP-Veranstaltungen."
+            },
+            blog: {
+                title:"Flughafen-VIP-Transferdienste Gazipaşa &amp; Antalya",
+                subtitle:"Wir bieten rund um die Uhr komfortablen, direkten und exklusiven VIP-Transport vom Flughafen Gazipaşa (GZP) und Flughafen Antalya (AYT) nach Alanya, Side, Manavgat, Belek, Kemer und die gesamte Mittelmeerregion.",
+                loading:"Reiseziele werden geladen...", loadMore:"Mehr anzeigen"
+            },
+            filo: {
+                title:"Unsere Luxusflotte",
+                subtitle:"Wir begleiten Sie mit erstklassig ausgestatteten VIP-Fahrzeugen, die Ihre Reise unvergesslich machen.",
+                vehicleName:"Mercedes-Benz Vito VIP", passengers:"1-6 Passagiere", luggage:"6 Koffer",
+                f1:"Echte Ledersitze", f2:"Kostenloses Highspeed-WLAN", f3:"VIP-Erfrischungen & Getränke",
+                f4:"Klimaanlage", f5:"Babysitz (auf Anfrage)", f6:"Kreditkarte im Fahrzeug akzeptiert",
+                reserveBtn:"Jetzt buchen"
+            },
+            nasilCalisir: {
+                title:"So funktioniert's", subtitle:"Null Aufwand. Schließen Sie Ihre Reservierung in 3 einfachen Schritten ab und überlassen Sie den Rest unserem Betriebsteam.",
+                s1t:"Route wählen", s1d:"Wählen Sie über das System Ihren Abhol- und Zielort, Ihr Flugdatum und die Anzahl der Passagiere.",
+                s2t:"Bestätigen", s2d:"Sehen Sie unsere transparenten Preise und schließen Sie den Vorgang per Kreditkarte oder Zahlung im Fahrzeug ab.",
+                s3t:"Genießen Sie die Fahrt", s3d:"Werden Sie am Flughafen namentlich begrüßt und genießen Sie eine reibungslose Fahrt in Ihrem VIP-Fahrzeug."
+            },
+            ucus: {
+                title:"Live-Fluganzeige", subtitle:"Echtzeit-Ankunfts- und Abflugsinformationen für die Flughäfen Gazipaşa-Alanya und Antalya. Verfolgen Sie Ihren Flug und planen Sie Ihren Transfer mit Zuversicht.",
+                gelen:"Ankünfte", giden:"Abflüge", saat:"Uhrzeit", ucusNo:"Flugnr.", nereden:"Von", nereye:"Nach", tur:"Typ", havayolu:"Fluggesellschaft", durum:"Status"
+            },
+            sss: {
+                title:"Häufig gestellte Fragen", subtitle:"Alle Details, die Sie zu unseren Transfer- und Mietprozessen interessieren.",
+                q1:"Was passiert, wenn sich mein Flug verspätet? Zahle ich einen Aufpreis?", a1:"Nein, es entstehen keine zusätzlichen Kosten. Unser Betriebsteam verfolgt Ihren Flug anhand der Flugnummer in Echtzeit. Egal wie lange sich Ihr Flug verspätet, unser VIP-Fahrzeug und Fahrer warten weiterhin auf Sie.",
+                q2:"Wie kann ich bezahlen?", a2:"Sie können sicher online über unser System bezahlen oder nach dem Transfer bar/mit Kreditkarte im Fahrzeug.",
+                q3:"Bieten Sie einen Baby- oder Kindersitz an?", a3:"Ja, auf Wunsch bei der Buchung stellen wir in unseren VIP-Vito-Fahrzeugen kostenlos einen hygienischen Baby- oder Kindersitz zur Verfügung.",
+                q4:"Bieten Sie Transferservice für Nachtflüge an?", a4:"Ja, unser Service ist rund um die Uhr, 7 Tage die Woche, ohne Unterbrechung verfügbar. Auch bei Flügen um Mitternacht werden Sie mit demselben VIP-Standard empfangen."
+            },
+            iletisim: {
+                title:"Kontakt", subtitle:"Kontaktieren Sie uns für unsere VIP-Transfer- und Chauffeurdienste. Wir melden uns so schnell wie möglich bei Ihnen.",
+                phoneLabel:"Telefon", emailLabel:"E-Mail", addressLabel:"Adresse", addressValue:"Gazipaşa / Antalya, Türkei",
+                formTitle:"Kontaktieren Sie uns", formSubtitle:"Füllen Sie das Formular für Reservierungen, Angebote oder Fragen aus, wir melden uns schnell bei Ihnen.",
+                namePh:"Ihr vollständiger Name", phonePh:"Ihre Telefonnummer", emailPh:"Ihre E-Mail-Adresse", messagePh:"Ihre Nachricht...",
+                sendBtn:"Nachricht senden", sendingBtn:"Wird gesendet...", successMsg:"Ihre Nachricht wurde empfangen. Wir melden uns in Kürze bei Ihnen."
+            },
+            footer: {
+                about:"Eine Premium-VIP-Transfermarke, die luxuriöse, sichere und pünktliche Transportlösungen in den Regionen Antalya und Gazipaşa anbietet.",
+                quickMenu:"Schnellmenü", servicesLink:"Unsere Leistungen", fleetLink:"Unsere VIP-Flotte", regionsLink:"Reiseziele",
+                contactLink:"Kontakt", faqLink:"Häufig gestellte Fragen", contactCorporate:"Kontakt & Unternehmen",
+                addressFooter:"Gazipaşa / Antalya", securePayment:"Sichere Zahlungsinfrastruktur",
+                garantiText:"Durch 3D-Secure geschützte Zahlungen über die virtuelle POS-Infrastruktur der Garanti BBVA.",
+                sslText:"Alle Ihre Zahlungsvorgänge sind durch ein 256-Bit-SSL-Zertifikat gesichert.",
+                rights:"Alle Rechte vorbehalten."
+            },
+            errorPages: {
+                e404Title:"Seite nicht gefunden", e404Desc:"Die gesuchte Seite wurde möglicherweise verschoben, entfernt oder hat nie existiert.",
+                homeBtn:"Zurück zur Startseite", whatsappBtn:"24/7 WhatsApp-Support",
+                e403Title:"Sie haben keinen Zugriff auf diesen Bereich", e403Desc:"Der Bereich, auf den Sie zugreifen möchten, ist aus Sicherheitsgründen eingeschränkt.", visualEntryBtn:"Zurück zur Startseite",
+                e500Title:"Verbindung wird aktualisiert", e500Desc:"Unser System durchläuft derzeit eine kurze Wartung. Bitte versuchen Sie es in ein paar Minuten erneut.", refreshBtn:"Seite neu laden"
+            },
+            chat: {
+                assistantName:"Güliz Assistent", startPrompt:"Bevor wir mit dem Chat beginnen, wie sollen wir Sie ansprechen?",
+                namePh:"Ihr vollständiger Name", phonePh:"Telefon (z.B. +90 5XX XXX XX XX)", startBtn:"Chat starten",
+                editBtn:"Bearbeiten", messagePh:"Schreiben Sie Ihre Nachricht...", triggerLabel:"Live-Support"
+            },
+            mobileBookBar: { label:"Jetzt buchen" },
+            successModal: { title:"Ihre Anfrage wurde empfangen!", desc:"Unser Kundenberater wird sich <b>innerhalb von 5 Minuten</b> mit Ihnen in Verbindung setzen, um die Verfügbarkeit zu bestätigen und den genauen Preis mitzuteilen.", closeBtn:"OK, Danke" },
+            routeModal: { title:"Schnellbuchung", subtitle:"Wählen Sie eine unserer häufig genutzten Routen oder erstellen Sie Ihre eigene.", altBtn:"Andere Route erstellen" },
+            destModal: { reserveBtn:"Transfer in dieses Gebiet buchen" },
+            alerts: {
+                serviceAreaPickup:"Entschuldigung, dieser Abholort liegt außerhalb unseres Servicegebiets. Wir bedienen nur die Regionen Gazipaşa, Alanya und Antalya.",
+                serviceAreaDest:"Entschuldigung, dieser Zielort liegt außerhalb unseres Servicegebiets. Wir bedienen nur die Regionen Gazipaşa, Alanya und Antalya.",
+                requiredFields:"Bitte füllen Sie die erforderlichen Felder aus.",
+                reservationFailed:"Reservierung konnte nicht erstellt werden: ", connectionFailed:"Verbindung zum Server konnte nicht hergestellt werden. Bitte versuchen Sie es später erneut.",
+                contactFailed:"Nachricht konnte nicht gesendet werden: ", contactFailedGeneric:"Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.",
+                unknownError:"Unbekannter Fehler"
+            }
         }
         };
 
@@ -2608,7 +2737,8 @@
             var flagSvgs = {
                 tr: '<svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#E30A17"/><circle cx="16" cy="12" r="6" fill="#fff"/><circle cx="18" cy="12" r="5" fill="#E30A17"/><path d="M22 8l-1 4 3-2-3 2 1 4" fill="#fff"/></svg>',
                 en: '<svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#012169"/><path d="M0 0l36 24m0-24L0 24" stroke="#fff" stroke-width="5"/><path d="M0 0l36 24m0-24L0 24" stroke="#C8102E" stroke-width="3"/><path d="M18 0v24M0 12h36" stroke="#fff" stroke-width="6"/><path d="M18 0v24M0 12h36" stroke="#C8102E" stroke-width="3"/></svg>',
-                ru: '<svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#fff"/><rect y="8" width="36" height="8" fill="#0039A6"/><rect y="16" width="36" height="8" fill="#D52B1E"/></svg>'
+                ru: '<svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="24" fill="#fff"/><rect y="8" width="36" height="8" fill="#0039A6"/><rect y="16" width="36" height="8" fill="#D52B1E"/></svg>',
+                de: '<svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="8" fill="#000000"/><rect y="8" width="36" height="8" fill="#DD0000"/><rect y="16" width="36" height="8" fill="#FFCE00"/></svg>'
             };
             var trigger = document.querySelector('.lang-switcher .flag-trigger');
             if (trigger && flagSvgs[lang]) trigger.innerHTML = flagSvgs[lang];
@@ -2673,6 +2803,12 @@
                     basarisiz: { title: 'Оплата не прошла', desc: 'Оплата картой не была завершена (банк отклонил операцию). Бронирование можно завершить банковским переводом, наша команда свяжется с вами.' },
                     iptal: { title: 'Оплата отменена', desc: 'Вы не завершили оплату. Бронирование можно завершить банковским переводом, наша команда свяжется с вами.' },
                     dogrulanamadi: { title: 'Проверка платежа', desc: 'Мы проверяем статус вашего платежа. Скоро с вами свяжемся.' }
+                },
+                de: {
+                    basarili: { title: 'Zahlung erhalten!', desc: 'Ihre Kreditkartenzahlung wurde erfolgreich abgeschlossen. Ihre Reservierung ist bestätigt, vielen Dank.' },
+                    basarisiz: { title: 'Zahlung fehlgeschlagen', desc: 'Ihre Kartenzahlung konnte nicht abgeschlossen werden (von Ihrer Bank abgelehnt). Ihre Reservierung kann auch per Banküberweisung abgeschlossen werden, unser Team wird sich mit Ihnen in Verbindung setzen.' },
+                    iptal: { title: 'Zahlung abgebrochen', desc: 'Sie haben die Zahlung nicht abgeschlossen. Ihre Reservierung kann auch per Banküberweisung abgeschlossen werden, unser Team wird sich mit Ihnen in Verbindung setzen.' },
+                    dogrulanamadi: { title: 'Zahlung wird überprüft', desc: 'Wir überprüfen den Status Ihrer Zahlung. Wir melden uns in Kürze bei Ihnen.' }
                 }
             };
             var set = texts[window.SITE_LANG] || texts.tr;
@@ -3074,7 +3210,7 @@
             // (/sayfa/<slug>, /en/sayfa/<slug>, /ru/sayfa/<slug>) gidiyoruz — kullanıcı
             // sayfadan kopmuyor VE içerik de artık gerçekten çevriliyor.
             if (document.body.classList.contains('page-mode')) {
-                var slug = window.location.pathname.replace(/^\/(en\/|ru\/)?sayfa\//, '').replace(/\/$/, '');
+                var slug = window.location.pathname.replace(/^\/(en\/|ru\/|de\/)?sayfa\//, '').replace(/\/$/, '');
                 var prefix = lang === 'tr' ? '/sayfa/' : '/' + lang + '/sayfa/';
                 window.location.href = prefix + slug;
                 return;
@@ -3089,6 +3225,8 @@
                 window.location.href = '/en/';
             } else if (lang === 'ru') {
                 window.location.href = '/ru/';
+            } else if (lang === 'de') {
+                window.location.href = '/de/';
             }
         }
 

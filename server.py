@@ -245,6 +245,33 @@ PAGE_TRANSLATIONS = {
             "subtitle": "Условия возврата и возмещения средств за нашу услугу VIP-трансфера",
             "content": "<h2>Политика возврата</h2><p>Для Güliz VIP Transfer удовлетворённость клиентов — главный приоритет. Настоящая политика возврата регулирует условия возврата и возмещения средств за бронирования, сделанные через наш сайт.</p><h2>1. Право на отказ от услуги</h2><p>В соответствии с турецким Законом о защите прав потребителей № 6502, услуги VIP-трансфера считаются услугами, оказываемыми в определённую дату, поэтому право на отказ подчиняется следующим условиям:</p><ul><li><strong>Отмена за 24 часа и более:</strong> производится полный возврат без каких-либо удержаний.</li><li><strong>Отмена менее чем за 24 часа:</strong> возвращается 50% от уплаченной суммы.</li><li><strong>Отмена в день оказания услуги или неявка:</strong> возврат не производится.</li></ul><h2>2. Процесс возврата</h2><p>Вы можете отправить запрос на возврат через следующие каналы:</p><ul><li><strong>Эл. почта:</strong> info@gulizvip.com.tr</li><li><strong>Телефон:</strong> +90 242 606 25 48</li><li><strong>WhatsApp:</strong> +90 242 606 25 48</li></ul><p>Ваш запрос на возврат будет рассмотрен нашей операционной командой, и вы получите ответ не позднее чем через 3 рабочих дня.</p><h2>3. Способы возврата</h2><p>Одобренные возвраты производятся следующим образом, в зависимости от использованного способа оплаты:</p><ul><li><strong>Кредитная карта:</strong> возврат на карту в течение 3-7 рабочих дней через инфраструктуру Garanti BBVA Sanal POS.</li><li><strong>Банковский перевод:</strong> зачисление на банковский счёт в течение 3-5 рабочих дней.</li></ul><h2>4. Изменения и исправления</h2><p>Изменения даты, времени или маршрута бронирования могут быть внесены бесплатно при условии уведомления не менее чем за 12 часов до даты оказания услуги. Изменения в последнюю минуту подлежат согласованию с нашей операционной командой и могут повлечь дополнительную плату.</p><h2>5. Форс-мажор</h2><p>В случае невозможности оказания услуги вследствие форс-мажорных обстоятельств, таких как стихийные бедствия, неблагоприятные погодные условия, перекрытие дорог, забастовки или подобные события, клиенту предлагается полный возврат средств или возможность получения услуги в альтернативную дату.</p><h2>6. Контакты</h2><p>По вопросам возврата и изменений вы можете связаться с нами:</p><p>Телефон: +90 242 606 25 48<br>Эл. почта: info@gulizvip.com.tr<br>Адрес: Газипаша / Анталья</p>"
         }
+    },
+    "de": {
+        "hakkimizda": {
+            "title": "Über uns",
+            "subtitle": "Die exklusive Welt des Premium-VIP-Transferservices",
+            "content": "<h2>Güliz VIP Transfer</h2><p>Bei Güliz VIP Transfer bieten wir einen luxuriösen und komfortablen VIP-Transferservice in der Region Flughafen Gazipaşa und Alanya. Unseren Gästen ein sicheres, pünktliches und prestigeträchtiges Reiseerlebnis zu bieten, hat für uns oberste Priorität.</p><h2>Unsere Vision</h2><p>Die vertrauenswürdigste VIP-Transfermarke in der Mittelmeerregion zu werden. Wir arbeiten daran, jede Reise in ein unvergessliches Erlebnis zu verwandeln, bei dem Komfort auf Luxus trifft.</p><h2>Unsere Mission</h2><p>Unseren Gästen dank unseres professionellen Teams und modernen Fahrzeugparks ein ununterbrochenes, sicheres und exklusives Erlebnis bei Flughafentransfers und Chauffeur-Tagesmieten zu bieten.</p><h2>Unsere Werte</h2><ul><li><strong>Sicherheit:</strong> Höchste Sicherheitsstandards auf jeder Fahrt</li><li><strong>Komfort:</strong> Keine Kompromisse beim Reisekomfort dank unserer Luxusflotte</li><li><strong>Pünktlichkeit:</strong> 99% pünktliche Ankunftsrate dank Flugverfolgung</li><li><strong>Kundenzufriedenheit:</strong> Ein Serviceansatz, der sich durch individuelle Lösungen auszeichnet</li></ul>"
+        },
+        "gizlilik": {
+            "title": "Datenschutzerklärung",
+            "subtitle": "Informationen zum Schutz und zur Verarbeitung Ihrer personenbezogenen Daten",
+            "content": "<h2>1. Erhobene Informationen</h2><p>Bei Güliz VIP Transfer erheben wir personenbezogene Daten wie Ihren Vor- und Nachnamen, Ihre Telefonnummer, E-Mail-Adresse und Zahlungsinformationen während des Buchungsvorgangs. Diese Informationen werden ausschließlich zur Erbringung unserer Dienstleistungen verwendet.</p><h2>2. Verwendung der Informationen</h2><p>Ihre erhobenen personenbezogenen Daten werden verarbeitet, um Ihre Reservierungen zu verwalten, Ihnen individuelle Angebote zu unterbreiten und die Qualität des Kundenservice zu verbessern.</p><h2>3. Weitergabe von Informationen</h2><p>Ihre personenbezogenen Daten werden nicht an Dritte weitergegeben, außer wenn dies gesetzlich vorgeschrieben ist. Zahlungsvorgänge werden über unsere sichere Zahlungsinfrastruktur abgewickelt.</p><h2>4. Datensicherheit</h2><p>Ihre personenbezogenen Daten werden durch branchenübliche Sicherheitsmaßnahmen (SSL, Verschlüsselung) geschützt.</p><h2>5. Cookie-Richtlinie</h2><p>Unsere Website verwendet Cookies, um die Benutzererfahrung zu verbessern. Sie können Ihre Cookie-Einstellungen in Ihren Browsereinstellungen verwalten.</p><h2>6. Ihre Rechte</h2><p>Gemäß dem türkischen Gesetz zum Schutz personenbezogener Daten (KVKK) haben Sie das Recht auf Auskunft, Berichtigung, Löschung und Widerspruch gegen die Verarbeitung Ihrer Daten. Sie können uns kontaktieren, um diese Rechte auszuüben.</p>"
+        },
+        "mesafeli-satis": {
+            "title": "Fernabsatzvertrag",
+            "subtitle": "Bedingungen für Online-Reservierungen und -Verkäufe",
+            "content": "<h2>1. Vertragsparteien</h2><p>Dieser Fernabsatzvertrag wird zwischen den folgenden Parteien geschlossen:</p><p><strong>Verkäufer:</strong><br>Firmenname: Güliz Lojistik Mimarlık Sanayi ve Tic. Ltd. Şti.<br>Hauptsitz: Pazarcı Mah. 10003. Sok. No: 32/7, Gazipaşa/Antalya, Türkei<br>Büro Flughafen Gazipaşa: Gazipaşa Havalimanı İçi No:3 Sarıağaç, Gazipaşa/Antalya, Türkei<br>Finanzamt: Gazipaşa Mal Müdürlüğü<br>Steuernummer (VKN): 4200721970<br>Telefon: +90 242 606 25 48<br>E-Mail: info@gulizvip.com.tr</p><p><strong>Käufer:</strong> Die natürliche oder juristische Person (Kunde), die über die Website eine Reservierung vornimmt</p><p>Dieser Vertrag gilt für Reservierungen, die über die Website im Rahmen der Dienstleistungen von Güliz VIP Transfer vorgenommen werden.</p><h2>2. Leistungsbeschreibung</h2><p>Flughafen-VIP-Transfer- und Chauffeur-Tagesmietdienste werden mit einem Luxusfahrzeug in Begleitung eines professionellen Fahrers zum angegebenen Datum, zur angegebenen Uhrzeit und auf der angegebenen Route erbracht.</p><h2>3. Preisgestaltung</h2><p>Die Preisgestaltung basiert auf dem aktuellen Preis pro Kilometer. Alle Preise sind in türkischer Lira (TL) angegeben und beinhalten die Mehrwertsteuer.</p><h2>4. Zahlungsbedingungen</h2><p>Die Zahlung kann per Kreditkarte oder Banküberweisung erfolgen. Bei Kreditkartenzahlungen gelten die Gebührensätze der jeweiligen Kartennetzwerke.</p><h2>5. Widerrufsrecht</h2><p>Gemäß dem türkischen Verbraucherschutzgesetz Nr. 6502 gelten VIP-Transferdienste als Dienstleistungen, die zu einem bestimmten Termin erbracht werden, weshalb das Widerrufsrecht den auf der Seite „Rückerstattungsbedingungen\" detailliert beschriebenen Bedingungen unterliegt.</p><h2>6. Vertragserfüllung</h2><p>Sobald eine Reservierung bestätigt ist, beginnt die Leistung zum angegebenen Datum und zur angegebenen Uhrzeit. Bei Verzögerungen oder Stornierungen werden höhere Gewalt-Umstände berücksichtigt.</p>"
+        },
+        "teslimat": {
+            "title": "Liefer- und Rückerstattungsbedingungen",
+            "subtitle": "Detaillierte Informationen zu den Liefer- und Rückerstattungsbedingungen unseres VIP-Transferservices",
+            "content": "<h2>Lieferbedingungen</h2><p>Unser VIP-Transferservice beginnt am bei der Reservierung angegebenen Treffpunkt, zum angegebenen Datum und zur angegebenen Uhrzeit. Dank Flugverfolgung ist unser Fahrer über eventuelle Verspätungen informiert und wartet im Ankunftsbereich auf Sie.</p><h2>Serviceablauf</h2><ul><li>Begrüßung durch den Fahrer am Treffpunkt</li><li>Gepäckhilfe und Einstieg ins Fahrzeug</li><li>Komfortabler und sicherer VIP-Transfer</li><li>Pünktliche Ankunft am Zielort</li></ul><h2>Storno- und Rückerstattungsbedingungen</h2><ul><li><strong>24 Stunden oder mehr vorher:</strong> Volle Rückerstattung</li><li><strong>Weniger als 24 Stunden vorher:</strong> 50% Rückerstattung</li><li><strong>Am Tag der Leistung:</strong> Keine Rückerstattung</li></ul><h2>Änderungen</h2><p>Änderungen des Reservierungsdatums, der Uhrzeit oder der Route müssen mindestens 12 Stunden vor der Leistung mitgeteilt werden. Kurzfristige Änderungen bedürfen der Zustimmung des Betriebsteams.</p><h2>Höhere Gewalt</h2><p>Im Falle höherer Gewalt wie Naturkatastrophen, widrige Wetterbedingungen oder Straßensperrungen wird eine vollständige Rückerstattung oder eine alternative Terminoption angeboten.</p>"
+        },
+        "iade-sartlari": {
+            "title": "Rückerstattungsbedingungen",
+            "subtitle": "Die Rückerstattungs- und Erstattungsbedingungen unseres VIP-Transferservices",
+            "content": "<h2>Rückerstattungsrichtlinie</h2><p>Bei Güliz VIP Transfer hat die Kundenzufriedenheit oberste Priorität. Diese Rückerstattungsrichtlinie regelt die Rückerstattungs- und Erstattungsbedingungen für über unsere Website vorgenommene Reservierungen.</p><h2>1. Widerrufsrecht</h2><p>Gemäß dem türkischen Verbraucherschutzgesetz Nr. 6502 gelten VIP-Transferdienste als Dienstleistungen, die zu einem bestimmten Termin erbracht werden, weshalb das Widerrufsrecht folgenden Bedingungen unterliegt:</p><ul><li><strong>Stornierung 24 Stunden oder mehr vorher:</strong> Es erfolgt eine volle Rückerstattung ohne Abzüge.</li><li><strong>Stornierung weniger als 24 Stunden vorher:</strong> 50% des gezahlten Betrags werden erstattet.</li><li><strong>Stornierung am Tag der Leistung oder Nichterscheinen:</strong> Es erfolgt keine Rückerstattung.</li></ul><h2>2. Rückerstattungsprozess</h2><p>Sie können Ihren Rückerstattungsantrag über folgende Kanäle einreichen:</p><ul><li><strong>E-Mail:</strong> info@gulizvip.com.tr</li><li><strong>Telefon:</strong> +90 242 606 25 48</li><li><strong>WhatsApp:</strong> +90 242 606 25 48</li></ul><p>Ihr Rückerstattungsantrag wird von unserem Betriebsteam geprüft, und Sie erhalten spätestens innerhalb von 3 Werktagen eine Antwort.</p><h2>3. Rückerstattungsmethoden</h2><p>Genehmigte Rückerstattungen werden je nach verwendeter Zahlungsmethode wie folgt abgewickelt:</p><ul><li><strong>Kreditkarte:</strong> Rückerstattung auf Ihre Karte innerhalb von 3-7 Werktagen über die Garanti BBVA Sanal POS-Infrastruktur.</li><li><strong>Banküberweisung / EFT:</strong> Gutschrift auf Ihr Bankkonto innerhalb von 3-5 Werktagen.</li></ul><h2>4. Änderungen und Korrekturen</h2><p>Änderungen des Reservierungsdatums, der Uhrzeit oder der Route sind kostenlos möglich, sofern sie mindestens 12 Stunden vor dem Servicedatum mitgeteilt werden. Kurzfristige Änderungen bedürfen der Zustimmung unseres Betriebsteams und können zusätzliche Kosten verursachen.</p><h2>5. Höhere Gewalt</h2><p>Kann die Leistung aufgrund höherer Gewalt wie Naturkatastrophen, widrigen Wetterbedingungen, Straßensperrungen, Streiks oder ähnlichen Ereignissen nicht erbracht werden, wird dem Kunden eine volle Rückerstattung oder die Möglichkeit einer Leistung an einem alternativen Termin angeboten.</p><h2>6. Kontakt</h2><p>Für Rückerstattungs- und Änderungsanfragen können Sie uns kontaktieren:</p><p>Telefon: +90 242 606 25 48<br>E-Mail: info@gulizvip.com.tr<br>Adresse: Gazipaşa / Antalya</p>"
+        }
     }
 }
 
@@ -343,6 +370,7 @@ def _render_route_seo_page(slug):
         '<link rel="alternate" hreflang="tr" href="https://gulizvip.com.tr/">\n'
         '    <link rel="alternate" hreflang="en" href="https://gulizvip.com.tr/en/">\n'
         '    <link rel="alternate" hreflang="ru" href="https://gulizvip.com.tr/ru/">\n'
+        '    <link rel="alternate" hreflang="de" href="https://gulizvip.com.tr/de/">\n'
         '    <link rel="alternate" hreflang="x-default" href="https://gulizvip.com.tr/">',
         f'<link rel="alternate" hreflang="tr" href="{page_url}">'
     )
@@ -399,6 +427,14 @@ LANG_META = {
         "og_description": "Непрерывный VIP-трансфер на автомобиле Vito 24/7 из аэропортов Газипаша (GZP) и Анталия (AYT) в Аланию, Сиде, Манавгат, Белек, Кемер и весь Средиземноморский регион.",
         "twitter_title": "VIP-трансфер из аэропортов Газипаша и Анталия | Güliz VIP",
         "twitter_description": "VIP-трансфер 24/7 из аэропортов Газипаша (GZP) и Анталия (AYT) в Аланию, Сиде, Манавгат, Белек и Кемер.",
+    },
+    "de": {
+        "title": "Flughafentransfer Gazipaşa & Antalya VIP | Güliz VIP Transfer",
+        "description": "Wir bieten rund um die Uhr komfortablen, direkten und exklusiven VIP-Transferservice vom Flughafen Gazipaşa (GZP) und Flughafen Antalya (AYT) nach Alanya, Side, Manavgat, Belek, Kemer und die gesamte Mittelmeerregion.",
+        "og_title": "Flughafen-VIP-Transferdienste Gazipaşa & Antalya | Güliz VIP",
+        "og_description": "Ununterbrochenes VIP-Vito-Transferprivileg rund um die Uhr von den Flughäfen Gazipaşa (GZP) und Antalya (AYT) nach Alanya, Side, Manavgat, Belek, Kemer und die gesamte Mittelmeerregion.",
+        "twitter_title": "Flughafentransfer Gazipaşa & Antalya VIP | Güliz VIP",
+        "twitter_description": "VIP-Transfer rund um die Uhr von den Flughäfen Gazipaşa (GZP) und Antalya (AYT) nach Alanya, Side, Manavgat, Belek und Kemer.",
     },
 }
 
@@ -457,7 +493,7 @@ def _render_lang_page(lang):
         '<meta property="og:url" content="https://gulizvip.com.tr/">',
         f'<meta property="og:url" content="{lang_url}">'
     )
-    og_locale = {"en": "en_US", "ru": "ru_RU"}.get(lang, "tr_TR")
+    og_locale = {"en": "en_US", "ru": "ru_RU", "de": "de_DE"}.get(lang, "tr_TR")
     html = html.replace(
         '<meta property="og:locale" content="tr_TR">',
         f'<meta property="og:locale" content="{og_locale}">'
@@ -636,7 +672,7 @@ def _get_merged_pages(lang="tr"):
                 }
     except Exception as e:
         print(f"[!] _get_merged_pages() DB okuma hatası: {e}")
-    if lang in ("en", "ru"):
+    if lang in ("en", "ru", "de"):
         translations = PAGE_TRANSLATIONS.get(lang, {})
         for slug, entry in merged.items():
             t = translations.get(slug)
@@ -679,7 +715,7 @@ def get_page_data(slug, lang="tr"):
             "content": page_entry.get("content", ""),
             "updatedAt": page_entry.get("updatedAt", "")
         }
-    if lang in ("en", "ru"):
+    if lang in ("en", "ru", "de"):
         translation = PAGE_TRANSLATIONS.get(lang, {}).get(slug)
         if translation:
             result_page = dict(result_page)
@@ -747,7 +783,7 @@ def _render_sayfa_page(slug, lang="tr"):
     # olmayan bir sayfa için sahte hreflang üretmek Search Console hatası ve
     # yanlış sinyal riski taşır.
     hreflang_links = [f'<link rel="alternate" hreflang="tr" href="{BASE_URL}/sayfa/{slug}">']
-    for hl in ("en", "ru"):
+    for hl in ("en", "ru", "de"):
         if slug in PAGE_TRANSLATIONS.get(hl, {}):
             hreflang_links.append(f'<link rel="alternate" hreflang="{hl}" href="{BASE_URL}/{hl}/sayfa/{slug}">')
     hreflang_links.append(f'<link rel="alternate" hreflang="x-default" href="{BASE_URL}/sayfa/{slug}">')
@@ -755,6 +791,7 @@ def _render_sayfa_page(slug, lang="tr"):
         '<link rel="alternate" hreflang="tr" href="https://gulizvip.com.tr/">\n'
         '    <link rel="alternate" hreflang="en" href="https://gulizvip.com.tr/en/">\n'
         '    <link rel="alternate" hreflang="ru" href="https://gulizvip.com.tr/ru/">\n'
+        '    <link rel="alternate" hreflang="de" href="https://gulizvip.com.tr/de/">\n'
         '    <link rel="alternate" hreflang="x-default" href="https://gulizvip.com.tr/">',
         "\n    ".join(hreflang_links)
     )
@@ -770,7 +807,7 @@ def _render_sayfa_page(slug, lang="tr"):
         '<meta property="og:url" content="https://gulizvip.com.tr/">',
         f'<meta property="og:url" content="{page_url}">'
     )
-    og_locale = {"en": "en_US", "ru": "ru_RU"}.get(lang, "tr_TR")
+    og_locale = {"en": "en_US", "ru": "ru_RU", "de": "de_DE"}.get(lang, "tr_TR")
     html = html.replace(
         '<meta property="og:locale" content="tr_TR">',
         f'<meta property="og:locale" content="{og_locale}">'
@@ -3418,7 +3455,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 # Anasayfanın 3 dil sürümü birbirine karşılıklı (reciprocal) hreflang
                 # referansı verir (Google'ın gerekli gördüğü kural: A, B'yi işaret
                 # ediyorsa B de A'yı işaret etmeli).
-                home_alternates = {"tr": f"{BASE_URL}/", "en": f"{BASE_URL}/en/", "ru": f"{BASE_URL}/ru/", "x-default": f"{BASE_URL}/"}
+                home_alternates = {"tr": f"{BASE_URL}/", "en": f"{BASE_URL}/en/", "ru": f"{BASE_URL}/ru/", "de": f"{BASE_URL}/de/", "x-default": f"{BASE_URL}/"}
                 urls = [{"loc": f"{BASE_URL}/", "lastmod": today, "changefreq": "daily", "priority": "1.0", "alternates": home_alternates}]
                 try:
                     # DB + fallback birleştirilmiş güncel liste (bkz. _get_merged_pages —
@@ -3433,12 +3470,12 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                         # hem /sayfa/<slug> hem /en/.../ru/ varyantları için AYNI
                         # alternates seti kullanılır (karşılıklı hreflang kuralı).
                         page_alternates = {"tr": f"{BASE_URL}/sayfa/{slug}"}
-                        for lang in ("en", "ru"):
+                        for lang in ("en", "ru", "de"):
                             if slug in PAGE_TRANSLATIONS.get(lang, {}):
                                 page_alternates[lang] = f"{BASE_URL}/{lang}/sayfa/{slug}"
                         page_alternates["x-default"] = f"{BASE_URL}/sayfa/{slug}"
                         urls.append({"loc": f"{BASE_URL}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5", "alternates": page_alternates})
-                        for lang in ("en", "ru"):
+                        for lang in ("en", "ru", "de"):
                             if slug in PAGE_TRANSLATIONS.get(lang, {}):
                                 urls.append({"loc": f"{BASE_URL}/{lang}/sayfa/{slug}", "lastmod": lastmod, "changefreq": "monthly", "priority": "0.5", "alternates": page_alternates})
                 except Exception as e:
@@ -3448,7 +3485,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     # bu yüzden alternates eklenmiyor — tek dilli sayfa için hreflang
                     # alternate listesi gereksiz/yanıltıcı olurdu.
                     urls.append({"loc": f"{BASE_URL}/{slug}", "lastmod": today, "changefreq": "weekly", "priority": "0.8"})
-                for lang in ("en", "ru"):
+                for lang in ("en", "ru", "de"):
                     urls.append({"loc": f"{BASE_URL}/{lang}/", "lastmod": today, "changefreq": "weekly", "priority": "0.9", "alternates": home_alternates})
                 xml_parts = ['<?xml version="1.0" encoding="UTF-8"?>',
                              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">']
@@ -3467,17 +3504,18 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 self._send_text("".join(xml_parts), content_type="application/xml; charset=utf-8")
                 return
             lang_path = path.strip("/")
-            if lang_path in ("en", "ru"):
+            if lang_path in ("en", "ru", "de"):
                 rendered = _render_lang_page(lang_path)
                 if rendered:
                     self._send_html(rendered)
                     return
-            # /en/sayfa/<slug> veya /ru/sayfa/<slug> — içerik sayfalarının (Hakkımızda,
-            # Gizlilik, Mesafeli Satış vb.) İngilizce/Rusça sürümü (bkz. PAGE_TRANSLATIONS).
-            # Aynı index.html kabuğu SITE_LANG enjekte edilerek servis edilir; sayfa
-            # içeriği istemci tarafında /api/page/<slug>?lang=<dil> ile yükleniyor.
+            # /en/sayfa/<slug>, /ru/sayfa/<slug> veya /de/sayfa/<slug> — içerik
+            # sayfalarının (Hakkımızda, Gizlilik, Mesafeli Satış vb.) İngilizce/
+            # Rusça/Almanca sürümü (bkz. PAGE_TRANSLATIONS). Aynı index.html kabuğu
+            # SITE_LANG enjekte edilerek servis edilir; sayfa içeriği istemci
+            # tarafında /api/page/<slug>?lang=<dil> ile yükleniyor.
             lang_sayfa_parts = lang_path.split("/")
-            if len(lang_sayfa_parts) == 3 and lang_sayfa_parts[0] in ("en", "ru") and lang_sayfa_parts[1] == "sayfa":
+            if len(lang_sayfa_parts) == 3 and lang_sayfa_parts[0] in ("en", "ru", "de") and lang_sayfa_parts[1] == "sayfa":
                 rendered = _render_sayfa_page(lang_sayfa_parts[2], lang_sayfa_parts[0])
                 if rendered:
                     self._send_html(rendered)
@@ -3489,15 +3527,16 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 else:
                     self._send_error("Sayfa bulunamadı", 404)
                 return
-            # /en/<rota-slug> veya /ru/<rota-slug> gibi birleşik adresler (örn. eski/dış
-            # bağlantılar) — rota sayfalarının çevirisi yok, 404 yerine sade dil sayfasına
-            # yönlendir (bkz. index.html switchLanguage() artık bu tarz URL üretmiyor).
+            # /en/<rota-slug>, /ru/<rota-slug> veya /de/<rota-slug> gibi birleşik
+            # adresler (örn. eski/dış bağlantılar) — rota sayfalarının çevirisi
+            # yok, 404 yerine sade dil sayfasına yönlendir (bkz. index.html
+            # switchLanguage() artık bu tarz URL üretmiyor).
             lang_path_parts = lang_path.split("/")
             if len(lang_path_parts) == 2 and (
-                (lang_path_parts[0] in ("en", "ru") and lang_path_parts[1] in ROUTE_SEO_PAGES) or
-                (lang_path_parts[1] in ("en", "ru") and lang_path_parts[0] in ROUTE_SEO_PAGES)
+                (lang_path_parts[0] in ("en", "ru", "de") and lang_path_parts[1] in ROUTE_SEO_PAGES) or
+                (lang_path_parts[1] in ("en", "ru", "de") and lang_path_parts[0] in ROUTE_SEO_PAGES)
             ):
-                redirect_lang = lang_path_parts[0] if lang_path_parts[0] in ("en", "ru") else lang_path_parts[1]
+                redirect_lang = lang_path_parts[0] if lang_path_parts[0] in ("en", "ru", "de") else lang_path_parts[1]
                 self.send_response(302)
                 self.send_header("Location", f"/{redirect_lang}/")
                 self.end_headers()
