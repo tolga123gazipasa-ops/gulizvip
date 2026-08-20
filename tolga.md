@@ -9,6 +9,25 @@ dil-unutma linki bug'ı bulunup düzeltildi, üstüne dördüncü dil olarak **A
 push/deploy bekliyor — ACİLEN deploy edilmesi lazım, şu an canlıda müşteriler
 rezervasyon YAPAMIYOR.**
 
+## ÇÖZÜLDÜ (henüz deploy edilmedi) — Bayrak sıralaması + Güliz Asistan karşılama mesajı dile göre değişmiyordu
+
+**1) Bayrak sıralaması:** Tolga'nın isteğiyle dil seçici artık TR → EN → DE
+→ RU sırasında. (commit `5e3e863`)
+
+**2) GERÇEK BUG — canlı destek karşılama mesajı hep Türkçeydi:** Tolga fark
+etti: "Güliz Asistan" sohbet kutusu hangi dilde açılırsa açılsın (EN/RU/DE
+dahil) hep "Merhaba, ben Güliz Asistan..." diye sabit Türkçe karşılıyordu.
+Sebep: bu metin `I18N`/`t()` çeviri sistemini hiç kullanmıyordu, JS içinde
+düz Türkçe string olarak yazılıydı (aynı şekilde "Güliz Asistan:" mesaj
+etiketi de 2 ayrı yerde daha hardcoded'du). Düzeltildi: yeni bir
+`chat.greeting` çeviri anahtarı eklendi (tr/en/ru/de — 201/201 parite), 3
+hardcoded string `t('chat.assistantName')` / `t('chat.greeting')`
+çağrılarına çevrildi. **"Güliz" markası kasıtlı olarak hiçbir dilde
+çevrilmiyor** — Tolga'nın özel isteğiyle her dilde aynı kalıyor (en: "Güliz
+Assistant", de: "Güliz Assistent", ru: "Ассистент Güliz" — kelime sırası/eki
+değişiyor ama "Güliz" hep Latin harfleriyle, değişmeden duruyor).
+(commit `851626e`)
+
 ## YENİ ÖZELLİK (henüz deploy edilmedi) — Almanca (de) dil desteği eklendi
 
 **Bağlam:** Tolga, az önce düzeltilen "dil unutuluyor" bug'ının ardından
