@@ -1,5 +1,25 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
+## ÇÖZÜLDÜ — Ödeme onay sayfasında müşteri kendi ismini düzeltemiyordu (21 Ağustos, devamı)
+
+**Bağlam:** Bir önceki maddedeki (#169) olaydan sonra Tolga "ismini de
+yazmıştı o da gözükmüyordu" dedi — yani Ceylin Hanım ödeme onay sayfasında
+kendi adını da düzeltmeye çalışmış ama bu bilgi hiçbir yere kaydedilmemiş.
+
+**Kök neden:** `/odeme/onayla/<id>/<token>` sayfasında (`_render_return_reservation_page`,
+server.py) telefon ve e-posta DÜZENLENEBİLİR input'tu ama **isim salt-okunur
+bir `<p>` etiketiydi** — müşterinin ismini düzeltebileceği bir alan hiç
+yoktu. Aynı şekilde backend'deki `/api/public/return-reservation/confirm`
+uç noktası da body'den sadece `phone`/`email` okuyordu, `name` diye bir
+alanı hiç işlemiyordu.
+
+**Düzeltme:** Telefon/e-posta ile birebir aynı mantıkla "Ad Soyad" alanı da
+artık düzenlenebilir input; müşteri kaydederken `name` de gönderiliyor,
+backend bunu hem rezervasyonun `customerName`'ine hem (varsa) bağlı CRM
+müşteri kaydına (`db.update_customer`) yazıyor — tıpkı telefon/e-posta gibi.
+Böylece Tolga'nın onayladığı iş akışı ("ben ne yazarsam yazayım, müşteri
+kendi doğrusunu girer, o bana yansır") artık isim için de eksiksiz çalışıyor.
+
 ## ÇÖZÜLDÜ — Admin panelinde e-posta hiç görünmüyordu + müşteri kaydı yanlış isimle üzerine yazılmıştı (21 Ağustos)
 
 **Bağlam:** Tolga admin panelinden elle bir rezervasyon (#169) oluşturup

@@ -1922,7 +1922,7 @@ def _render_return_reservation_page(reservation, token, is_return=True):
 <body>
   <div class="card">
     <h2>{page_title}</h2>
-    <p class="sub">{esc(reservation.get('customerName'))} — Rezervasyon #{res_id}</p>
+    <p class="sub">Rezervasyon #{res_id}</p>
     <div class="summary">
       <div class="summary-row"><span>Alış Noktası</span><span>{esc(reservation.get('pickup'))}</span></div>
       <div class="summary-row"><span>{route_label}</span><span>{route_value}</span></div>
@@ -1931,6 +1931,8 @@ def _render_return_reservation_page(reservation, token, is_return=True):
       <div class="amount">{price} {currency}</div>
     </div>
     <form id="confirmForm">
+      <label>Ad Soyad</label>
+      <input id="nameInput" required value="{esc(reservation.get('customerName'))}" placeholder="Ad Soyad">
       <label>Telefon Numaranız</label>
       <input id="phoneInput" required inputmode="tel" value="{esc(reservation.get('customerPhone'))}" placeholder="05XX XXX XX XX">
       <label>E-posta Adresiniz</label>
@@ -1992,13 +1994,14 @@ document.getElementById('confirmForm').addEventListener('submit', function(e) {{
   errBox.style.display = 'none';
   btn.disabled = true;
   btn.textContent = 'Gönderiliyor...';
+  var name = document.getElementById('nameInput').value.trim();
   var phone = document.getElementById('phoneInput').value.trim();
   var email = document.getElementById('emailInput').value.trim();
   var payMethod = checkedRadio.value;
   fetch('/api/public/return-reservation/confirm', {{
     method: 'POST',
     headers: {{ 'Content-Type': 'application/json' }},
-    body: JSON.stringify({{ id: {res_id}, token: '{token}', phone: phone, email: email, paymentMethod: payMethod }})
+    body: JSON.stringify({{ id: {res_id}, token: '{token}', name: name, phone: phone, email: email, paymentMethod: payMethod }})
   }})
   .then(function(r) {{ return r.json(); }})
   .then(function(data) {{
@@ -4064,6 +4067,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 if not target:
                     self._send_error("Rezervasyon bulunamadı.", 404)
                     return
+                name = (body.get("name") or "").strip()
                 phone = (body.get("phone") or "").strip()
                 email = (body.get("email") or "").strip()
                 raw_payment_method = body.get("paymentMethod") or ""
@@ -4081,6 +4085,8 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     if target.get("paymentMethod"):
                         already_confirmed = True
                     else:
+                        if name:
+                            target["customerName"] = name
                         if phone:
                             target["customerPhone"] = phone
                         if email:
@@ -4090,6 +4096,7 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     self._send_error("Bu bağlantı zaten kullanılmış, rezervasyonunuz onaylanmıştı.", 409)
                     return
                 fields_to_update = {
+                    "customerName": target["customerName"],
                     "customerPhone": target["customerPhone"],
                     "customerEmail": target["customerEmail"],
                     "paymentMethod": target["paymentMethod"],
@@ -4102,9 +4109,11 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                 # rezervasyondan farklı) — genel müşteri kaydını (CRM) da senkronize
                 # ediyoruz, aksi halde admin panelindeki müşteri kartı eski bilgiyle
                 # kalırdı.
-                if target.get("customerId") and (phone or email):
+                if target.get("customerId") and (name or phone or email):
                     try:
                         customer_fields = {}
+                        if name:
+                            customer_fields["name"] = name
                         if phone:
                             customer_fields["phone"] = phone
                         if email:
