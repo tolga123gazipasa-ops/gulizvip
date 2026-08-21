@@ -1,5 +1,27 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
+## ÇÖZÜLDÜ — GERÇEK BUG: Mobilde admin panel menüsü, sekme değiştirince açık kalıyordu (21 Ağustos)
+
+**Bağlam:** Tolga mobilde "Yeni Rezervasyon" oluşturmaya çalıştı, buton
+uzun süre hiçbir şey yapmıyormuş gibi göründü — ekranı yatay çevirince
+(genişlik 768px eşiğini aşınca) birden çalıştı, o şekilde "zorla" yapabildi.
+
+**Kök neden:** Mobilde hamburger menüye basılınca `.sidebar` ve
+`#sidebarOverlay` "açık" class'ı alıyor (tam ekran overlay + z-index 999).
+Menüden bir sekmeye (ör. "Rezervasyonlar") tıklanınca `switchTab()` sadece
+içeriği değiştiriyordu, **sidebar/overlay'i hiç kapatmıyordu.** Sayfadaki
+"dışarı tıklayınca kapat" listener'ı da işe yaramıyordu çünkü menü öğesine
+tıklamak sidebar'ın İÇİNE tıklamak sayılıyor, o kural sadece dışarıya
+tıklanınca tetikleniyor. Sonuç: arkadaki gerçek içerik (ör. "+ Yeni
+Rezervasyon" butonu) açık kalan saydam olmayan overlay'in ALTINDA kalıp
+dokunuşları hiç almıyordu — ekranı döndürüp masaüstü genişliğine geçmek
+overlay CSS kuralını devre dışı bırakıp "düzeltiyordu".
+
+**Düzeltme:** `switchTab()` fonksiyonu artık (admin.html, ikinci/aktif
+tanım — dosyada aynı isimle bir tane daha ölü/kullanılmayan kopyası var,
+ona dokunulmadı) sekme değiştiğinde mobil genişlikte sidebar/overlay'i de
+kapatıyor. (commit bekliyor)
+
 ## ÇÖZÜLDÜ — Ödeme onay sayfasında müşteri kendi ismini düzeltemiyordu (21 Ağustos, devamı)
 
 **Bağlam:** Bir önceki maddedeki (#169) olaydan sonra Tolga "ismini de

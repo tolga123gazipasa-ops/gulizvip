@@ -1409,6 +1409,20 @@
         const titleText = element.innerText.trim();
         document.getElementById('header-title-text').innerText = titleText;
 
+        // GERÇEK BUG DÜZELTİLDİ (21 Ağustos — Tolga mobilde fark etti): sekme
+        // menüden değiştirildiğinde açık kalan mobil sidebar/overlay hiç
+        // kapanmıyordu (sadece "dışarı" tıklanınca kapanıyordu, menü öğesine
+        // tıklamak sidebar'ın İÇİNE tıklamak sayıldığı için o kurala girmiyordu).
+        // Sonuç: arkadaki içerik (ör. "+ Yeni Rezervasyon" butonu) açık kalan
+        // overlay'in altında kalıp dokunuşları almıyordu — ekranı yatay çevirip
+        // 768px eşiğini aşana kadar "hiçbir şey olmuyormuş" gibi görünüyordu.
+        if (window.innerWidth <= 768) {
+            var sidebarEl = document.querySelector('.sidebar');
+            var overlayEl = document.getElementById('sidebarOverlay');
+            if (sidebarEl) sidebarEl.classList.remove('open');
+            if (overlayEl) overlayEl.classList.remove('show');
+        }
+
         // Radar polling: radar sekmesi açıkken başlat, diğer sekmelerde durdur
         if (tabId === 'view-radar') {
             startRadarPolling();
