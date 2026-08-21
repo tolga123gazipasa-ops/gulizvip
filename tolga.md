@@ -1,5 +1,50 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
+## ÇÖZÜLDÜ — Admin panelinde e-posta hiç görünmüyordu + müşteri kaydı yanlış isimle üzerine yazılmıştı (21 Ağustos)
+
+**Bağlam:** Tolga admin panelinden elle bir rezervasyon (#169) oluşturup
+müşteriye ödeme linki gönderdi, müşteri ödemeyi tamamladı. Tolga "müşterinin
+girdiği bilgileri admin panelinde göremiyorum" dedi.
+
+**Tolga'nın iş akışı (kasıtlı, doğru, DOKUNULMADI):** Admin panelden elle
+rezervasyon oluşturulurken isme/e-postaya ne yazılırsa yazılsın, amaç sadece
+ödeme linki üretmek. Müşteri `/odeme/onayla/<id>/<token>` sayfasında kendi
+telefon/e-postasını teyit/düzeltiyor, bu bilgi `find_or_create_customer()`
+üzerinden hem rezervasyona hem müşteri (CRM) kaydına geri yazılıyor. Tolga bu
+mantığı **bilerek ve beğenerek** kullanıyor — "sistem çok güzel işliyor,
+amacım sadece ödemesini alabilmek" dedi. Bu davranış değiştirilmedi.
+
+**Bulunan GERÇEK bug — e-posta admin panelinde hiç gösterilmiyordu:**
+Rezervasyon #169'un verisini API'den doğrudan çektiğimde `customerEmail:
+"ceylinsaritas@icloud.com"` zaten doğru kayıtlıydı — sorun veri kaybı değil,
+**admin.html'in rezervasyon detay modalı ve düzenleme formu `customerEmail`
+alanını hiçbir zaman render etmiyordu** (kodda tek geçtiği yer calendar hızlı
+rezervasyon formunun gönderdiği payload'dı, gösterim tarafında sıfır referans
+vardı). Düzeltildi: detay modalına "E-posta" kutusu (Telefon'un yanına),
+düzenleme formuna da e-posta input'u eklendi, `adminSaveEdit()` artık
+`customerEmail`'i de gönderiyor (backend'in `/api/admin/reservations` edit
+action'ı zaten bu alanı kabul ediyordu, sadece frontend hiç göndermiyordu).
+(commit `a4ef30a`)
+
+**Yan bulgu — CRM'de gerçek bir müşteri kaydı bozulmuştu:** #169'u oluştururken
+"Müşteri Adı" kutusuna yanlışlıkla güzergah metni ("ANTALYA GAZIPAŞA")
+yazılmış. Telefon numarası (05309709339) sistemdeki mevcut bir müşteriyle
+(id:1, 13 rezervasyon / 7.373₺ harcama, VIP) eşleşince,
+`find_or_create_customer()` (db.py satır 613) — yeni isim eskisinden farklı
+olduğu için — müşterinin gerçek adını ("Ceylin Sarıtaş", e-postasından
+`ceylinsaritas@icloud.com` teyit edildi) sessizce "ANTALYA GAZIPAŞA" ile
+ezdi. **Bu davranış (isim farklıysa otomatik güncelleme) Tolga'nın isteğiyle
+BİLEREK korundu**, sadece bu spesifik yanlış veri canlıda elle düzeltildi:
+hem `customers` tablosundaki id:1 kaydı hem #169'un `customerName`'i
+"Ceylin Sarıtaş" olarak geri yazıldı (API üzerinden, admin token ile).
+
+**Hâlâ eksik:** #169'un transfer tarih/saati boş (aynı oturumda daha önce
+bulunan, admin.html'deki "Yeni Rezervasyon & Rota Planlama" formunun
+tarih/saati zorunlu tutmaması bug'ından kaynaklanıyor — bkz. ayrı not).
+Tolga doğru tarih/saati verince tamamlanacak.
+
+---
+
 ## ANALİZ (kod değişikliği yok) — Railway loglarından "ziyaretçi geliyor ama rezervasyon yapmıyor" incelemesi
 
 **Bağlam:** Tolga Railway'den ~4 saatlik log dosyası indirdi (13:45-17:34,
