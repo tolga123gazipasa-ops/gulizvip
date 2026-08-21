@@ -2567,6 +2567,7 @@
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Hizmet</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + (typeMap[r.type] || r.type) + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Müşteri</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.customerName || '') + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Telefon</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.customerPhone || '') + '</div></div>' +
+                (r.customerEmail ? '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">E-posta</div><div style="font-size:15px;font-weight:700;margin-top:4px;word-break:break-all;">' + escapeHtml(r.customerEmail) + '</div></div>' : '') +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Ödeme</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + payHtml + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Güzergah</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(gzrh) + '</div></div>' +
                 '<div style="background:#F8FAFC;padding:12px;border-radius:8px;"><div style="font-size:11px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Tarih / Saat</div><div style="font-size:15px;font-weight:700;margin-top:4px;">' + escapeHtml(r.date || '') + ' ' + escapeHtml(r.time || '') + '</div></div>' +
@@ -2651,6 +2652,7 @@
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
                 '<div style="grid-column:1/-1;"><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Müşteri Adı</label><input id="edit-name" value="' + escapeHtml(r.customerName || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
                 '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Telefon</label><input id="edit-phone" value="' + escapeHtml(r.customerPhone || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
+                '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">E-posta</label><input id="edit-email" type="email" value="' + escapeHtml(r.customerEmail || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
                 '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Alış</label><input id="edit-pickup" value="' + escapeHtml(r.pickup || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' +
                 (r.type === 'transfer' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Varış</label><input id="edit-destination" value="' + escapeHtml(r.destination || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' : '') +
                 (r.type === 'transfer' ? '<div><label style="display:block;font-size:12px;color:#94A3B8;margin-bottom:4px;">Uçuş No</label><input id="edit-flight" value="' + escapeHtml(r.flightNumber || '') + '" style="width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:16px;"></div>' : '') +
@@ -2690,6 +2692,7 @@
             id: id,
             customerName: document.getElementById('edit-name').value.trim(),
             customerPhone: document.getElementById('edit-phone').value.trim(),
+            customerEmail: document.getElementById('edit-email').value.trim(),
             pickup: document.getElementById('edit-pickup').value.trim(),
             date: document.getElementById('edit-date').value,
             time: document.getElementById('edit-time').value,

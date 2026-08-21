@@ -1,5 +1,69 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
+## ANALİZ (kod değişikliği yok) — Railway loglarından "ziyaretçi geliyor ama rezervasyon yapmıyor" incelemesi
+
+**Bağlam:** Tolga Railway'den ~4 saatlik log dosyası indirdi (13:45-17:34,
+20 Ağustos), "Telegram'a yeni ziyaretçi bildirimi düşüyor ama tek rezervasyon
+yok, Google Ads'ten de hiç işlem yok" dedi.
+
+**Bulgular:**
+1. **Log penceresi 24 saat değil ~3s49dk** — muhtemelen Railway'in export/
+   retention sınırı. Daha net tablo için daha uzun pencere gerekebilir.
+2. **Bu pencerede toplam `POST /api/reservations` = 0.** Tolga'nın iddiası
+   doğrulandı.
+3. **18 farklı gerçek Google Ads tıklaması** (`gclid=` parametreli, benzersiz
+   ID'ler) bu ~4 saatte siteye düştü, hepsi `200 OK` ile karşılandı — reklam
+   trafiği geliyor, sorun reklamda değil.
+4. **En kritik bulgu — bu 18 tıklamanın 6 tanesinde (%32) sayfa hiç
+   yüklenmedi:** Sunucu HTML'i döndü (200) ama sayfanın JS'i açılışta attığı
+   API paketini (unit-price, slider-images, maps/config, fleet, vb. — hepsi
+   birlikte ateşlenir) hiç tetiklemedi. Yani ziyaretçi tıklıyor, boş/yarım
+   sayfa görüyor ya da anında kapatıyor, uygulama hiç "boot" olmuyor. Bunun
+   nedeni büyük ihtimalle yavaş mobil yükleme veya JS hatası — ayrıca
+   olabilir; kesin teşhis için gerçek kullanıcı tarayıcı konsol logu/Core Web
+   Vitals verisi lazım.
+5. **En önemli bulgu — sayfa yüklenen 15 oturumun HİÇBİRİNDE
+   `/api/maps/distance` çağrısı yok (0/15).** Yani ziyaretçi sayfayı tam açsa
+   bile, tek bir tanesi bile alış+varış noktasını başarıyla girip fiyat
+   hesaplatamamış. Bu, bu oturumda daha önce ayrı ayrı fark edilip düzeltilen
+   "GPS ile konum çekiliyor ama fiyat hiç görünmüyor" bug'ıyla birebir örtüşüyor
+   (bkz. aşağıdaki ilgili bölüm, commit `5084c5b`) — **ve o düzeltme de dahil
+   olmak üzere TÜM bu oturumdaki commit'ler HÂLÂ DEPLOY EDİLMEDİ.** Yani
+   sitedeki gerçek trafik şu an hâlâ bu bug'ın etkisi altında; muhtemel
+   sıfır-dönüşümün en büyük tek nedeni bu.
+6. `/api/track/event` ve `/api/agent/track-event` bu pencerede hiç
+   çağrılmamış (0) — adım bazlı huni (funnel) takibi ya frontend'de
+   tetiklenmiyor ya da kullanıcılar o adımlara hiç gelmiyor; ayrı
+   doğrulanmalı.
+7. `/api/track/heartbeat` çağrılarının %66'sı (138/210) `404 Oturum
+   bulunamadı` dönüyor — `VISITOR_SESSIONS` sadece bellekte tutuluyor
+   (DB/dosyaya yazılmıyor), sunucu her yeniden başladığında/deploy'da
+   sıfırlanıyor. Bu, Telegram'daki "yeni ziyaretçi" bildirim sayısını
+   şişirebilir/karıştırabilir ama rezervasyon akışını doğrudan bozmuyor —
+   kozmetik/izleme sorunu, öncelik değil.
+8. Logda `GET /tel:+902426062548`, `GET /https://www.instagram.com/...`,
+   `GET /http://www.gulizlojistik.com` gibi bozuk path'ler var ama
+   index.html'deki linkler hepsi doğru (`tel:`, `https://` tam URL,
+   `target="_blank"`) — kodda ilgili querySelectorAll/prefetch mantığı da
+   yok. Bunlar gerçek kullanıcı tıklaması değil, bot/tarayıcı taraması
+   kaynaklı gürültü — göz ardı edilebilir.
+9. Ham loglardaki IP'ler (`100.64.0.x`) Railway/Cloudflare'in iç proxy
+   adresleri, gerçek ziyaretçi IP'si değil — bu yüzden bu log tek başına
+   "kaç farklı gerçek ziyaretçi" sorusuna kesin cevap veremiyor (Telegram
+   tracking botundaki gerçek IP/konum verisiyle çapraz kontrol gerekir).
+
+**Sonuç / öncelik sırası:**
+- #1 öncelik: **bu oturumdaki tüm commit'leri deploy et** (502 fix dahil —
+  şu an müşteriler zaten rezervasyon yapamıyor, bu tek başına sıfır
+  dönüşümü açıklar) — GPS/fiyat gösterme düzeltmesi de aynı pakette.
+- Deploy sonrası aynı analiz tekrarlanmalı: `/api/maps/distance` çağrı
+  sayısı 0'dan çıkıyor mu, gerçek gclid oturumlarının kaçında sayfa "boot"
+  oluyor, izlemeli.
+- `/api/track/event` çağrılarının neden hiç düşmediği ayrıca kontrol
+  edilmeli (frontend'de event tetikleme eksik olabilir).
+
+---
+
 Son güncelleme: 2026-08-20 — **CANLI SİTEDE MÜŞTERİLER REZERVASYON YAPAMIYORDU
 (502 Bad Gateway), GERÇEK KÖK NEDEN BULUNDU VE DÜZELTİLDİ** (aşağıdaki ilgili
 bölüme bak — Tolga Railway loglarını paylaştı, kesin teşhis kondu). Ayrıca 502
