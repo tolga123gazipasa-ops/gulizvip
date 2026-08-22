@@ -4711,12 +4711,24 @@ class GulizHandler(http.server.BaseHTTPRequestHandler):
                     "email": "",
                     "reservationId": "",
                 }
+                # GERÇEK BUG DÜZELTİLDİ (22 Ağustos — Tolga Telegram'da aynı IP'den 1-3
+                # dakika arayla art arda "Yeni Ziyaretçi" bildirimi geldiğini fark etti):
+                # bu uç nokta her çağrıldığında KOŞULSUZ Telegram bildirimi atıyordu, aynı
+                # sessionId zaten VISITOR_SESSIONS'ta kayıtlıysa bile. Mobilde sekme arka
+                # plana alınıp geri dönüldüğünde (ya da bellek baskısıyla sayfa yeniden
+                # yüklendiğinde) frontend identify()'ı tekrar çağırıyor — aynı ziyaretçi
+                # için tekrar "yeni" bildirim gidiyordu. Artık sadece GERÇEKTEN yeni bir
+                # sessionId ise (son 5 dakika içinde — VISITOR_SESSION_CLEANUP — kayıt
+                # yoksa) bildirim gönderiliyor; zaten biliniyorsa kayıt sessizce
+                # tazeleniyor (IP/sayfa güncellenir) ama Telegram'a tekrar düşmüyor.
                 with visitor_lock:
+                    is_truly_new = session_id not in VISITOR_SESSIONS
                     VISITOR_SESSIONS[session_id] = visitor
-                print(f"[tracking] Yeni ziyaretçi: {ip} / {body.get('device', '?')} "
+                print(f"[tracking] {'Yeni' if is_truly_new else 'Devam eden'} ziyaretçi: {ip} / {body.get('device', '?')} "
                       f"| CF-Connecting-IP={self.headers.get('CF-Connecting-IP', '-')} "
                       f"XFF={self.headers.get('X-Forwarded-For', '-')}")
-                threading.Thread(target=_resolve_geo_and_notify_visitor, args=(session_id, ip), daemon=True).start()
+                if is_truly_new:
+                    threading.Thread(target=_resolve_geo_and_notify_visitor, args=(session_id, ip), daemon=True).start()
                 self._send_json({"success": True, "visitorId": session_id})
             except json.JSONDecodeError:
                 self._send_error("Geçersiz JSON.", 400)

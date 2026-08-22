@@ -1,5 +1,45 @@
 # Güliz VIP — Proje Durumu (Kaldığımız Yer)
 
+## ÇÖZÜLDÜ — GERÇEK BUG: Telegram'a aynı ziyaretçi için art arda sahte "Yeni Ziyaretçi" bildirimi (22 Ağustos)
+
+**Bağlam:** Tolga Telegram'daki "Gulizvipradar" botunda aynı IP'den (`2a00:1d36:...`,
+Ankara, Mobile/macOS) 1-3 dakika arayla art arda 4 tane "Yeni Ziyaretçi"
+bildirimi geldiğini fark etti, ekran görüntüsü attı: "ip bilgilerinde çok
+büyük sorun var, hâlâ bir yere takılıyor gerçek bilgiler olmuyor" dedi.
+
+**Bulunan 2 GERÇEK bug + 1 gerçek ama düzeltilemeyen sınırlama:**
+
+1. **sessionId kalıcılığı bug'ı (asıl neden):** `gulizTracker` IIFE'i (index.html)
+   ziyaretçi kimliğini hem `localStorage` hem `sessionStorage`'a yazıyordu ama
+   OKURKEN sadece `sessionStorage`'a bakıyordu. Mobilde sekme arka plana
+   alınıp hafıza baskısıyla sayfa yeniden yüklenince `sessionStorage`
+   sıfırlanabiliyor (`localStorage` kalıcı kalır) — kod bu durumda
+   `localStorage`'a hiç bakmadan sıfırdan yeni bir kimlik üretiyor, aynı
+   ziyaretçi için tekrar "yeni ziyaretçi" tetikleniyordu. Düzeltildi:
+   `sessionStorage.getItem(...) || localStorage.getItem(...)` fallback'i
+   eklendi, ayrıca localStorage'dan geldiyse sessionStorage'a geri yazılıyor.
+2. **Backend de aynı sorunu büyütüyordu:** `/api/track/identify` uç noktası,
+   `sessionId` zaten `VISITOR_SESSIONS`'ta kayıtlı olsa bile HER ÇAĞRIDA
+   koşulsuz Telegram bildirimi atıyordu (server.py). Artık sadece GERÇEKTEN
+   yeni bir `sessionId` ise (son 5 dakika — `VISITOR_SESSION_CLEANUP` —
+   içinde kayıt yoksa) bildirim gidiyor, biliniyorsa kayıt sessizce
+   tazeleniyor ama Telegram'a düşmüyor.
+3. **"Cihaz: Mobile / macOS" çelişkisi (ayrı bug):** iPhone/iPad Safari'nin
+   user-agent'ı eski uyumluluk için "like Mac OS X" içeriyor. OS tespitinde
+   "Mac OS" kontrolü iPhone/iPad kontrolünden ÖNCE yapıldığı için her iOS
+   ziyaretçi yanlışlıkla "macOS" olarak etiketleniyordu. Kontrol sırası
+   değiştirildi (iOS/Android artık önce kontrol ediliyor).
+4. **IP'nin "Ankara" göstermesi bug DEĞİL:** gerçek ziyaretçi IP'si zaten
+   doğru çekiliyor (Cloudflare CF-Connecting-IP önceliği önceki bir
+   oturumda düzeltilmişti). Türk mobil operatörlerinin IPv6 bloklarının
+   IP-konum veritabanlarında genelde operatörün merkez şehrine (Ankara/
+   İstanbul) kayıtlı olması — dünyadaki hemen her ücretsiz IP-geolocation
+   servisinde var olan, kodla düzeltilemeyen bir sınırlama. Tolga'ya
+   açıklandı, "gerçek konum" beklentisinin mobil veri bağlantılarında zaten
+   gerçekçi olmadığı belirtildi.
+
+(commit bekliyor — henüz push/deploy edilmedi)
+
 ## ÇÖZÜLDÜ — GERÇEK BUG: Mobilde admin panel menüsü, sekme değiştirince açık kalıyordu (21 Ağustos)
 
 **Bağlam:** Tolga mobilde "Yeni Rezervasyon" oluşturmaya çalıştı, buton

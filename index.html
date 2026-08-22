@@ -4877,7 +4877,14 @@
         });
         // ─── GÖRÜNMEZ AJAN (TRACKING) ─────────────────────────────────────
         var gulizTracker = (function() {
-            var sessionId = sessionStorage.getItem('guliz_session_id');
+            // GERÇEK BUG DÜZELTİLDİ (22 Ağustos — Tolga Telegram'da aynı IP'den art arda
+            // "Yeni Ziyaretçi" bildirimleri geldiğini fark etti): sessionId hem localStorage
+            // hem sessionStorage'a yazılıyordu ama OKUNURKEN sadece sessionStorage'a
+            // bakılıyordu. Mobilde sekme arka plana alınınca/hafıza sıkışınca sessionStorage
+            // sıfırlanabiliyor (localStorage kalıcı kalır) — bu durumda kod localStorage'a
+            // hiç bakmadan sıfırdan yeni bir kimlik üretiyor, aynı ziyaretçi için tekrar
+            // "yeni ziyaretçi" bildirimi tetikleniyordu. Artık localStorage'a da bakılıyor.
+            var sessionId = sessionStorage.getItem('guliz_session_id') || localStorage.getItem('guliz_session_id');
             if (!sessionId) {
                 sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                     var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -4885,6 +4892,10 @@
                 });
                 sessionStorage.setItem('guliz_session_id', sessionId);
                 localStorage.setItem('guliz_session_id', sessionId);
+            } else {
+                // sessionId localStorage'dan geldiyse (sessionStorage sıfırlanmıştı),
+                // sessionStorage'ı da senkron tut ki aynı sekmedeki sonraki okumalar tutarlı olsun.
+                sessionStorage.setItem('guliz_session_id', sessionId);
             }
 
             var ua = navigator.userAgent;
@@ -4892,12 +4903,18 @@
             if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) device = 'Mobile';
             if (/iPad|Tablet|PlayBook|Silk/i.test(ua)) device = 'Tablet';
 
+            // GERÇEK BUG DÜZELTİLDİ (22 Ağustos — Tolga Telegram'da "Cihaz: Mobile /
+            // macOS" gibi çelişkili bir bildirim gördü): iPhone/iPad Safari'nin
+            // user-agent'ı eski uyumluluk için hâlâ "like Mac OS X" içeriyor. "Mac OS"
+            // kontrolü iPhone/iPad kontrolünden ÖNCE geldiği için her iOS ziyaretçisi
+            // yanlışlıkla "macOS" olarak etiketleniyordu (cihaz tarafı doğruydu, sadece
+            // işletim sistemi yanlıştı). iOS/Android kontrolleri artık önce yapılıyor.
             var os = 'Unknown';
-            if (/Windows/.test(ua)) os = 'Windows';
-            else if (/Mac OS/.test(ua)) os = 'macOS';
-            else if (/Linux/.test(ua) && !/Android/.test(ua)) os = 'Linux';
+            if (/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
             else if (/Android/.test(ua)) os = 'Android';
-            else if (/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
+            else if (/Windows/.test(ua)) os = 'Windows';
+            else if (/Mac OS/.test(ua)) os = 'macOS';
+            else if (/Linux/.test(ua)) os = 'Linux';
 
             var browser = 'Unknown';
             if (/Chrome/.test(ua) && !/Edg/.test(ua) && !/OPR/.test(ua)) browser = 'Chrome';
